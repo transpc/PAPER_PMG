@@ -1,0 +1,963 @@
+@comment{x-kbibtex-personnameformatting=<%l><, %f>}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% References for: PMG-Preconditioned BiCGSTAB (MSFR / iSMR)
+%% NOTE: Entries marked WARN need author order / volume / pages / DOI
+%%       verified against the published version (publisher pages were
+%%       blocked during drafting).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% --- Authors' group prior work (scalable solver lineage) ---
+
+@article{do2024meshless,
+  title   = {Highly scalable meshless multigrid solver for 3D thermal-hydraulic analysis of nuclear reactors},
+  author  = {Do, Seong Ju and Ha, Sang Truong and Choi, Hyoung Gwon and Yoon, Han Young},
+  journal = {Annals of Nuclear Energy},
+  volume  = {207},
+  pages   = {110713},
+  year    = {2024},
+  doi     = {10.1016/j.anucene.2024.110713},
+  note    = {\url{https://www.sciencedirect.com/science/article/pii/S0306454924003761}}
+}
+% WARN: verify author order and article number (110713) against published version
+
+@article{do2022highaspect,
+  title   = {A meshless geometric multigrid method for a grid with a high aspect ratio},
+  author  = {Do, Seong Ju and Ha, Sang Truong and Choi, Hyoung Gwon and Yoon, Han Young},
+  journal = {Journal of Mechanical Science and Technology},
+  year    = {2022},
+  doi     = {10.1007/s12206-022-1019-4},
+  note    = {\url{https://link.springer.com/article/10.1007/s12206-022-1019-4}}
+}
+% WARN: verify authors, volume, pages
+
+@article{ha2024aiaa,
+  title   = {Meshless Geometric Multigrid Method for Complex Geometries with Improved Cell Coarsening Algorithm},
+  author  = {Ha, Sang Truong and Do, Seong Ju and Choi, Hyoung Gwon and Yoon, Han Young},
+  journal = {AIAA Journal},
+  year    = {2024},
+  doi     = {10.2514/1.J063127},
+  note    = {\url{https://arc.aiaa.org/doi/10.2514/1.J063127}}
+}
+% WARN: verify author order, volume, year
+
+@article{ha2021nodecoarsening,
+  title   = {A meshless geometric multigrid method based on a node-coarsening algorithm for the linear finite element discretization},
+  author  = {Ha, Sang Truong and Choi, Hyoung Gwon},
+  year    = {2021},
+  note    = {\url{https://www.researchgate.net/publication/351771284}}
+}
+% WARN: verify authors, journal, DOI (ResearchGate-registered version)
+
+@misc{ha2025aggregation,
+  title        = {Investigation on an Optimal Aggregation Level for a Parallel Meshless Multigrid Method Based on Domain Decomposition Method},
+  author       = {Ha, Sang Truong and Yoon, Han Young and Choi, Hyoung Gwon},
+  howpublished = {SSRN preprint 5081886},
+  year         = {2025},
+  note         = {\url{https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5081886}}
+}
+% WARN: verify year and publication status
+
+%% --- Semi-coarsening multigrid ---
+
+@article{mulder1989,
+  title   = {A new multigrid approach to convection problems},
+  author  = {Mulder, W. A.},
+  journal = {Journal of Computational Physics},
+  volume  = {83},
+  number  = {2},
+  pages   = {303--323},
+  year    = {1989},
+  doi     = {10.1016/0021-9991(89)90121-6}
+}
+% WARN: foundational semi-coarsening reference; verify exact source (JCP 1989 vs SIAM J. Numer. Anal.)
+
+@techreport{osti440722,
+  title       = {A parallel semicoarsening multigrid algorithm for solving the Reynolds-averaged Navier-Stokes equations},
+  institution = {OSTI},
+  number      = {440722},
+  note        = {\url{https://www.osti.gov/biblio/440722}}
+}
+% WARN: verify authors and year
+
+@article{dendy2019msg,
+  title   = {Multiple Semicoarsened Multigrid for anisotropic diffusion problems},
+  author  = {Anonymous},
+  journal = {arXiv preprint arXiv:1907.12334},
+  year    = {2019},
+  note    = {\url{https://arxiv.org/abs/1907.12334}}
+}
+% WARN: verify authors and formal publication venue
+
+%% --- Parallel MG communication reduction ---
+
+@article{reisner2018,
+  title   = {Scaling Structured Multigrid to 500K+ Cores through Coarse-Grid Redistribution},
+  author  = {Reisner, Andrew and Olson, Luke N. and Moulton, J. David},
+  journal = {SIAM Journal on Scientific Computing},
+  year    = {2018},
+  note    = {\url{https://arxiv.org/abs/1803.02481}}
+}
+% WARN: verify volume, pages, DOI
+
+@article{bienz2020,
+  title   = {Node-Aware Improvements to Allreduce / Reducing Communication in Algebraic Multigrid},
+  author  = {Bienz, Amanda and Gropp, William D. and Olson, Luke N.},
+  journal = {International Journal of High Performance Computing Applications},
+  volume  = {34},
+  number  = {5},
+  pages   = {547--561},
+  year    = {2020},
+  note    = {\url{https://arxiv.org/abs/1904.05838}}
+}
+% WARN: verify exact title
+
+@article{manteuffel2016,
+  title   = {Nonsymmetric Algebraic Multigrid Sparsification / Reducing Communication Costs in AMG},
+  author  = {Manteuffel, Thomas A. and others},
+  journal = {SIAM Journal on Scientific Computing},
+  year    = {2016},
+  note    = {\url{https://arxiv.org/abs/1512.04629}}
+}
+% WARN: verify exact title, full author list, volume, pages
+
+%% --- BiCGSTAB / preconditioned convergence theory ---
+
+@article{vandervorst1992,
+  title   = {Bi-CGSTAB: A Fast and Smoothly Converging Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems},
+  author  = {van der Vorst, Henk A.},
+  journal = {SIAM Journal on Scientific and Statistical Computing},
+  volume  = {13},
+  number  = {2},
+  pages   = {631--644},
+  year    = {1992},
+  doi     = {10.1137/0913035},
+  note    = {\url{https://epubs.siam.org/doi/10.1137/0913035}}
+}
+
+@article{chen2016fbicgstab,
+  title   = {A Flexible Variant of Bi-CGSTAB with a Multigrid Preconditioner (FBiCGStab)},
+  author  = {Chen, Jie and McInnes, Lois Curfman and Zhang, Hong},
+  journal = {Journal of Scientific Computing},
+  volume  = {68},
+  number  = {2},
+  pages   = {803--825},
+  year    = {2016},
+  note    = {\url{https://jiechenjiechen.github.io/pub/fbcgs.pdf}}
+}
+% WARN: verify exact title (PFLOTRAN application)
+
+@article{lucerolorca2026,
+  title   = {Two-point spectral clustering and Krylov convergence of multigrid-preconditioned solvers},
+  author  = {Lucero Lorca, Jose Pablo and McCoid, Conor and Outrata, Michal},
+  journal = {arXiv preprint arXiv:2511.12298},
+  year    = {2026},
+  note    = {\url{https://arxiv.org/abs/2511.12298}; preprint, pre-peer-review}
+}
+% WARN: verify title and authors (2026 preprint)
+
+%% --- MSFR / reactor CFD ---
+
+@article{msfr_coupled,
+  title   = {Coupled neutronics and thermal-hydraulics numerical simulations of a Molten Salt Fast Reactor (MSFR)},
+  author  = {Anonymous},
+  note    = {\url{https://www.academia.edu/70734179/}}
+}
+% WARN: verify authors, journal, year
+
+@article{fnuen2025,
+  title   = {Multigrid preconditioning for reactor thermal-hydraulics CFD},
+  journal = {Frontiers in Nuclear Engineering},
+  year    = {2025},
+  note    = {\url{https://www.frontiersin.org/journals/nuclear-engineering/articles/10.3389/fnuen.2025.1597165/full}}
+}
+% WARN: verify title and authors
+
+@inproceedings{nuclearcfd_springer,
+  title     = {Parallel multigrid in nuclear CFD},
+  booktitle = {Springer LNCS},
+  doi       = {10.1007/978-3-030-39647-3_20},
+  note      = {\url{https://link.springer.com/chapter/10.1007/978-3-030-39647-3_20}}
+}
+% WARN: verify title, authors, year
+
+@article{MLP_2005,
+	author = "Kim, Kyu Hong and Kim, Chongam",
+	journal = "J. Comput. Phys.",
+	number = "2",
+	pages = "570--615",
+	title = "{Accurate, Efficient and Monotonic Numerical Methods for Multi-dimensional Compressible Flows Part II: Multi-dimensional Limiting Process}",
+	url = "http://dx.doi.org/10.1016/j.jcp.2005.02.022",
+	volume = "208",
+	year = "2005"
+}
+
+@article{Sweby1984,
+	author = "Sweby, P. K.",
+	journal = "SIAM J. Numer. Anal.",
+	month = "October",
+	number = "5",
+	pages = "995--1011",
+	title = "{High resolution schemes using flux limiters for hyperbolic conservation laws}",
+	volume = "21",
+	year = "1984"
+}
+
+@article{VanLeer1979,
+	author = "Leer, B. V.",
+	journal = "J. Comput. Phys.",
+	pages = "101--136",
+	title = "{Towards the Ultimate Conservative Difference Scheme. V. A Second-order Sequel to Godunov's Method}",
+	volume = "32",
+	year = "1979"
+}
+
+@article{WENOJS_1996,
+	author = "Jiang, Guang-Shan and Shu, Chi-Wang",
+	journal = "J. Comput. Phys.",
+	pages = "202--228",
+	title = "{Efficient Implementation of Weighted ENO Schemes}",
+	volume = "126",
+	year = "1996"
+}
+
+@article{ENO_1989,
+	author = "Shu, Chi-Wang and Osher, Stanley",
+	journal = "J. Comput. Phys.",
+	pages = "32--78",
+	title = "{Efficient Implementation of Essentially Non-Oscillatory Shock-Capturing Schemes, II}",
+	volume = "83",
+	year = "1989"
+}
+
+@article{ENO_1988,
+	author = "Shu, Chi-Wang and Osher, Stanly",
+	journal = "J. Comput. Phys.",
+	pages = "439--471",
+	title = "{Efficient Implementation of Essentially Non-Oscillatory Shock-Capturing Schemes}",
+	volume = "77",
+	year = "1988"
+}
+
+@techreport{DG_Shu2001,
+	author = "Shu, Chi-Wang",
+	journal = "ICASE Report",
+	month = "May",
+	number = "2001-11",
+	title = "{High Order Finite Difference and Finite Volume WENO Schemes and Discontinuous Galerkin Methods for CFD}",
+	year = "2001"
+}
+
+@article{Shu1997,
+	author = "Shu, Chi-Wang",
+	journal = "ICASE Report",
+	month = "Nov.",
+	number = "97-65",
+	title = "{Essentially Non-Oscillatory and Weighted Essentially Non-Oscillatory Schemes for Hyperbolic Conservation Laws}",
+	year = "1997"
+}
+
+@article{Cockburn1998,
+	author = "Cockburn, Bernardo and Shu, Chi-Wang",
+	journal = "J. Comput. Phys.",
+	pages = "199--224",
+	title = "{The Runge-Kutta Discontinuous Galerkin Method for Conservation Laws V}",
+	volume = "141",
+	year = "1998"
+}
+
+
+@article{WENOZ_Borges2008,
+	author = "Borges, Rafael and Carmona, Monique and Costa, Bruno and Don, Wai Sun",
+	journal = "J. Comput. Phys.",
+	pages = "3191--3211",
+	title = "{An improved weighted essentially non-oscillatory scheme for hyperbolic conservaltion laws}",
+	volume = "227",
+	year = "2008"
+}
+
+@article{WENOZ_Castro2011,
+	author = "Castro, Marcos and Costa, Bruno and Don, Wai Sun",
+	journal = "J. Comput. Phys.",
+	pages = "1766--1792",
+	title = "{High Order weighted essentially non-oscillatory WENO-Z schemes for hyperbolic conseravtion laws}",
+	volume = "230",
+	year = "2011"
+}
+
+@article{WENONS_Ha2013,
+	author = "Ha, Youngsoo and Kim, Chang Ho and Lee, Yeon Ju and Yoon, Jungho",
+	journal = "J. Comput. Phys.",
+	pages = "68--86",
+	title = "{An improved weighted essentially non-oscillatory scheme with a new smoothness indicator}",
+	volume = "232",
+	year = "2013"
+}
+
+@article{Ziegler2011,
+	author = "Ziegler, Jack L. and Deiterding, Ralf and Shepherd, Joseph E. and Pullin, D. I.",
+	journal = "J. Comput. Phys.",
+	pages = "7598--7630",
+	title = "{An adaptive high-order hybrid scheme for compressive, viscous flows with detailed chemistry}",
+	volume = "230",
+	year = "2011"
+}
+
+@article{WENOM_Henrick2005,
+	author = "Henrick, Andrew K. and Aslam, Tariq D. and Powers, Joseph M.",
+	journal = "J. Comput. Phys.",
+	pages = "542--567",
+	title = "{Mapped weighted essentially non-oscillatory schemes: Achieving optimal order near critical points}",
+	volume = "207",
+	year = "2005"
+}
+
+@article{ADERWENO_Aboiyar2010,
+	author = "Aboiyar, Terhemen and Georgoulis, Emmanuil H. and Iske, Armin",
+	journal = "SIAM J. Sci. Comput.",
+	number = "6",
+	pages = "3251--3277",
+	title = "{Adaptive ADER methods using kernel-based polyharmonic spline WENO Reconstruction}",
+	volume = "32",
+	year = "2010"
+}
+
+@article{ADERWENO_Dumbser2013,
+	author = "Dumbser, Michael and Zanotti, Olindo and Hidago, Arturo and Balsara, Dinshaw S.",
+	journal = "J. Comput. Phys.",
+	pages = "257--286",
+	title = "{ADER-WENO finite volume schemes with space-time adaptive mesh refinement}",
+	volume = "248",
+	year = "2013"
+}
+
+@article{AWCM_Vasilyev2003,
+	author = {{Vasilyev}, O.~V.},
+	title = "{Solving Multi-dimensional Evolution Problems with Localized Structures using Second Generation Wavelets}",
+	journal = {International Journal of Computational Fluid Dynamics},
+	year = 2003,
+	month = mar,
+	volume = 17,
+	pages = {151-168},
+	url = {http://adsabs.harvard.edu/abs/2003IJCFD..17..151V}
+}
+
+
+@article{AWCM_Vasilyev2000,
+	title = "{Second-Generation Wavelet Collocation Method for the Solution of Partial Differential Equations}",
+	journal = "Journal of Computational Physics ",
+	volume = "165",
+	number = "2",
+	pages = "660 - 693",
+	year = "2000",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999100966385",
+	author = "Oleg V Vasilyev and Christopher Bowman"
+}
+
+@article{AWCM_Vasilyev2005,
+	title = "{An adaptive multilevel wavelet collocation method for elliptic problems}",
+	journal = "Journal of Computational Physics ",
+	volume = "206",
+	number = "2",
+	pages = "412 - 431",
+	year = "2005",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999104005200",
+	author = "Oleg V. Vasilyev and Nicholas K.-R. Kevlahan",
+}
+
+
+
+
+@article{WAVELET_Mallat1989,
+	author = "Mallat, S.",
+	journal = "Trans. Amer. Math. Soc.",
+	pages = "69--87",
+	title = "{Multiresolution approximations and wavelet orthonormal bases of $L^2(\mathbb{R})$ }",
+	volume = "315",
+	year = "1989"
+}
+
+@article{WAVELET_Sweldens1996,
+	author = "Sweldens, W.",
+	journal = "Appl. Comput. Harmon. Anal.",
+	pages = "186--200",
+	title = "{The lifting scheme: A custom-design construction of biorthogonal wavelets}",
+	volume = "315",
+	year = "1996"
+}
+
+@article{WAVELET_Sweldens1998,
+	author = "Sweldens, W.",
+	journal = "SIAM J. Math. Anal.",
+	number = "2",
+	pages = "511--546",
+	title = "{The lifting scheme: A construction of second generation wavelets}",
+	volume = "29",
+	year = "1998"
+}
+
+@article{WAVELET_DD1989,
+	author = "Deslauriers, G. and Dubuc, S.",
+	journal = "Constr. Approx.",
+	pages = "49--68",
+	title = "{Symmetric iterative interpolation processes}",
+	volume = "5",
+	year = "1989"
+}
+
+@techreport{WAVELET_Donoho1992,
+	author = "Donoho, D. L.",
+	organization = "Department of Statistics, Stanford University",
+	title = "{Interpolating wavelet transforms}",
+	year = "1992"
+}
+
+@article{AWCM_Alves2002,
+	author = "Alves, M. A. and Cruz, P. and Mendes, A. and Magalhaes, F. D. and Pinho, F. T. and Oliveira, P. J.",
+	journal = "Comput. Methods Appl. Mech. Engrg.",
+	pages = "3909--3928",
+	title = "{Adaptive multiresolution approach for solution of hyperbolic PDEs}",
+	volume = "191",
+	year = "2002"
+}
+
+@article{AWCM_localtimestepping_Domingues2008,
+	title = "{An adaptive multiresolution scheme with local time stepping for evolutionary PDEs }",
+	journal = "Journal of Computational Physics ",
+	volume = "227",
+	number = "8",
+	pages = "3758 - 3780",
+	year = "2008",
+	note = "",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999107005219",
+	author = "Margarete O. Domingues and Sônia M. Gomes and Olivier Roussel and Kai Schneider",
+	keywords = "Finite volume",
+	keywords = "Adaptivity",
+	keywords = "Multiresolution",
+	keywords = "Evolutionary partial differential equation "
+}
+
+
+
+@article{AWCM_localtimestepping_Domingues2009,
+	title = "{Space–time adaptive multiresolution methods for hyperbolic conservation laws: Applications to compressible Euler equations}",
+	journal = "Applied Numerical Mathematics ",
+	volume = "59",
+	number = "9",
+	pages = "2303 - 2321",
+	year = "2009",
+	note = "",
+	issn = "0168-9274",
+	url = "http://www.sciencedirect.com/science/article/pii/S0168927408002195",
+	author = "Margarete O. Domingues and Sônia M. Gomes and Olivier Roussel and Kai Schneider",
+}
+
+@ARTICLE{AWCM_Regele2009,
+	author={Regele, J.D. and Vasilyev, O.V.},
+	title="{An adaptive wavelet-collocation method for shock computations}",
+	journal={International Journal of Computational Fluid Dynamics},
+	year={2009},
+	volume={23},
+	number={7},
+	pages={503-518},
+	note={},
+	url = {https://www.scopus.com/inward/record.url?eid=2-s2.0-70349839183&partnerID=40&md5=e8f542d3b946ee746a416c93532b95a2},
+	document_type={Article},
+	source={Scopus},
+}
+
+
+@book{RiemannLebesgue,
+	author = "Bochner, S. and Chandrasekharan, K.",
+	publisher = "Princeton University Press",
+	title = "{ Fourier Transforms}",
+	year = "1949"
+}
+
+@article{SHOCKTUBE_SOD1978,
+	title = "{A survey of several finite difference methods for systems of nonlinear hyperbolic conservation laws}",
+	journal = "Journal of Computational Physics",
+	volume = "27",
+	number = "1",
+	pages = "1 - 31",
+	year = "1978",
+	note = "",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/0021999178900232",
+	author = "Gary A Sod",
+}
+
+@article{Roe1981,
+	author = "Roe, P. L.",
+	journal = "J. Comput. Phys.",
+	pages = "357--372",
+	title = "{Approximate Riemann solvers, parameter vectors and difference scheme}",
+	volume = "43",
+	year = "1981"
+}
+
+@article{Leveque1997,
+	author = "LeVeque, Randall J.",
+	journal = "J. Comput. Phys.",
+	pages = "327--353",
+	title = "{Wave propagation algorithm for multidimensional hyperbolic systems}",
+	volume = "131",
+	year = "1997"
+}
+
+@article{WINDTUNNEL_WOODWARD1984,
+	title = "{The numerical simulation of two-dimensional fluid flow with strong shocks}",
+	journal = "Journal of Computational Physics",
+	volume = "54",
+	number = "1",
+	pages = "115 - 173",
+	year = "1984",
+	note = "",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/0021999184901426",
+	author = "Paul Woodward and Phillip Colella",
+}
+
+@article{AMRWENO_Shen2011,
+	title = "{Adaptive mesh refinement based on high order finite difference WENO scheme for multi-scale simulations}",
+	journal = "Journal of Computational Physics ",
+	volume = "230",
+	number = "10",
+	pages = "3780 - 3802",
+	year = "2011",
+	note = "",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999111000908",
+	author = "Chaopeng Shen and Jing-Mei Qiu and Andrew Christlieb",
+}
+
+@article{WENO_MULTIDOMAIN_Kurt2003,
+	year={2003},
+	issn={0885-7474},
+	journal={Journal of Scientific Computing},
+	volume={19},
+	number={1-3},
+	title= "{Multidomain WENO Finite Difference Method with Interpolation at Subdomain Interfaces}",
+	publisher={Kluwer Academic Publishers-Plenum Publishers},
+	author="Sebastian, Kurt and Shu, Chi-Wang",
+	pages={405-438},
+	language={English}
+}
+
+@article{Eva1993,
+	title = "{Conservative and non-conservative interpolation between overlapping grids for finite volume solutions of hyperbolic problems}",
+	journal = "Computers and Fluids ",
+	volume = "23",
+	number = "3",
+	pages = "551 - 574",
+	year = "1994",
+	note = "",
+	issn = "0045-7930",
+	author = "Eva Pärt-Enander and Björn Sjögreen"
+}
+
+@article{Toro,
+	title = "{Riemann Solvers and Numerical Methods for Fluid Dynamics, Third edition}",
+	journal = "Spinger",
+	year = "2009",
+	author = "Eleuterio F. Toro"
+}
+
+@article{AWCM_Reckinger2016,
+	title = "{Comprehensive numerical methodology for direct numerical simulations of compressible Rayleigh–Taylor instability}",
+	journal = "Journal of Computational Physics ",
+	volume = "313",
+	number = "",
+	pages = "181 - 208",
+	year = "2016",
+	note = "",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999115007354",
+	author = "Scott J. Reckinger and Daniel Livescu and Oleg V. Vasilyev",
+}
+
+@article{CloudShock_Li2012,
+	title = "{Arbitrary order exactly divergence-free central discontinuous Galerkin methods for ideal MHD equations}",
+	journal = "Journal of Computational Physics ",
+	volume = "231",
+	number = "6",
+	pages = "2655 - 2675",
+	year = "2012",
+	note = "",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999111007285",
+	author = "Fengyan Li and Liwei Xu",
+}
+
+@article{DivCleaning_Dedner2002,
+	title = "{Hyperbolic Divergence Cleaning for the MHD Equations}",
+	journal = "Journal of Computational Physics ",
+	volume = "175",
+	number = "2",
+	pages = "645 - 673",
+	year = "2002",
+	note = "",
+	url = "http://www.sciencedirect.com/science/article/pii/S002199910196961X",
+	author = "A. Dedner and F. Kemm and D. Kröner and C.-D. Munz and T. Schnitzer and M. Wesenberg"
+}
+
+@article{WENO_survey_Shu2016,
+	title = "{High order WENO and DG methods for time-dependent convection-dominated PDEs: A brief survey of several recent developments}",
+	journal = "Journal of Computational Physics ",
+	volume = "316",
+	number = "",
+	pages = "598 - 613",
+	year = "2016",
+	note = "",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999116300766",
+	author = "Chi-Wang Shu",
+}
+
+@article{AWCM_Schneider2010,
+	Author = {Schneider, Kai and Vasilyev, Oleg V.},
+	Title = "{Wavelet Methods in Computational Fluid Dynamics}",
+	Journal = {{ANNUAL REVIEW OF FLUID MECHANICS}},
+	Series = {{Annual Review of Fluid Mechanics}},
+	Year = {{2010}},
+	Volume = {{42}},
+	Pages = {{473-503}},
+	url = "http://www.annualreviews.org/doi/full/10.1146/annurev-fluid-121108-145637"
+}
+
+@article{AWCMWENO_Li2015,
+	title = "{A wavelet-based adaptive WENO algorithm for Euler equations}",
+	journal = "Computers and Fluids ",
+	volume = "123",
+	number = "",
+	pages = "10 - 22",
+	year = "2015",
+	note = "",
+	issn = "0045-7930",
+	url = "http://www.sciencedirect.com/science/article/pii/S0045793015003175",
+	author = "Haojun Li and Seongju Do and Myungjoo Kang",
+}
+
+
+@article{TVDRK3rd_Gottlieb1998,
+	author={Gottlieb, S. and Shu, C.-W.},
+	title="{Total variation diminishing Runge-Kutta schemes}",
+	journal={Mathematics of Computation},
+	year={1998},
+	volume={67},
+	number={221},
+	pages={73-85},
+	url={https://www.scopus.com/inward/record.url?eid=2-s2.0-0032345207&partnerID=40&md5=2c97069ffa3543097f9cdea5e339c673},
+}
+
+@article{FDM_WENO_MHD_Christlieb2014,
+	title = "{Finite difference weighted essentially non-oscillatory schemes with constrained transport for ideal magnetohydrodynamics}",
+	journal = "Journal of Computational Physics ",
+	volume = "268",
+	pages = "302 - 325",
+	year = "2014",
+	issn = "0021-9991",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999114001703",
+	author = "Andrew J. Christlieb and James A. Rossmanith and Qi Tang",
+}
+
+@article{NAVIER_STOKES_BRISTEAU1987,
+	title = "{Numerical methods for the navier-stokes equations. Applications to the simulation of compressible and incompressible viscous flows}",
+	journal = "Computer Physics Reports",
+	volume = "6",
+	number = "1",
+	pages = "73 - 187",
+	year = "1987",
+	url = "http://www.sciencedirect.com/science/article/pii/0167797787900116",
+	author = "M.O. Bristeau and R. Glowinski and J. Periaux",
+}
+
+@book{CHEMICAL_Davis1984,
+	title = "{Numerical Methods and Modeling for Chemical Engineers}",
+	journal = "Computer Physics Reports",
+	pages = "73 - 187",
+	year = "1984",
+	author = "Mark E.Davis",
+}
+
+@PHDTHESIS{MHD_CharacteristicDecomposition_Rossmanith2002,
+   author = {{Rossmanith}, J.~A.},
+    title = "{A wave propagation method with constrained transport for ideal and shallow water magnetohydrodynamics}",
+   school = {University of Washington},
+     year = 2002,
+   adsurl = {http://adsabs.harvard.edu/abs/2002PhDT........77R},
+  adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@ARTICLE{RiemannProblem2D_Lax1998,
+author={Lax, P.D. and Liu, X.-D.},
+title="{Solution of two-dimensional Riemann problems of gas dynamics by positive schemes}",
+journal={SIAM Journal on Scientific Computing},
+year={1998},
+volume={19},
+number={2},
+pages={319-340},
+url={https://www.scopus.com/inward/record.uri?eid=2-s2.0-0001528721&partnerID=40&md5=11ce9572bfd5e36b79891164c93e3ec8}
+}
+
+@article{Third_Order_Limiter_Cada2009,
+title = "{Compact third-order limiter functions for finite volume methods}",
+journal = "Journal of Computational Physics ",
+volume = "228",
+number = "11",
+pages = "4118 - 4145",
+year = "2009",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999109000953",
+author = "Miroslav Čada and Manuel Torrilhon",
+}
+
+@article{MHD_Characteristic_Brio_1988,
+title = "{An upwind differencing scheme for the equations of ideal magnetohydrodynamics}",
+journal = "Journal of Computational Physics",
+volume = "75",
+number = "2",
+pages = "400 - 422",
+year = "1988",
+url = "http://www.sciencedirect.com/science/article/pii/0021999188901209",
+author = "M Brio and C.C Wu",
+}
+
+@article{Rotor_Balsara1999,
+title = "{A Staggered Mesh Algorithm Using High Order Godunov Fluxes to Ensure Solenoidal Magnetic Fields in Magnetohydrodynamic Simulations}",
+journal = "Journal of Computational Physics ",
+volume = "149",
+number = "2",
+pages = "270 - 292",
+year = "1999",
+note = "",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999198961538",
+author = "Dinshaw S Balsara and Daniel S Spicer"
+}
+
+@ARTICLE{OT_Orszag_Tang1979,
+   author = {{Orszag}, S.~A. and {Tang}, C.-M.},
+    title = "{Small-scale structure of two-dimensional magnetohydrodynamic turbulence}",
+  journal = {Journal of Fluid Mechanics},
+     year = 1979,
+    month = jan,
+   volume = 90,
+    pages = {129-143},
+   adsurl = {http://adsabs.harvard.edu/abs/1979JFM....90..129O}
+}
+
+@article{OT_Dai1998331,
+title = "{A Simple Finite Difference Scheme for Multidimensional Magnetohydrodynamical Equations}",
+journal = "Journal of Computational Physics ",
+volume = "142",
+number = "2",
+pages = "331 - 369",
+year = "1998",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999198959447",
+author = "Wenlong Dai and Paul R. Woodward"
+}
+
+
+@article{OT_DongsuRyu1998,
+  author="{Dongsu Ryu and Francesco Miniati and T. W. Jones and Adam Frank}",
+  title="{A Divergence-free Upwind Code for Multidimensional Magnetohydrodynamic Flows}",
+  journal={The Astrophysical Journal},
+  volume={509},
+  number={1},
+  pages={244},
+  url={http://stacks.iop.org/0004-637X/509/i=1/a=244},
+  year={1998},
+}
+	
+@article{OT_Andrew1994,
+author = "{Andrew L. Zachary and Andrea Malagoli and Phillip Colella}",
+title = "{A Higher-Order Godunov Method for Multidimensional Ideal Magnetohydrodynamics}",
+journal = {SIAM Journal on Scientific Computing},
+volume = {15},
+number = {2},
+pages = {263-284},
+year = {1994},
+URL = { http://dx.doi.org/10.1137/0915019}
+}
+
+@article{MHD_div_free_Toth2000605,
+title = "{The ∇·B=0 Constraint in Shock-Capturing Magnetohydrodynamics Codes}",
+journal = "Journal of Computational Physics ",
+volume = "161",
+number = "2",
+pages = "605 - 652",
+year = "2000",
+note = "",
+issn = "0021-9991",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999100965197",
+author = "Gábor Tóth"
+}
+
+
+@article{DG_COCKBURN1989,
+title = "{TVB Runge-Kutta local projection discontinuous Galerkin finite element method for conservation laws III: One-dimensional systems}",
+journal = "Journal of Computational Physics",
+volume = "84",
+number = "1",
+pages = "90 - 113",
+year = "1989",
+url = "http://www.sciencedirect.com/science/article/pii/0021999189901836",
+author = "Bernardo Cockburn and San-Yih Lin and Chi-Wang Shu",
+}
+
+@article{DG_Cockburn1998,
+title = "{The Runge–Kutta Discontinuous Galerkin Method for Conservation Laws V: Multidimensional Systems}",
+journal = "Journal of Computational Physics ",
+volume = "141",
+number = "2",
+pages = "199 - 224",
+year = "1998",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999198958922",
+author = "Bernardo Cockburn and Chi-Wang Shu"
+}
+
+@article{ADERWENO_Balsara2009,
+title = "{Efficient, high accuracy ADER-WENO schemes for hydrodynamics and divergence-free magnetohydrodynamics}",
+journal = "Journal of Computational Physics ",
+volume = "228",
+number = "7",
+pages = "2480 - 2516",
+year = "2009",
+url = "http://www.sciencedirect.com/science/article/pii/S0021999108006396",
+author = "Dinshaw S. Balsara and Tobias Rumpf and Michael Dumbser and Claus-Dieter Munz",
+}
+
+@article{SpectralMethod_Hesthaven2011,
+title = "{Spectral and High Order Methods for Partial Differential Equations}",
+author = "Jan S. Hesthaven and Einar M. Ronquist",
+volume = "76",
+year = "2011",
+journal = "Springer-Verlag Berlin Heidelberg"
+}
+
+@article{WENO_Xu2005,
+	title = "{Anti-diffusive flux corrections for high order finite difference WENO schemes}",
+	journal = "Journal of Computational Physics ",
+	volume = "205",
+	number = "2",
+	pages = "458 - 485",
+	year = "2005",
+	url = "http://www.sciencedirect.com/science/article/pii/S0021999104004760",
+	author = "Zhengfu Xu and Chi-Wang Shu"
+}
+
+@article{WENO_MHD_Balsara2000,
+title = "{Monotonicity Preserving Weighted Essentially Non-oscillatory Schemes with Increasingly High Order of Accuracy}",
+journal = "{Journal of Computational Physics}",
+volume = "160",
+number = "2",
+pages = "405 - 452",
+year = "2000",
+note = "",
+issn = "0021-9991",
+url = "http://www.sciencedirect.com/science/article/pii/S002199910096443X",
+author = "{Dinshaw S. Balsara and Chi-Wang Shu}",
+}
+
+@article{WENO_Efficient_Balsara2016,
+title = "{An efficient class of WENO schemes with adaptive order}",
+journal = "Journal of Computational Physics ",
+volume = "326",
+number = "",
+pages = "780 - 804",
+year = "2016",
+note = "",
+issn = "0021-9991",
+url = "//www.sciencedirect.com/science/article/pii/S0021999116304211",
+author = "Dinshaw S. Balsara and Sudip Garain and Chi-Wang Shu",
+}
+
+@article{AMR_BERGER1989,
+title = "{Local adaptive mesh refinement for shock hydrodynamics}",
+journal = "{Journal of Computational Physics}",
+volume = "82",
+number = "1",
+pages = "64 - 84",
+year = "1989",
+note = "",
+issn = "0021-9991",
+url = "http://www.sciencedirect.com/science/article/pii/0021999189900351",
+author = "{M.J. Berger and P. Colella}",
+}
+
+@article{MHD_BRACKBILL1980,
+title = "{The Effect of Nonzero ∇ · B on the numerical solution of the magnetohydrodynamic equations}",
+journal = "{Journal of Computational Physics}",
+volume = "35",
+number = "3",
+pages = "426 - 430",
+year = "1980",
+note = "",
+issn = "0021-9991",
+url = "http://www.sciencedirect.com/science/article/pii/0021999180900790",
+author = "{J.U Brackbill and D.C Barnes}",
+}
+
+@Article{MHD_Brackbill1985,
+author="{Brackbill, Jeremiah}",
+title="{Fluid modeling of magnetized plasmas}",
+journal="Space Science Reviews",
+year="1985",
+volume="42",
+number="1",
+pages="153--167",
+issn="1572-9672",
+url="http://dx.doi.org/10.1007/BF00218230"
+}
+
+  	
+@article{MHD_Dinshaw2004,
+author={Dinshaw S. Balsara and Jongsoo Kim},
+title={A Comparison between Divergence-Cleaning and Staggered-Mesh Formulations for Numerical Magnetohydrodynamics},
+journal={The Astrophysical Journal},
+volume={602},
+number={2},
+pages={1079},
+url={http://stacks.iop.org/0004-637X/602/i=2/a=1079},
+year={2004},
+}
+
+@article{MHD_Balsara2001,
+title = "{Divergence-Free Adaptive Mesh Refinement for Magnetohydrodynamics}",
+journal = "{Journal of Computational Physics}",
+volume = "174",
+number = "2",
+pages = "614 - 648",
+year = "2001",
+note = "",
+issn = "0021-9991",
+url = "//www.sciencedirect.com/science/article/pii/S0021999101969177",
+author = "{Dinshaw S. Balsara}"
+}
+
+@article{AWCM_Nejadmalayeri2015,
+title = "{Parallel adaptive wavelet collocation method for PDEs} ",
+journal = "{Journal of Computational Physics }",
+volume = "298",
+number = "",
+pages = "237 - 253",
+year = "2015",
+note = "",
+issn = "0021-9991",
+url = "//www.sciencedirect.com/science/article/pii/S0021999115003629",
+author = "Alireza Nejadmalayeri and Alexei Vezolainen and Eric Brown-Dymkoski and Oleg V. Vasilyev",
+}
+
+@article{KHI_MHD_Frank1996,
+   author = "{{Frank}, A. and {Jones}, T.~W. and {Ryu}, D. and {Gaalaas}, J.~B.}",
+    title = "{The Magnetohydrodynamic Kelvin-Helmholtz Instability: A Two-dimensional Numerical Study}",
+  journal = {The Astrophysical Journal},
+   eprint = {astro-ph/9510115},
+     year = 1996,
+    month = apr,
+   volume = 460,
+    pages = {777},
+      doi = {10.1086/177009},
+}
+
+

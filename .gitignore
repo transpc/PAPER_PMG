@@ -1,0 +1,33 @@
+# LaTeX build artifacts
+latex_source/*.aux
+latex_source/*.bbl
+latex_source/*.blg
+latex_source/*.fdb_latexmk
+latex_source/*.fls
+latex_source/*.log
+latex_source/*.out
+latex_source/*.spl
+latex_source/*.synctex.gz
+latex_source/*.pdf
+latex_source/texput.log
+
+# General LaTeX auxiliary files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.idx
+*.ind
+*.ilg
+*.lof
+*.lot
+*.log
+*.out
+*.spl
+*.synctex.gz
+*.toc
+*.nav
+*.snm
+*.vrb
+texput.log

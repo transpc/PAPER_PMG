@@ -1,0 +1,281 @@
+\documentclass[review]{elsarticle}
+\usepackage[left=2cm,right =2cm, top=1.5cm,bottom=2.5cm, headheight=200pt]{geometry}
+\usepackage{lineno,hyperref,subfigure,rotating,float}
+\usepackage{amsmath,amssymb,wasysym}
+% \usepackage{kotex}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\modulolinenumbers[5]
+
+\renewcommand{\vec}{\mathbf}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+
+\journal{Annals of Nuclear Energy}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%% Elsevier bibliography styles
+%%%%%%%%%%%%%%%%%%%%%%%
+%% To change the style, put a % in front of the second line of the current style and
+%% remove the % from the second line of the style you would like to use.
+%%%%%%%%%%%%%%%%%%%%%%%
+
+% Numbered
+%\bibliographystyle{model1-num-names}
+
+%% Numbered without titles
+%\bibliographystyle{model1a-num-names}
+
+% Harvard
+%\bibliographystyle{model2-names.bst}\biboptions{authoryear}
+
+%% Vancouver numbered
+%\usepackage{numcompress}\bibliographystyle{model3-num-names}
+
+%% Vancouver name/year
+%\usepackage{numcompress}\bibliographystyle{model4-names}\biboptions{authoryear}
+
+%% APA style
+%\bibliographystyle{model5-names}\biboptions{authoryear}
+
+%% AMA style
+%\usepackage{numcompress}\bibliographystyle{model6-num-names}
+
+%% `Elsevier LaTeX' style
+\bibliographystyle{elsarticle-num}
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{frontmatter}
+
+  \title{A Parallel Semi-Coarsening Geometric Multigrid Preconditioner for BiCGSTAB on Unstructured Grids: Application to MSFR Steady State and iSMR Natural Circulation}
+
+  %% or include affiliations in footnotes:
+  \author[kaeri]{Seong Ju Do}
+  \ead{sjdo@kaeri.re.kr}
+
+  \author[seoultech]{Sang Truong Ha}
+
+  \author[seoultech]{Hyoung Gwon Choi}
+
+  \author[kaeri]{Han Young Yoon\corref{mycorrespondingauthor}}
+  \cortext[mycorrespondingauthor]{Corresponding author}
+  \ead{hyyoon@kaeri.re.kr}
+
+  \address[kaeri]{Korea Atomic Energy Research Institute, 989-111 Daedeok-daero, Yuseong-gu, Daejeon, 34057, Republic of Korea}
+  \address[seoultech]{Department of Mechanical and Automotive Engineering, Seoul National University of Science and Technology, Seoul, Republic of Korea}
+
+  \begin{abstract}
+    In reactor thermal-hydraulic analysis, solving the pressure correction (Poisson-type) equation for incompressible flow dominates the overall computation time, and the convergence of conventional BiConjugate Gradient (BiCG)-family solvers degrades sharply with mesh refinement (non-scalable). In this work we integrate a semi-coarsening geometric multigrid (MG) applicable to unstructured grids as a \emph{preconditioner} for BiCGSTAB. Whereas the preceding meshless geometric multigrid was a standalone solver, casting it as a preconditioner secures robustness and acceleration simultaneously: MG removes low-frequency error while BiCGSTAB handles the residual spectral components that MG misses. When the MG hierarchy is restricted and the coarsest grid is approximated iteratively to reduce communication, the preconditioner becomes variable, and a flexible variant (FBiCGSTAB) is employed. Parallel scalability is pursued through communication-volume reduction and a serial-computation-below-a-fixed-level strategy. The methodology is demonstrated on three problems of computational nuclear engineering: the Molten Salt Fast Reactor (MSFR) steady state, the innovative SMR (iSMR) emergency core cooling/heat-removal natural circulation, and the iSMR core daily load-following transient.
+  \end{abstract}
+
+  \begin{keyword}
+    Geometric multigrid \sep Preconditioner \sep BiCGSTAB \sep Unstructured grid \sep Semi-coarsening \sep Molten Salt Fast Reactor \sep Small Modular Reactor \sep Natural circulation
+  \end{keyword}
+\end{frontmatter}
+
+\linenumbers
+
+\section{Introduction}
+\label{Section:Introduction}
+
+\subsection{Background}
+In reactor thermal-hydraulic analysis, solving the pressure correction equation (pressure correction / Poisson type) for incompressible flow dominates the overall computation time. This elliptic equation has a large condition number, and the convergence of iterative solvers degrades sharply with mesh refinement, making it the bottleneck of large-scale three-dimensional analysis.
+
+KAERI's CUPID code analyzes reactor cores and systems with an unstructured-grid-based two-fluid, three-field model, and has traditionally used BiConjugate Gradient (BiCG)-family solvers for the pressure correction equation \cite{do2024meshless}. However, BiCG-family methods have an intrinsic limitation: the iteration count grows with mesh size (non-scalable).
+
+Multigrid (MG) is almost the only family of methods that theoretically provides a convergence rate independent of mesh size. In prior work \cite{do2024meshless, do2022highaspect, ha2024aiaa}, the authors' group developed a meshless geometric multigrid (GMG) directly applicable to unstructured grids and demonstrated superior scalability compared with BiCG. This work reconstructs it as a preconditioner and extends it with parallel communication reduction and application to MSFR and iSMR.
+
+\subsection{Motivation: Why MG-Preconditioned BiCGSTAB?}
+\begin{itemize}
+  \item \emph{Limitations of a standalone MG solver.} Geometric MG is sensitive to the smoothing and grid-transfer operators with respect to the problem, so its convergence may stagnate when used alone on strongly anisotropic, irregular unstructured grids.
+  \item \emph{Effect of Krylov acceleration.} When MG is used as a preconditioner for BiCGSTAB, MG efficiently removes low-frequency error while BiCGSTAB handles the residual spectral components that MG misses, greatly improving robustness.
+  \item \emph{The variable-preconditioner issue.} In large-scale parallel runs, if the MG hierarchy is restricted and the coarsest grid is approximated by an iterative method to reduce communication, the preconditioner changes at every iteration, becoming a \emph{variable} preconditioner. In this case standard BiCGSTAB may break down in convergence, and a flexible variant (FBiCGSTAB) is required \cite{chen2016fbicgstab}.
+\end{itemize}
+
+\subsection{Objectives}
+This work aims to (1) integrate an unstructured-grid semi-coarsening geometric MG preconditioner into BiCGSTAB (FBiCGSTAB when necessary), (2) implement communication-volume reduction and serial computation below a fixed level, and (3) quantitatively demonstrate the acceleration performance on the MSFR steady state, iSMR ECT natural circulation, and iSMR core daily load-following transient problems.
+
+\section{Related Work}
+\label{Section:RelatedWork}
+
+\subsection{Unstructured-Grid Geometric Multigrid (Authors' Group Prior Work)}
+The scalable-solver lineage that this work directly extends is as follows.
+\begin{itemize}
+  \item \emph{Meshless GMG (ANE 2024)} \cite{do2024meshless}: Introduced a node-coarsening-based meshless geometric MG into the CUPID code. It converges stably on both structured and unstructured grids and substantially reduces computation time compared with BiCG. This is the starting point of the present paper and the basis for the unstructured-grid application strategy.
+  \item \emph{High aspect ratio GMG (JMST 2022)} \cite{do2022highaspect}: Meshless GMG on high-aspect-ratio (stretched), anisotropic grids. Corresponds to boundary layers and thin-film flows, and connects directly to the semi-coarsening motivation.
+  \item \emph{Complex geometry cell-coarsening (AIAA J.)} \cite{ha2024aiaa}: An improved cell-coarsening algorithm for complex geometries. The basis for application to complex shapes such as MSFR and iSMR.
+  \item \emph{Node-coarsening for linear FE (2021)} \cite{ha2021nodecoarsening}: The foundation of the node-coarsening algorithm for linear finite element discretization.
+  \item \emph{Optimal aggregation level for parallel meshless MG (DDM)} \cite{ha2025aggregation}: A study of the optimal aggregation level for a domain-decomposition (DDM)-based parallel meshless MG, directly connected to this paper's serial-computation-below-a-fixed-level and communication-reduction strategy.
+\end{itemize}
+
+\subsection{Semi-Coarsening Geometric Multigrid}
+Semi-coarsening coarsens only one coordinate direction and is robust to the anisotropy of stretched grids \cite{osti440722}. Since Mulder's proposal \cite{mulder1989}, the Multiple Semi-Coarsened Multigrid (MSG) approach \cite{dendy2019msg} added extra coarse grids coarsened along each coordinate direction, improving the treatment of anisotropic diffusion. The fact that coordinate-alignment directions are ambiguous on unstructured grids is the central challenge and contribution point of this work.
+
+\subsection{Parallel MG Communication Reduction and Coarse-Level Handling}
+The central challenge of large-scale parallel MG is coarse-level communication. Key strategies include:
+\begin{itemize}
+  \item \emph{Coarse-grid redistribution (incremental agglomeration)} \cite{reisner2018}: Gradually reduces processes using a predictive performance model, scaling structured-grid MG to 500K+ cores.
+  \item \emph{Node-aware multi-stage communication} \cite{bienz2020}: Simultaneously reduces the number and size of inter-node messages, prioritizing intra-node channels.
+  \item \emph{Post-hierarchy sparsification} \cite{manteuffel2016}: Reduces communication by removing coarse-matrix entries after hierarchy formation, with a convergence-degradation trade-off when overdone.
+\end{itemize}
+These have each been validated on structured grids / AMG, and their combined application to unstructured reactor CFD grids remains an open area.
+
+\subsection{BiCGSTAB and Variable Preconditioning}
+BiCGSTAB \cite{vandervorst1992} is a standard Krylov solver more efficient than CGS for nonsymmetric systems. When MG is used as a variable preconditioner, restricting the hierarchy to about three levels and approximating the coarsest grid iteratively, then applying FBiCGSTAB, has been reported to yield a 2--3$\times$ speedup over Chebyshev-preconditioned IBiCGSTAB at large scale \cite{chen2016fbicgstab}. There is also a theoretical basis that Krylov convergence accelerates when the spectrum of the preconditioned operator clusters at a few points \cite{lucerolorca2026}.
+
+\subsection{Numerical Analysis of MSFR / SMR Natural Circulation}
+In coupled neutronics/thermal-hydraulics MSFR analysis \cite{msfr_coupled}, the fuel salt circulates the primary loop in roughly 3--4 seconds, which is directly tied to delayed neutron precursor (DNP) transport and is a reference design parameter. SMR natural circulation is a buoyancy-driven, low-Reynolds, thermally stratified condition that is qualitatively different from MSFR forced turbulence, requiring a separate examination of preconditioner robustness.
+
+\section{Methodology}
+\label{Section:Methodology}
+
+\subsection{Governing Equations and Discretization}
+The pressure correction equation derived from SIMPLE-family pressure-velocity coupling in CUPID's incompressible (or low-Mach) two-fluid model reads
+\begin{equation}
+  \nabla \cdot \left( \frac{1}{a_P} \nabla p' \right) = \nabla \cdot \vec{u}^{*}.
+  \label{eq:pressure-correction}
+\end{equation}
+Unstructured finite-volume discretization yields a nonsymmetric (or weakly symmetric) sparse linear system $A p' = b$. The condition number of $A$ deteriorates with grid aspect ratio and non-orthogonality.
+
+\subsection{Semi-Coarsening Geometric MG Preconditioner (Unstructured Grids)}
+Based on the node-coarsening of the preceding meshless GMG \cite{do2024meshless, ha2021nodecoarsening}, we construct a semi-coarsening variant that detects the anisotropy direction and coarsens only along that direction.
+\begin{itemize}
+  \item \emph{Direction detection.} Since there are no coordinate axes on an unstructured grid, the strong-coupling direction is estimated from the local grid aspect ratio and connection strength (matrix coefficient magnitude).
+  \item \emph{Grid-transfer operators.} Meshless interpolation (restriction/prolongation) operating on mixed structured/unstructured grids.
+  \item \emph{Smoother.} Point/line relaxation, or multi-color Gauss--Seidel.
+\end{itemize}
+A remaining open issue is ensuring semi-coarsening direction consistency on polyhedral grids where coordinate-alignment directions are undefined.
+
+\subsection{Parallelization: Communication Reduction and Switch to Serial Computation}
+\begin{itemize}
+  \item \emph{Communication reduction.} Applying the node-aware multi-stage messaging \cite{bienz2020} concept to reduce the number of inter-node messages in halo exchange, and eliminating redundant communication during grid transfer.
+  \item \emph{Serial computation below a fixed level.} From the point where the aggregation level becomes sufficiently small (unknowns per process below a threshold) that communication dominates computation, the coarse problem is gathered onto a single (or a few) processes and handled by a serial direct solver. The optimal switching level is determined by the performance model of the prior DDM aggregation study \cite{ha2025aggregation}.
+  \item \emph{Alternative.} Comparative evaluation against coarse-grid redistribution (incremental agglomeration) \cite{reisner2018}.
+\end{itemize}
+
+\subsection{BiCGSTAB / FBiCGSTAB Coupling}
+When the MG preconditioner is fixed (full V-cycle), standard BiCGSTAB is applied. When the MG preconditioner is variable (iterative approximation of the coarsest grid), FBiCGSTAB is applied \cite{chen2016fbicgstab}. The trade-off between inner MG accuracy and outer convergence is determined experimentally. The overall procedure is summarized in Algorithm~\ref{alg:fbicgstab}.
+
+\begin{algorithm}
+\caption{FBiCGSTAB with PMG preconditioner}
+\label{alg:fbicgstab}
+\begin{algorithmic}[1]
+\State Given $A$, $b$, initial guess $x_0$
+\State $r_0 = b - A x_0$, \quad choose $\hat{r}_0$ with $\hat{r}_0 \cdot r_0 \neq 0$
+\For{$k = 0, 1, 2, \dots$}
+  \State $y_k = M_k^{-1} p_k$ \Comment{$M_k$: PMG preconditioner (may be variable)}
+  \State $v_k = A y_k$
+  \State $\alpha = (\hat{r}_0 \cdot r_k) / (\hat{r}_0 \cdot v_k)$
+  \State $s_k = r_k - \alpha v_k$
+  \State $z_k = M_k^{-1} s_k$ \Comment{PMG preconditioner reapplied}
+  \State $t_k = A z_k$
+  \State $\omega = (t_k \cdot s_k) / (t_k \cdot t_k)$
+  \State $x_{k+1} = x_k + \alpha y_k + \omega z_k$
+  \State $r_{k+1} = s_k - \omega t_k$
+  \State \textbf{if} $\norm{r_{k+1}} / \norm{b} < \mathrm{tol}$ \textbf{then break}
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Verification and Performance Metrics}
+For verification, accuracy is confirmed with the method of manufactured solutions (MMS) and standard benchmarks (lid-driven cavity, channel flow). The performance metrics are the mesh-independence of the iteration count, strong/weak scaling, the wall-clock speedup ratio over standalone BiCG, and parallel efficiency.
+
+\section{Case Studies}
+\label{Section:CaseStudies}
+
+All three case studies were selected to demonstrate the value of a multidimensional high-speed pressure solver. The key common motivations are as follows.
+\begin{itemize}
+  \item \emph{Time advancement over long physical time scales.} In all three problems, the phenomena of interest are governed by slow transport/circulation/feedback time scales ranging from seconds to tens of thousands of seconds (a day). Whether reaching a steady state (Sections~\ref{Section:MSFR} and \ref{Section:iSMRnc}) or a long-duration operational transient (Section~\ref{Section:iSMRtrans}), one must time-advance many steps with small time intervals, solving the pressure correction equation at every step. Therefore, the acceleration of a single linear solve accumulates multiplicatively over the whole analysis time, and accelerating the pressure solver directly shortens the total wall-clock.
+  \item \emph{Inevitability of multidimensionality (3D).} The core physics of the three problems (advection-diffusion of DNP in the fuel salt, thermal stratification and recirculation of buoyancy-driven natural circulation, core flow redistribution during power variations) is inherently coupled to a 3D flow field and cannot be reduced to a 1D system code. Because local velocity/temperature distributions are directly tied to safety margins, multidimensional CFD analysis is essential.
+  \item \emph{Iterative analysis for design and safety evaluation.} Steady-state and operational-transient solutions are computed tens to hundreds of times in design-variable sweeps, sensitivity analysis, and safety licensing evaluation. A high-speed solver lowers this iterative cost to a practical level and shortens the design optimization cycle.
+\end{itemize}
+
+\subsection{MSFR Steady-State Analysis}
+\label{Section:MSFR}
+The MSFR has a unique structure in which the nuclear fuel circulates the primary loop in a liquid state, and as the fuel salt passes through the core in roughly 3--4 seconds, delayed neutron precursors (DNP) are transported outside the active region \cite{msfr_coupled}. The spatial distribution of this DNP depends strongly on the core geometry and velocity field, so it cannot be captured by point kinetics or a 1D model; only by solving a coupled 3D steady-state distribution of neutron flux, temperature, and velocity can the effective reactivity and power distribution be accurately predicted. The steady-state operating point is the reference for fuel-salt composition, flow rate, and core geometry design, and is recomputed at every design iteration, so the acceleration of the pressure correction solver governs the efficiency of design evaluation.
+\begin{itemize}
+  \item \emph{Target.} 3000~MWth-class MSFR primary loop, steady turbulence \cite{msfr_coupled}.
+  \item \emph{Physics.} Fuel-salt circulation in 3--4 seconds, asymmetric advection term due to DNP transport, with assessment of the impact on preconditioner quality.
+  \item \emph{Measurement.} Pressure-correction convergence and total computation time of PMG-BiCGSTAB vs standalone BiCG.
+\end{itemize}
+
+\subsection{iSMR ECT Natural Circulation}
+\label{Section:iSMRnc}
+The passive decay-heat removal of the iSMR relies on natural circulation driven by buoyancy alone without pumps, so the core of safety demonstration is to show that natural circulation stably converges to a steady circulation state with sufficient heat-removal flow. The natural circulation flow rate is a global, multidimensional equilibrium determined by the loop-wide density difference, thermal stratification, and recirculation structure; due to the weak driving force, reaching steady state is slow, and transient analysis requires a very large number of time steps. Moreover, buoyancy-driven low-Reynolds flow converges slowly and unstably, so without a robust yet fast pressure solver, the steady-state analysis itself becomes impractically slow. This problem therefore best reveals the practical value of a high-speed, robust solver.
+\begin{itemize}
+  \item \emph{Target.} Emergency core cooling / heat-removal (ECT) natural-circulation scenario of an innovative SMR (iSMR).
+  \item \emph{Physics.} Buoyancy-driven low-Reynolds, thermally stratified flow with strong anisotropy and weak convection. An ideal case for testing semi-coarsening robustness.
+  \item \emph{Measurement.} Speedup ratio to reach natural-circulation steady state, and robustness (divergence-free convergence).
+\end{itemize}
+
+\subsection{iSMR Core Daily Load-Following Flow Distribution Transient Analysis}
+\label{Section:iSMRtrans}
+Whereas the previous two cases address the acceleration of a single steady-state solution, this case analyzes a long-duration transient on the scale of 24 hours of physical time by time advancement. This is the configuration in which the multiplicative accumulation effect of solver acceleration is revealed most dramatically: a tiny acceleration of a single pressure solve accumulates over tens of thousands to hundreds of thousands of time steps and determines the total analysis time. Thus, in addition to preconditioner quality (Section~\ref{Section:MSFR}) and robustness (Section~\ref{Section:iSMRnc}), it provides a third evaluation axis: cumulative acceleration and sustained robustness over long-duration time advancement.
+
+\subsubsection{Why the ``Day (24-hour)'' Scale --- Physical Justification}
+\begin{enumerate}
+  \item \emph{Intrinsic long-period nature of load-following operation.} The iSMR is designed as a flexible power source to compensate for the variability of renewable energy, targeting daily load-following operation with a soluble-boron-free core and control-rod-based reactivity control. A representative load-following pattern (e.g., a 100\%--50\%--100\% daily cycle) has 24 hours as one cycle, so directly analyzing the core behavior of this operational scenario requires time-advancing the full 24 hours of physical time.
+  \item \emph{Slow feedback time constants.} The core's key feedback mechanisms have time constants on the scale of hours to a day.
+  \begin{itemize}
+    \item \emph{Xenon-135 kinetics.} Reactivity feedback from the I-135 (half-life $\approx 6.6$~h) $\rightarrow$ Xe-135 (half-life $\approx 9.2$~h) decay chain develops on a scale of hours, and the period of spatial xenon oscillations is about 15--30 hours. The re-equilibration of the xenon distribution after a power change is captured only on the scale of a day.
+    \item \emph{Thermal inertia.} Temperature-distribution changes due to the heat capacity of the core, structures, and primary-system coolant proceed on a scale of minutes to hours.
+    \item These feedbacks cannot be reduced to a single steady-state solution, and the entire time history is the subject of safety/operability evaluation.
+  \end{itemize}
+  \item \emph{3D flow redistribution following power variation.} During a power ramp, the core power distribution changes, and accordingly the flow rate and temperature of each subchannel are redistributed. Since the relative contributions of natural-circulation and mixed-convection components vary with time, it cannot be reduced to a 1D system code, and evaluating the time history of local DNBR and temperature margins requires a transient analysis of the 3D core flow field.
+\end{enumerate}
+
+\subsubsection{Meaningful Demonstration Plan}
+\begin{table}[H]
+\centering
+\caption{Demonstration plan for the iSMR daily load-following transient.}
+\label{tab:demo-plan}
+\begin{tabular}{p{0.22\linewidth} p{0.36\linewidth} p{0.34\linewidth}}
+\toprule
+\textbf{Metric} & \textbf{What it shows} & \textbf{Expected result} \\
+\midrule
+Cumulative wall-clock curve & Compare cumulative pressure-solver time versus physical time ($0 \to 24$~h) for PMG-BiCGSTAB vs standalone BiCG & The gap between the two curves widens linearly over time, giving an intuitive presentation of multiplicative accumulation \\
+Per-time-step iteration-count stability & Whether the iteration count stays flat, independent of grid and time, even through intervals where the flow field and condition number change due to power ramps and xenon oscillations & PMG stays flat; standalone BiCG shows a sharp rise in iteration count and risk of divergence in rapid-ramp intervals \\
+Time-step-size sensitivity & Preconditioner robustness when the condition number worsens due to weakened diagonal dominance at large time steps & PMG allows larger time steps, giving double acceleration of fewer steps $\times$ per-step speedup \\
+(Optional) Computational-resource perspective & Core-hours and power consumption of long-duration HPC analysis & Quantify the real cost savings accumulated over design iterations \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The scenario is defined, for example, as 100\%--50\%--100\% daily load-following (example ramp rate: a few \% of rated per minute), or a partial-power step change that induces spatial xenon oscillations; it is designed to sufficiently excite changes in the core flow distribution. This case most directly shows the value of a high-speed, robust pressure solver not as a one-off benchmark but in an actual SMR operational analysis workload. It is the capstone case that integrally validates steady-state acceleration (Section~\ref{Section:MSFR}) and robustness (Section~\ref{Section:iSMRnc}) at a real operational time scale.
+\begin{itemize}
+  \item \emph{Target.} Daily load-following operational transient of the iSMR core (or a representative partial core), with weakly or strongly coupled neutronics/thermal-hydraulics.
+  \item \emph{Physics.} Power ramp + xenon kinetics + thermal inertia producing a time-varying flow field, over long-duration time advancement.
+  \item \emph{Measurement.} 24-hour cumulative speedup ratio, iteration-count stability over the entire transient, and allowable time-step enlargement.
+\end{itemize}
+
+\section{Results}
+\label{Section:Results}
+\emph{(To be written after the numerical experiments.)} The planned results comprise:
+\begin{itemize}
+  \item Mesh-independent convergence curve (iteration count vs unknowns);
+  \item Speedup ratio table over standalone BiCG (MSFR / iSMR);
+  \item Strong/weak scaling (core count vs efficiency);
+  \item Communication-reduction effect (communication-time fraction vs level);
+  \item Serial-switch level sensitivity analysis;
+  \item Fixed MG vs variable MG (FBiCGSTAB) comparison;
+  \item Cumulative wall-clock curve for the load-following transient (physical time $0 \to 24$~h vs cumulative solver time);
+  \item Per-time-step iteration-count stability over the entire transient (ramp / xenon-oscillation intervals);
+  \item Time-step-size sensitivity (large steps allowed by PMG robustness).
+\end{itemize}
+
+\section{Conclusion}
+\label{Section:Conclusion}
+We integrate a semi-coarsening geometric MG applicable to unstructured grids as a BiCGSTAB preconditioner, secure parallel scalability through communication reduction and serial switching, and demonstrate acceleration on the MSFR and iSMR problems (planned).
+
+\section*{Acknowledgements}
+This work was supported by the Korea Atomic Energy Research Institute.
+
+\clearpage
+\bibliography{mybibfile}
+
+\end{document}
