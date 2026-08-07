@@ -1,0 +1,119 @@
+# This file is to be included in the Makefile for CUPID (LHD)
+#
+# 1) Compiler
+FC = mpifort
+#FC = ifort
+#
+# 2) optimization level
+# # common options
+#OPT = -nowarn -auto -no-ansi-alias -r8 -fpp -Dmaster_flag -Dmpi_flag -Dmetis_flag -mcmodel=small -qoverride-limits
+#OPT = -warn unused -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -mcmodel=medium -qoverride-limits
+#OPT = -warn unused -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -mcmodel=medium -qoverride-limits -save-temps
+#OPT = -nowarn -auto -no-ansi-alias -r8 -fpp -mcmodel=medium -qoverride-limits -save-temps
+OPT = -warn interface -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -mcmodel=medium -qoverride-limits
+#OPT = -nowarn -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -mcmodel=medium -qoverride-limits
+# 3) Vector option
+#    Each intel platform has a subset of vector options from the subsequent platform
+#    When running on hybrid configuration choose minimum set ie ivy-bridge broadwell use ivy-bride
+#    ALIGN is used for alignment of data for solver ie knl 8r8=64byte broadwell 4xr8=32byte vector length vl_f set in Zvec_param
+#==> KNL
+#VECTOR = MIC-AVX512
+#ALIGN = AVX512
+#ALIGN_byte = -align array64byte
+#p=64
+#==> Skylake
+#VECTOR = core-AVX512
+#ALIGN = AVX512
+#ALIGN_byte = -align array64byte
+#p=52
+#==> Broadwell
+VECTOR = AVX
+ALIGN = AVX 
+ALIGN_byte = -align array32byte
+#p=28
+#==> Ivy-bridge
+#VECTOR = AVX 
+#ALIGN = AVX
+#ALIGN_byte = -align array32byte
+#p=20
+#==> Sandy-bride Nehalem choose proper SSE for vector get it from /proc/cpuinfo 4.x= 4.2, 4.1
+#VECTOR = SSE4.x
+#ALIGN = SSE
+#ALIGN_byte = -align array16byte
+#==> no vector no align compile on the platform run on same platform
+#VECTOR = Host
+#ALIGN = 
+#ALIGN_byte =
+# 
+# 4) Profiling
+PG =
+#PG = -pg
+# 
+# 5) Debuging
+#DEBUG=
+DEBUG= -g -traceback
+# Checking divide by zero Nan, unititialized variables, check bounds, must use -g -traceback
+# should run one after another in this order for a total of 3 runs
+#CHECK=
+#CHECK= -fpe0
+#CHECK= -init=snan,arrays
+#CHECK= -check uninit,stack
+#CHECK= -check stack
+#CHECK= -check bounds 
+#CHECK= -check assume
+#CHECK= -check arg_temp_created
+#CHECK= -check pointers
+#CHECK= -check all
+# 
+# production fastest options
+# 
+#FOPTFLAGS = -O3 $(PG) $(OPT) -D$(ALIGN) $(ALIGN_byte) -x$(VECTOR) -no-simd -no-vec
+#FOPTFLAGV = -O3 $(PG) $(OPT) -D$(ALIGN) $(ALIGN_byte) -x$(VECTOR) -qopt-report-phase=vec -qopt-report=5 
+#FOPTFLAGX = -O3 $(PG) $(OPT) -D$(ALIGN) $(ALIGN_byte) -x$(VECTOR) -qopt-report-phase=vec -qopt-report=5 -qopt-zmm-usage=high
+# 
+# test abnormal conditions divby0/Nanq/bounds with $(CHECK)
+# test bitwise with -fp-model strict
+#
+FOPTFLAGS = $(PG) $(DEBUG) $(CHECK) -O -nowarn -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -D$(ALIGN) $(ALIGN_byte) -mcmodel=medium -fp-model strict -no-simd -no-vec -x$(VECTOR)
+FOPTFLAGV = $(PG) $(DEBUG) $(CHECK) -O -nowarn -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -D$(ALIGN) $(ALIGN_byte) -mcmodel=medium -fp-model strict -x$(VECTOR) 
+#FOPTFLAGS = -O $(PG) $(DEBUG) $(CHECK) -fp-model strict $(OPT) -D$(ALIGN) $(ALIGN_byte) -x$(VECTOR) -no-simd -no-vec
+#FOPTFLAGV = -O $(PG) $(DEBUG) $(CHECK) -fp-model strict $(OPT) -D$(ALIGN) $(ALIGN_byte) -x$(VECTOR) -qopt-report-phase=vec -qopt-report=5
+#FOPTFLAGV = -O $(PG) $(DEBUG) $(CHECK) -fp-model strict $(OPT) -D$(ALIGN) $(ALIGN_byte) -x$(VECTOR) -no-simd -no-vec 
+
+# 3) Additional flag
+# OOPTFLAGS = -openmp -parallel -fpp
+OOPTFLAGS = $(DEBUG) $(PG) -static-intel
+#
+# 4) Include directories for the cc compiler
+# INCDIR = /cm/shared/apps/mpich/ge/intel/64/1.2.7/lib -lmpich
+# 
+# 5) Loader
+LD = $(FC)
+#
+# 6) Additional libraries (METIS 5.0)
+# 6-1) Nehalem cluster
+# LIBDIR = -L/cm/shared/apps/metis5.0/metis-5.0.2/lib -lmetis
+# 6-2) Ivybridge,Broadwell
+#LIBDIR= -lmetis ~/mpi_trace_linux_x86_64/lib/libmpitrace.a
+#LIBDIR= -lmetis $(PWD)/SourceM/11_LinkToMASTER/libmaster4.0.so
+LIBDIR= -mkl -L/usr/local/metis-5.0.2/lib -lmetis
+#LIBDIR= 
+# 6-3) KNL
+#LIBDIR = -L/usr/local/metis/metis-5.0.2/lib -lmetis 
+# 6-4) SkyLake
+#LIBDIR= -L/usr/local/metis-5.0.2/lib -lmetis $(PWD)/SourceM/11_LinkToMASTER/libmaster4.0.so
+#LIBDIR= -mkl -L/usr/local/metis-5.0.2/lib -lmetis
+#LIBDIR= 
+#
+# What additional libraries to link the programs with (eg., -lmpi)
+#XTRALIBS = -lefence
+#XTRALIBS = -ldmalloc
+
+# What archiving to use
+ARCH = ar 
+ARCHFLAGS = cr
+
+# What to use for indexing the archive
+RANLIB = ranlib
+#RANLIB = ar -ts
+

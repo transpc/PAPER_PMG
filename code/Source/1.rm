@@ -1,0 +1,4 @@
+find . -name "*.o" -delete 
+find . -name "*.mod" -delete
+find . -name "*.optrpt" -delete
+find . -name "*.a" -delete

@@ -1,0 +1,79 @@
+include ../makefile.in
+
+MYNAME = cupidCLOSED
+MYNAME1 = s_cupidCLOSED
+VER = 01
+EXCNAME = $(MYNAME).x
+LIBNAME = lib$(MYNAME).a
+SRCNAME = $(MYNAME).for
+BACKUPNAME = $(MYNAME1)_$(VER).tar
+
+#----------------------------------------------------------------------
+# extension type : .f90
+FSRCS = csr_cg_solvers.f90\
+	csr_cg_solvers_scalar.f90\
+	csr_cg_solvers_vector.f90\
+	csr_neigh.f90\
+	csr_poiss.f90\
+	sort.f90\
+	inverse.f90\
+	summation.f90\
+	pressure_solver_pbcg_diag.f90\
+	pressure_solver_pcg_diag.f90\
+	pressure_solver_pcg_ilu.f90\
+	pressure_solver_sbcg.f90\
+        cupid_solvers.f90\
+        cupid_solvers_c.f90\
+        cupid_solve_non_orth.f90\
+        cupid_solvers_scalar.f90\
+        cupid_solvers_vector.f90\
+	subdomain_info.f90\
+	subdomain_info_ser.f90\
+	subdomain_info_solid.f90\
+	subdomain_info_solid_ser.f90\
+	reorder.f90
+FSRCV = amux0v.f90\
+	lusol0.f90\
+	ilupc.f90\
+	pressure_solver_pbcg_ilu.f90
+#----------------------------------------------------------------------
+
+OBJSS = $(FSRCS:.f90=.o)
+OBJSV = $(FSRCV:.f90=.o)
+OBJS = $(OBJSS) $(OBJSV)
+$(OBJSS): FFLAGS := $(FOPTFLAGS) -module ../Modules
+$(OBJSV): FFLAGS := $(FOPTFLAGV) -module ../Modules
+
+BACKUPFILE = *.f90 *.h makefile
+.SUFFIXES: .f90 .o
+.F.o :
+	$(FC) $(FFLAGS) -c $<
+.f.o :
+	$(FC) $(FFLAGS) -c $<
+.f90.o :
+	$(FC) $(FFLAGS) -c $<
+
+default : mk_lib
+
+mk_exe: $(OBJS)
+	$(FC) -o $(EXCNAME) $(OBJS)  $(CFLAGS) $(LFLAGS)
+
+mk_lib: $(OBJS)
+	$(ARCH) $(ARCHFLAGS) $(LIBNAME) $(OBJS)
+clean:
+#	rm -f *~
+#	rm -f *.o 
+#	rm -f *.mod
+#	rm -f *__genmod.*
+#	rm -f $(EXCNAME)
+#	rm -f $(LIBNAME)
+#	rm -f $(SRCNAME)
+	
+new : clean default
+
+src :
+	cat $(SRC) > $(SRCNAME)
+tag :
+	ctags $(SRC)
+backup :
+	tar cvf $(BACKUPNAME) $(BACKUPFILE)

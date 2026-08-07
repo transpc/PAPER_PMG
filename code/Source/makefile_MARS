@@ -1,0 +1,96 @@
+include ./makefile.in
+
+MYNAME = cupid
+MYNAME1 = S_CUPID
+VER = 10
+EXCNAME = $(MYNAME).x
+SRCNAME = $(MYNAME).for
+DATE = $(shell date +%Y%m%d_%HH)
+BACKUPNAME = $(MYNAME1)_$(VER)_$(DATE).tar
+#
+D0 = .
+include ./makefile_dir.in
+#
+
+default : mk_exe
+
+mk_exe: 
+	cd $(D0_0); make -j $(p) & \
+	cd ../$(D0_d); make -j $(p) & \
+        wait;
+	cd $(D0_a); make -j $(p) & \
+	cd ../../$(D0_b); make -j $(p) & \
+	cd ../../$(D0_c); make -j $(p) & \
+	cd ../../$(D0_e); make -j $(p) & \
+	cd ../../$(D0_g); make -j $(p) & \
+	cd ../../$(D0_h); make -j $(p) & \
+	cd ../../$(D0_i); make -j $(p) & \
+	cd ../../$(D0_j); make -j $(p) & \
+	cd ../../$(D0_l); make -j $(p) & \
+	cd ../../$(D0_54); make -j $(p) & \
+	wait;
+	cd $(D0_k); make -j $(p)
+	cd $(D0_1); make -f makefile_MARS -j $(p) & \
+	cd ../$(D0_2); make -j $(p) & \
+	wait;
+	cd $(D0_3); make -j $(p)
+	cd $(D0_31); make -j $(p) & \
+	cd ../../$(D0_311); make -j $(p) & \
+	cd ../../../$(D0_312); make -j $(p) & \
+	cd ../../../$(D0_313); make -j $(p) & \
+	cd ../../../$(D0_314); make -j $(p) & \
+	cd ../../../$(D0_315); make -j $(p) & \
+	cd ../../../$(D0_316); make -j $(p) & \
+	cd ../../../$(D0_318); make -j $(p) & \
+	cd ../../../$(D0_319); make -j $(p) & \
+        cd ../../../$(D0_32); make -j $(p) & \
+        cd ../../$(D0_321); make -j $(p) & \
+        cd ../../../$(D0_322); make -j $(p) & \
+        cd ../../../$(D0_323); make -j $(p) & \
+	wait;
+	cd $(D0_4); make -j $(p)
+	cd $(D0_5); make -j $(p)
+	cd $(D0_51); make -j $(p) & \
+	cd ../../$(D0_52); make -j $(p) & \
+	wait;
+	cd $(D0_53); make -j $(p)
+	cd $(D0_6); make -j $(p) & \
+	cd ../$(D0_7); make -j $(p) & \
+	wait;
+	cd $(D0_71); make -j $(p)
+	cd $(D0_8); make -j $(p)
+	cd $(D0_8_1); make -j $(p) & \
+	cd ../../../$(D0_8_2); make -j $(p) & \
+	cd ../../../$(D0_8_3); make -j $(p) & \
+	cd ../../../$(D0_8_4); make -j $(p) & \
+	cd ../../../$(D0_8_6); make -j $(p) & \
+	cd ../../../$(D0_8_8); make -j $(p) & \
+	cd ../../../$(D0_8_9); make -j $(p) & \
+	cd ../../../$(D0_8_10); make -j $(p) & \
+	cd ../../../$(D0_8_11); make -j $(p) & \
+	cd ../../../$(D0_8_12); make -j $(p) & \
+	cd ../../../$(D0_8_13); make -j $(p) & \
+	cd ../../../$(D0_8_14); make -j $(p) & \
+	cd ../../../$(D0_8_16); make -j $(p) & \
+	cd ../../../$(D0_8_17); make -j $(p) & \
+	cd ../../../$(D0_8_18); make -j $(p) & \
+	cd ../../../$(D0_8_19); make -j $(p) & \
+	cd ../../../$(D0_8_20); make -j $(p) & \
+	cd ../../../$(D0_8_21); make -j $(p) & \
+	cd ../../../$(D0_8_22); make -j $(p) & \
+	cd ../../../$(D0_8_23); make -j $(p) & \
+	cd ../../../$(D0_8_24); make -j $(p) & \
+	cd ../../../$(D0_8_25); make -j $(p) & \
+	cd ../../../$(D0_8_26); make -j $(p) & \
+	cd ../../../$(D0_8_27); make -j $(p) & \
+	wait;
+	cd $(D0_9); make -j $(p) & \
+	cd ../$(D0_10); make -f makefile_MARS -j $(p) & \
+	cd ../$(D0_11); make -j $(p) & \
+	wait;
+	cd $(D0_C); make -f makefile_MARS -j $(p) & \
+	cd ../$(D0_C2); make -j $(p) & \
+	cd ../../$(D0_C1); make -j $(p) & \
+	wait;
+	cd $(D0_13); make -j $(p)
+	cd $(D0_14); make -j $(p)

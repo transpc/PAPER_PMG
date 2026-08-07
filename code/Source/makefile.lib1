@@ -1,0 +1,89 @@
+include ./makefile.in
+
+MYNAME = cupid
+MYNAME1 = S_CUPID
+VER = 10
+EXCNAME = $(MYNAME).x
+SRCNAME = $(MYNAME).for
+DATE = $(shell date +%Y%m%d_%HH)
+BACKUPNAME = $(MYNAME1)_$(VER)_$(DATE).tar
+D0_0 = 00_Module
+D0_a = 00_Module/a_IO
+D0_b = 00_Module/b_Model
+D0_c = 00_Module/c_Solver
+D0_d = 00_Module/d_MPI
+D0_e = 00_Module/e_Property
+D0_g = 00_Module/g_UserFunctions
+D0_h = 00_Module/h_LinkToMARS
+D0_i = 00_Module/i_Vectorize
+D0_j = 00_Module/j_rv_model
+D3 = 03_Model
+D3_a = 03_Model/rv_model
+D3_b = 03_Model/rv_model/heat_structure
+D3_c = 03_Model/rv_model/int_friction
+D3_d = 03_Model/rv_model/int_ht
+D3_e = 03_Model/rv_model/wall_friction
+D3_f = 03_Model/rv_model/wall_ht
+D3_g = 03_Model/rv_model/io
+D3_h = 03_Model/rv_model/choke
+D4 = 04_Turbulence
+D5 = 05_Solver
+D5_0 = 05_Solver/gradient
+D5_1 = 05_Solver/2nd_order_conv
+D6 = 06_MPI
+D7 = 07_Property
+D10= 10_LinkToMARS
+D11= 11_LinkToMASTER
+D14= Closed
+D14_a= Closed/IO
+D14_b= Closed/rv
+D15= 13_Vectorize
+DR = RUN
+
+LFLAGS =
+FFLAGS = $(FOPTFLAGS)
+OFLAGS = $(OOPTFLAGS) 
+OBJS=$(D0_0)/*.o $(D0_a)/*.o $(D0_b)/*.o $(D0_c)/*.o $(D0_d)/*.o $(D0_e)/*.o $(D0_g)/*.o $(D0_h)/*.o $(D0_i)/*.o $(D0_j)/*.o \
+     $(D3)/*.o $(D3_a)/*.o $(D3_b)/*.o $(D3_c)/*.o $(D3_d)/*.o $(D3_e)/*.o $(D3_f)/*.o $(D3_g)/*.o $(D3_h)/*.o  \
+     $(D4)/*.o \
+     $(D5)/*.o $(D5_0)/*.o $(D5_1)/*.o \
+     $(D6)/*.o \
+     $(D7)/*.o \
+     $(D10)/*.o \
+     $(D14)/*.o $(D14_a)/*.o \
+     $(D15)/*.o
+
+default : mk_lib
+
+mk_lib: 
+	(cd $(D0_0); make -j$(procs))
+	(cd $(D0_a); make -j$(procs))
+	(cd $(D0_b); make -j$(procs))
+	(cd $(D0_c); make -j$(procs))
+	(cd $(D0_d); make -j$(procs))
+	(cd $(D0_e); make -j$(procs))
+	(cd $(D0_g); make -j$(procs))
+	(cd $(D0_h); make -j$(procs))
+	(cd $(D0_i); make -j$(procs))
+	(cd $(D0_j); make)
+	(cd $(D3); make -j$(procs))
+	(cd $(D3_a); make -j$(procs))
+	(cd $(D3_b); make -j$(procs))
+	(cd $(D3_c); make -j$(procs))
+	(cd $(D3_d); make -j$(procs))
+	(cd $(D3_e); make -j$(procs))
+	(cd $(D3_f); make -j$(procs))
+	(cd $(D3_g); make -j$(procs))
+	(cd $(D3_h); make -j$(procs))
+	(cd $(D4); make -j$(procs))
+	(cd $(D5); make -j$(procs))
+	(cd $(D5_0); make -j$(procs))
+	(cd $(D5_1); make -j$(procs))
+	(cd $(D6); make -j$(procs))
+	(cd $(D7); make -j$(procs))
+	(cd $(D10); make -j$(procs))
+	(cd $(D14); make -j$(procs))
+	(cd $(D14_a); make -j$(procs))
+	(cd $(D14_b); make -j$(procs))
+	(cd $(D15); make -j$(procs))
+#	$(ARCH) $(ARCHFLAGS) $(LIBNAME) $(OBJS) 

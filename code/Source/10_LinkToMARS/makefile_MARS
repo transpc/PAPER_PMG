@@ -1,0 +1,80 @@
+include ../makefile.in
+INCDIR1 = ../../source/ThreeD
+INCDIR2 = ../../source/OneD
+INCDIR3 = ../../source/Modules
+
+MYNAME = LinkcupidMARS
+MYNAME1 = s_LinkcupidMARS
+VER = 01
+EXCNAME = $(MYNAME).x
+LIBNAME = lib$(MYNAME).a
+SRCNAME = $(MYNAME).for
+BACKUPNAME = $(MYNAME1)_$(VER).tar
+
+FFLAGS = -DMCC $(FOPTFLAGS) -I$(INCDIR1) -I$(INCDIR2) -module ../Modules -I$(INCDIR3)
+CFLAGS = 
+#----------------------------------------------------------------------
+# extension type : .f90
+FSRC1 =	pickup_pp_cupvols.f90\
+	trans_cupid.f90\
+	cupid2mars.f90\
+	donor_CMI.f90\
+	v1d3d_cupid.f90\
+	set_cupid_cell_no.f90\
+	print_mars.f90\
+	restart_write_cupid_master.f90\
+	read_cupid.f90\
+	change_tend_mars_cupid.f90 \
+	check_trip_cntrl.f90\
+	read_cupid_mars.f90\
+	scalar_reset_cupvols.f90\
+	get_mars_index.f90\
+	gather_cupvol_info.f90\
+	tend_mars.f90\
+	check_steady_dp.f90
+#----------------------------------------------------------------------
+
+FSRC = $(FSRC1)
+
+SRC  = $(FSRC)
+
+OBJS = $(FSRC1:.f90=.o)
+
+BACKUPFILE = *.f90 *.h makefile
+.SUFFIXES: .f90 .o
+.F.o :
+	$(FC) $(FFLAGS) -c $<
+.f.o :
+	$(FC) $(FFLAGS) -c $<
+.f90.o :
+	$(FC) $(FFLAGS) -c $<
+
+default : mk_lib
+
+mk_exe: $(OBJS)
+	$(FC) -o $(EXCNAME) $(OBJS) $(CFLAGS) $(LFLAGS)
+
+mk_lib: $(OBJS)
+	$(ARCH) $(ARCHFLAGS) $(LIBNAME) $(OBJS)
+#
+get_mars_index.o: read_cupid_mars.o
+check_trip_cntrl.o: read_cupid_mars.o
+tend_mars.o: read_cupid_mars.o
+
+clean:
+#	rm -f *~
+#	rm -f *.o 
+#	rm -f *.mod
+#	rm -f *__genmod.*
+#	rm -f $(EXCNAME)
+#	rm -f $(LIBNAME)
+#	rm -f $(SRCNAME)
+	
+new : clean default
+
+src :
+	cat $(SRC) > $(SRCNAME)
+tag :
+	ctags $(SRC)
+backup :
+	tar cvf $(BACKUPNAME) $(BACKUPFILE)

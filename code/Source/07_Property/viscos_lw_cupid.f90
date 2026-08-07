@@ -1,0 +1,166 @@
+!
+      SUBROUTINE viscos_lw_cupid (temp,rhoc,satt,term,state,n)
+!
+!     SUBROUTINE cond (tk,rhoc,convt) written by WJL on Dec. '97
+!     This SUBROUTINE calculates the LIGHT WATER THERMAL CONDUCTIVITY
+!     based on ASME '93 Steam Table, AppENDix 7
+!     Input quantities are t(K) and rhoc(kg/m3)
+!     Output quantities is term(Pa.s)
+
+      IMPLICIT NONE
+!
+!.....Data Statements:
+!     For Light Water Properties
+!
+      CHARACTER*(*) state
+      INTEGER i,n
+      REAL(8) tk,tkv(n)
+      REAL(8) ts1,ts2,ts3
+      REAL(8) r1
+      REAL(8) dr1,dr2,dr3,dr4
+      REAL(8) dt1,dt2,dt3,dt4,dt5
+      REAL(8) sum,sum1,sum2,sum3,sum4,sum5,sum6
+      REAL(8) temp(n),rhoc(n),satt(n),term(n)
+      REAL(8) a(4),bb(6,5) 
+      DATA a  /0.0181583d0,0.0177624d0,0.0105287d0,-0.0036744d0/       
+      DATA bb /0.501938d0,0.162888d0,-0.130356d0,0.907919d0,-0.551119d0,     &
+               0.146543d0,0.235622d0,0.789393d0,0.673665d0,1.207552d0,       &
+               0.0670665d0,-0.0843370d0,-0.274637d0,-0.743539d0,-0.959456d0, &
+              -0.687343d0,-0.497089d0,0.195286d0,0.145831d0,0.263129d0,      &
+               0.347247d0,0.213486d0,0.100754d0,-0.032932d0,-0.0270448d0,    &
+              -0.0253093d0,-0.0267758d0,-0.0822904d0,0.0602253d0,-0.0202595d0/   
+!
+!.....Test ranges of validity
+!
+      IF(state.eq.'liq') THEN
+         DO i=1,n
+            tkv(i)=MAX(273.16d0,MIN(temp(i),satt(i)))
+         ENDDO
+      ELSE
+         DO i=1,n
+            tkv(i)=MAX(273.16d0,MAX(temp(i),satt(i)))
+         ENDDO
+      ENDIF
+      DO i=1,n
+         tk=tkv(i)
+!
+         ts1=647.27d0/tk
+         ts2=ts1*ts1
+!         ts2=418958.4529d0/tk/tk
+         ts3=ts2*ts1
+!         ts3=271179237.8d0/tk/tk/tk
+         sum= a(1)+a(2)*ts1+a(3)*ts2 +a(4)*ts3
+         term(i)=1.d-06*SQRT(1.d0/ts1)/sum
+!      
+         IF(tk.ne.647.27d0) THEN
+!
+         r1=rhoc(i)/317.763d0
+         dr1=r1-1.0d0
+         dr2=dr1*dr1
+         dr3=dr2*dr1
+         dr4=dr3*dr1
+         dt1=ts1-1.0d0
+!         dt1=(647.27d0-tk)/tk
+         dt2=dt1*dt1
+         dt3=dt2*dt1
+         dt4=dt3*dt1
+         dt5=dt4*dt1
+!            
+         sum1=bb(1,1)+bb(1,2)*dr1+bb(1,3)*dr2+bb(1,4)*dr3+bb(1,5)*dr4
+         sum2=bb(2,1)+bb(2,2)*dr1+bb(2,3)*dr2+bb(2,4)*dr3+bb(2,5)*dr4
+         sum3=bb(3,1)+bb(3,2)*dr1+bb(3,3)*dr2+bb(3,4)*dr3+bb(3,5)*dr4
+         sum4=bb(4,1)+bb(4,2)*dr1+bb(4,3)*dr2+bb(4,4)*dr3+bb(4,5)*dr4
+         sum5=bb(5,1)+bb(5,2)*dr1+bb(5,3)*dr2+bb(5,4)*dr3+bb(5,5)*dr4
+         sum6=bb(6,1)+bb(6,2)*dr1+bb(6,3)*dr2+bb(6,4)*dr3+bb(6,5)*dr4
+         sum=sum1+sum2*dt1+sum3*dt2+sum4*dt3+sum5*dt4+sum6*dt5
+!         
+         term(i)=term(i)*EXP(r1*sum)
+         ENDIF
+      ENDDO      
+!
+      END SUBROUTINE viscos_lw_cupid
+!
+!!
+!      SUBROUTINE viscos_lw_cupid (temp,rhoc,satt,term,state,n)
+!!
+!!     SUBROUTINE cond (tk,rhoc,convt) written by WJL on Dec. '97
+!!     This SUBROUTINE calculates the LIGHT WATER THERMAL CONDUCTIVITY
+!!     based on ASME '93 Steam Table, AppENDix 7
+!!     Input quantities are t(K) and rhoc(kg/m3)
+!!     Output quantities is term(Pa.s)
+!
+!!      IMPLICIT REAL*8 (a-h,o-z)
+!      IMPLICIT NONE
+!!
+!!.....Data Statements:
+!!     For Light Water Properties
+!!
+!      CHARACTER*(*) state
+!      INTEGER i,n
+!      REAL(8) tk,tkv(n)
+!      REAL(8) ts1,ts2,ts3
+!      REAL(8) r1
+!      REAL(8) dr1,dr2,dr3,dr4
+!      REAL(8) dt1,dt2,dt3,dt4,dt5
+!      REAL(8) sum,sum1,sum2,sum3,sum4,sum5,sum6
+!      REAL(8) temp(n),rhoc(n),satt(n),term(n)
+!      REAL(8) a(4),bb(6,5) 
+!      DATA a  /0.0181583d0,0.0177624d0,0.0105287d0,-0.0036744d0/       
+!      DATA bb /0.501938d0,0.162888d0,-0.130356d0,0.907919d0,-0.551119d0,        &
+!               0.146543d0,0.235622d0,0.789393d0,0.673665d0,1.207552d0,           &
+!               0.0670665d0,-0.0843370d0,-0.274637d0,-0.743539d0,-0.959456d0,     &
+!              -0.687343d0,-0.497089d0,0.195286d0,0.145831d0,0.263129d0,          &
+!               0.347247d0,0.213486d0,0.100754d0,-0.032932d0,-0.0270448d0,        &
+!              -0.0253093d0,-0.0267758d0,-0.0822904d0,0.0602253d0,-0.0202595d0/   
+!!
+!!.....Test ranges of validity
+!!
+!      IF(state.eq.'liq') THEN
+!         DO i=1,n
+!            tkv(i)=dmax1(273.16d0,dmin1(temp(i),satt(i)))
+!         ENDDO
+!      ELSE
+!         DO i=1,n
+!            tkv(i)=dmax1(273.16d0,dmax1(temp(i),satt(i)))
+!         ENDDO
+!      ENDIF
+!!DIR$ SIMD
+!      DO i=1,n
+!         tk=tkv(i)
+!!
+!         ts1=647.27d0/tk
+!         ts2=ts1*ts1
+!!         ts2=418958.4529d0/tk/tk
+!         ts3=ts2*ts1
+!!         ts3=271179237.8d0/tk/tk/tk
+!         sum= a(1)+a(2)*ts1+a(3)*ts2 +a(4)*ts3
+!         term(i)=1.d-06*dsqrt(1.d0/ts1)/sum
+!!      
+!         IF(tk.ne.647.27d0) THEN
+!!
+!         r1=rhoc(i)/317.763d0
+!         dr1=r1-1.0d0
+!         dr2=dr1*dr1
+!         dr3=dr2*dr1
+!         dr4=dr3*dr1
+!         dt1=ts1-1.0d0
+!!         dt1=(647.27d0-tk)/tk
+!         dt2=dt1*dt1
+!         dt3=dt2*dt1
+!         dt4=dt3*dt1
+!         dt5=dt4*dt1
+!!            
+!         sum1=bb(1,1)+bb(1,2)*dr1+bb(1,3)*dr2+bb(1,4)*dr3+bb(1,5)*dr4
+!         sum2=bb(2,1)+bb(2,2)*dr1+bb(2,3)*dr2+bb(2,4)*dr3+bb(2,5)*dr4
+!         sum3=bb(3,1)+bb(3,2)*dr1+bb(3,3)*dr2+bb(3,4)*dr3+bb(3,5)*dr4
+!         sum4=bb(4,1)+bb(4,2)*dr1+bb(4,3)*dr2+bb(4,4)*dr3+bb(4,5)*dr4
+!         sum5=bb(5,1)+bb(5,2)*dr1+bb(5,3)*dr2+bb(5,4)*dr3+bb(5,5)*dr4
+!         sum6=bb(6,1)+bb(6,2)*dr1+bb(6,3)*dr2+bb(6,4)*dr3+bb(6,5)*dr4
+!         sum=sum1+sum2*dt1+sum3*dt2+sum4*dt3+sum5*dt4+sum6*dt5
+!!         
+!         term(i)=term(i)*dexp(r1*sum)
+!         ENDIF
+!      ENDDO      
+!!
+!      RETURN
+!      END SUBROUTINE viscos_lw_cupid

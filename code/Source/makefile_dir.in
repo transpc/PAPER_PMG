@@ -1,0 +1,86 @@
+D0_0 = $(D0)/00_Module
+D0_a = $(D0)/00_Module/a_IO
+D0_b = $(D0)/00_Module/b_Model
+D0_c = $(D0)/00_Module/c_Solver
+D0_d = $(D0)/00_Module/d_MPI
+D0_e = $(D0)/00_Module/e_Property
+D0_g = $(D0)/00_Module/g_UserFunctions
+D0_h = $(D0)/00_Module/h_LinkToMARS
+D0_i = $(D0)/00_Module/i_Vectorize
+D0_j = $(D0)/00_Module/j_rv_model
+D0_k = $(D0)/00_Module/k_interface
+D0_l = $(D0)/00_Module/l_KSMR
+D0_G = $(D0)/GMG
+D0_G1= $(D0_G)/module
+D0_1 = $(D0)/01_MAIN
+D0_2 = $(D0)/02_IO
+D0_3 = $(D0)/03_Model
+D0_31= $(D0_3)/rv_model
+D0_311= $(D0_31)/heat_structure
+D0_312= $(D0_31)/int_friction
+D0_313= $(D0_31)/int_ht
+D0_314= $(D0_31)/wall_friction
+D0_315= $(D0_31)/wall_ht
+D0_316= $(D0_31)/io
+D0_318= $(D0_31)/gap_cond
+D0_319= $(D0_31)/rad_conv
+D0_32= $(D0_3)/fluxBC_model
+D0_321= $(D0_32)/choke_model
+D0_322= $(D0_32)/mcp_model
+D0_323= $(D0_32)/valve_model
+D0_4 = $(D0)/04_Turbulence
+D0_5 = $(D0)/05_Solver
+D0_51= $(D0_5)/gradient
+D0_52= $(D0_5)/2nd_order_conv
+D0_6 = $(D0)/06_MPI
+D0_7 = $(D0)/07_Property
+D0_71= $(D0_7)/ExtFluid
+D0_8 = $(D0)/08_UserFunction
+D0_81= $(D0_8)/VnV
+D0_8_1 = $(D0_81)/cavitation
+D0_8_2 = $(D0_81)/dambreaking
+D0_8_3 = $(D0_81)/DIVA
+D0_8_4 = $(D0_81)/fluidic_device
+D0_8_6 = $(D0_81)/mom_diffusion
+D0_8_7 = $(D0_81)/natural_convection
+D0_8_8 = $(D0_81)/plume
+D0_8_9 = $(D0_81)/pool
+D0_8_10 = $(D0_81)/PSBT
+D0_8_11 = $(D0_81)/rocom
+D0_8_12 = $(D0_81)/sbloca
+D0_8_13 = $(D0_81)/subo_bankoff_turbulent_boron
+D0_8_14 = $(D0_81)/T_blowdown
+D0_8_16 = $(D0_81)/subchannel
+D0_8_17 = $(D0_81)/sg
+D0_8_18 = $(D0_81)/multi_ncg
+D0_8_19 = $(D0_81)/multi_ncg_diff
+D0_8_20 = $(D0_81)/rv
+D0_8_21 = $(D0_81)/uptf
+D0_8_22 = $(D0_81)/mult_ncg_2nd_conv
+D0_8_23 = $(D0_81)/mom_2nd_conv
+D0_8_24 = $(D0_81)/xn_2nd_conv
+D0_8_25 = $(D0_81)/atlas_mslb
+D0_8_26 = $(D0_81)/HYMERES
+D0_8_27 = $(D0_81)/halden_icarus
+D0_9 = $(D0)/09_SetBC
+D0_10= $(D0)/10_LinkToMARS
+D0_11= $(D0)/11_LinkToMASTER
+D0_13= $(D0)/13_Vectorize
+D0_14= $(D0)/14_SMR
+D0_C= $(D0)/Closed
+D0_C1= $(D0_C)/rv
+D0_C2= $(D0_C)/IO
+#
+OBJS=$(D0_0)/*.o $(D0_a)/*.o $(D0_b)/*.o $(D0_c)/*.o $(D0_d)/*.o $(D0_e)/*.o $(D0_g)/*.o $(D0_h)/*.o $(D0_i)/*.o $(D0_j)/*.o $(D0_k)/*.o $(D0_l)/*.o $(D0_G1)/*.o \
+     $(D0_1)/*.o \
+     $(D0_2)/*.o \
+     $(D0_3)/*.o $(D0_31)/*.o $(D0_311)/*.o $(D0_312)/*.o $(D0_313)/*.o $(D0_314)/*.o $(D0_315)/*.o $(D0_316)/*.o $(D0_318)/*.o $(D0_319)/*.o\
+     $(D0_32)/*.o $(D0_321)/*.o $(D0_322)/*.o $(D0_323)/*.o\
+     $(D0_4)/*.o $(D0_5)/*.o $(D0_51)/*.o $(D0_52)/*.o $(D0_6)/*.o $(D0_7)/*.o $(D0_71)/*.o \
+     $(D0_8)/*.o $(D0_8_1)/*.o $(D0_8_2)/*.o $(D0_8_3)/*.o $(D0_8_4)/*.o $(D0_8_6)/*.o $(D0_8_8)/*.o $(D0_8_9)/*.o \
+     $(D0_8_10)/*.o $(D0_8_11)/*.o $(D0_8_12)/*.o $(D0_8_13)/*.o $(D0_8_14)/*.o \
+     $(D0_8_16)/*.o $(D0_8_17)/*.o $(D0_8_18)/*.o $(D0_8_19)/*.o $(D0_8_20)/*.o $(D0_8_21)/*.o $(D0_8_22)/*.o $(D0_8_23)/*.o $(D0_8_24)/*.o \
+     $(D0_8_25)/*.o $(D0_8_26)/*.o $(D0_8_27)/*.o\
+     $(D0_9)/*.o \
+     $(D0_10)/*.o $(D0_11)/*.o $(D0_C)/*.o $(D0_C2)/*.o $(D0_C1)/*.o $(D0_13)/*.o $(D0_14)/*.o $(D0_G)/*.o
+#

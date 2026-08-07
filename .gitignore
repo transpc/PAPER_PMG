@@ -31,3 +31,24 @@ latex_source/texput.log
 *.snm
 *.vrb
 texput.log
+
+# Fortran build artifacts
+*.o
+*.obj
+*.mod
+*.smod
+*.a
+*.optrpt
+code/Source/Modules/
+code/Source/cupid.x
+code/Source/1
+
+# Large mesh input (foamGrid.7z 압축본만 커밋)
+code/**/foamGrid.in
+
+# Editor / backup leftovers
+*.swp
+*~
+*.orig
+*.save
+.nfs*

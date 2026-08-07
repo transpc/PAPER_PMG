@@ -1,0 +1,4 @@
+echo "file $1"
+#diff $1 ~/cupid_vec_4543/SourceM/$1
+diff $1 ~/cupid_vec_4550/SourceMbkp/SourceM/$1
+#diff $1 ~/cupid_vec_4445/SourceMcommit/SourceM/$1

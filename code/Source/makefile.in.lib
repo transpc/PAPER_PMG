@@ -1,0 +1,58 @@
+# This file is to be included in the Makefile for CUPID (LHD)
+#
+# 1) Compiler
+#    Nehalem/Ivybridge
+FC = mpif90
+#
+# 2) optimization level
+FOPTFLAGS= -O -nowarn -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -Dpara -mcmodel=medium -fp-model strict -no-simd -no-vec -xHOST -align array64byte
+FOPTFLAGV= -O -nowarn -auto -no-ansi-alias -r8 -fpp -Dmpi_flag -Dmetis_flag -Dpara -mcmodel=medium -fp-model strict -no-simd -no-vec -xHOST -align array64byte
+OOPTFLAGS =
+#
+# 3) Loader
+LD = $(FC)
+#
+# 4) Additional libraries (METIS 5.0)
+# 4-1) CUPID Libraries
+LIBDIR00 = 00_Module/libMODULE.a
+LIBDIR00a = 00_Module/a_IO/libIoMODULE.a
+LIBDIR00b = 00_Module/b_Model/libModMODULE.a
+LIBDIR00c = 00_Module/c_Solver/libSolMODULE.a
+LIBDIR00d = 00_Module/d_MPI/libMpiMODULE.a
+LIBDIR00e = 00_Module/e_Property/libProMODULE.a
+LIBDIR00g = 00_Module/g_UserFunctions/libUserMODULE.a
+LIBDIR00h = 00_Module/h_LinkToMARS/libLinkMODULE.a
+LIBDIR00i = 00_Module/i_Vectorize/libVecMODULE.a
+LIBDIR00j = 00_Module/j_rv_model/libRvMODULE.a
+LIBDIR03 = 03_Model/libcupidMOD.a
+LIBDIR03a= 03_Model/rv_model/libcupidMODrv0.a
+LIBDIR03b= 03_Model/rv_model/choke/libcupidMODrv1.a
+LIBDIR03c= 03_Model/rv_model/heat_structure/libcupidMODrv2.a
+LIBDIR03d= 03_Model/rv_model/int_friction/libcupidMODrv3.a
+LIBDIR03e= 03_Model/rv_model/int_ht/libcupidMODrv4.a
+LIBDIR03f= 03_Model/rv_model/io/libcupidMODrv5.a
+LIBDIR03g= 03_Model/rv_model/wall_friction/libcupidMODrv6.a
+LIBDIR03h= 03_Model/rv_model/wall_ht/libcupidMODrv7.a
+LIBDIR04 = 04_Turbulence/libcupidTURB.a
+LIBDIR05 = 05_Solver/libcupidSOL.a
+LIBDIR05a= 05_Solver/2nd_order_conv/libcupidSOL1.a
+LIBDIR05b= 05_Solver/gradient/libcupidSOL2.a
+LIBDIR06 = 06_MPI/libcupidMPI.a
+LIBDIR07 = 07_Property/libcupidPRO.a
+LIBDIR10 = 10_LinkToMARS/libLinkcupidMARS.a
+LIBDIR13 = 13_Vectorize/libcupidVEC.a
+LIBDIRcl = Closed/libcupidCLOSED.a
+LIBDIRclio = Closed/IO/libcupidCLOSEDio.a
+LIBDIRclrv = Closed/rv/libcupidCLOSEDrv.a
+
+# 4-2) METIS
+LIBDIR = -L/usr/local/bin -lmetis
+#
+# What archiving to use
+ARCH = ar 
+ARCHFLAGS = vr
+
+# What to use for indexing the archive
+RANLIB = ranlib
+#RANLIB = ar -ts
+

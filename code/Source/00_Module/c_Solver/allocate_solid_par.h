@@ -1,0 +1,19 @@
+       IF(ncell_ps.gt.0) THEN
+         ALLOCATE(solid%tsol(ncell_ps))
+         ALLOCATE(solid%rhos(ncell_ps))
+         ALLOCATE(solid%conds(ncell_ps),solid%cps(ncell_ps),solid%rhocps(ncell_ps))
+         ALLOCATE(solid%tsol_o(ncell_ps))
+         ALLOCATE(solid%tsol_max(ncell_ps),solid%tpellet_surf(ncell_ps))
+         ALLOCATE(solid%temp_rod(ncell_ps,10),solid%hconv_rod_g(ncell_ps))
+         ALLOCATE(solid%hconv_rod_l(ncell_ps))
+         ALLOCATE(solid%matnum(ncell_ps),solid%idummy(ncell_ps))
+       ELSE
+         ALLOCATE(solid%tsol(1))
+         ALLOCATE(solid%rhos(1))
+         ALLOCATE(solid%conds(1),solid%cps(1),solid%rhocps(1))
+         ALLOCATE(solid%tsol_o(1))
+         ALLOCATE(solid%tsol_max(1),solid%tpellet_surf(1))
+         ALLOCATE(solid%temp_rod(1,10),solid%hconv_rod_g(1))
+         ALLOCATE(solid%hconv_rod_l(1))
+         ALLOCATE(solid%matnum(1),solid%idummy(1))
+       ENDIF

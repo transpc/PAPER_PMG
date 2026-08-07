@@ -1,0 +1,95 @@
+include ./makefile.in
+
+MYNAME = cupid
+MYNAME1 = S_CUPID
+VER = 10
+EXCNAME = $(MYNAME).x
+SRCNAME = $(MYNAME).for
+DATE = $(shell date +%Y%m%d_%HH)
+BACKUPNAME = $(MYNAME1)_$(VER)_$(DATE).tar
+D1 = 01_MAIN
+D2 = 02_IO
+D6 = 06_MPI
+D8 = 08_UserFunction
+D8_1 = 08_UserFunction/VnV/cavitation
+D8_2 = 08_UserFunction/VnV/dambreaking
+D8_3 = 08_UserFunction/VnV/DIVA
+D8_4 = 08_UserFunction/VnV/fluidic_device
+D8_5 = 08_UserFunction/VnV/horizontal_flow
+D8_6 = 08_UserFunction/VnV/mom_diffusion
+D8_7 = 08_UserFunction/VnV/natural_convection
+D8_8 = 08_UserFunction/VnV/plume
+D8_9 = 08_UserFunction/VnV/pool
+D8_10 = 08_UserFunction/VnV/PSBT
+D8_11 = 08_UserFunction/VnV/rocom
+D8_12 = 08_UserFunction/VnV/sbloca
+D8_13 = 08_UserFunction/VnV/subo_bankoff_turbulent_boron
+D8_14 = 08_UserFunction/VnV//T_blowdown
+D8_15 = 08_UserFunction/VnV/FNC
+D8_16 = 08_UserFunction/VnV/macroscopic
+D8_17 = 08_UserFunction/VnV/sg
+D8_18 = 08_UserFunction/VnV/multi_ncg
+D8_19 = 08_UserFunction/VnV/multi_ncg_diff
+D8_20 = 08_UserFunction/VnV/rv
+D8_21 = 08_UserFunction/VnV/uptf
+D8_22 = 08_UserFunction/VnV/mult_ncg_2nd_conv
+D8_23 = 08_UserFunction/VnV/mom_2nd_conv
+D8_24 = 08_UserFunction/VnV/xn_2nd_conv
+D9 = 09_SetBC
+DR = RUN
+
+LFLAGS =
+FFLAGS = $(FOPTFLAGS)
+OFLAGS = $(OOPTFLAGS) 
+OBJS=$(D1)/*.o \
+     $(D2)/*.o \
+     $(D6)/*.o \
+     $(D8)/*.o $(D8_1)/*.o $(D8_2)/*.o $(D8_3)/*.o $(D8_4)/*.o $(D8_5)/*.o $(D8_6)/*.o $(D8_7)/*.o $(D8_8)/*.o $(D8_9)/*.o \
+     $(D8_10)/*.o $(D8_11)/*.o $(D8_12)/*.o $(D8_13)/*.o $(D8_14)/*.o $(D8_15)/*.o \
+     $(D8_16)/*.o $(D8_17)/*.o $(D8_18)/*.o $(D8_19)/*.o $(D8_20)/*.o $(D8_21)/*.o $(D8_22)/*.o $(D8_23)/*.o $(D8_24)/*.o \
+     $(D9)/*.o
+LIBS= $(LIBDIR03) $(LIBDIR03a) $(LIBDIR03d) $(LIBDIR03e) $(LIBDIR03f) $(LIBDIR03c) $(LIBDIR03b) $(LIBDIR03g) $(LIBDIR03h) \
+      $(LIBDIR04) $(LIBDIR05)  $(LIBDIR05a) $(LIBDIR05b) \
+      $(LIBDIR07) \
+      $(LIBDIR10) \
+      $(LIBDIR13) \
+      $(LIBDIRcl) $(LIBDIRclio) $(LIBDIRclrv) \
+      $(LIBDIR06) \
+      $(LIBDIR02) \
+      $(LIBDIR00) $(LIBDIR00a) $(LIBDIR00b) $(LIBDIR00c) $(LIBDIR00d) $(LIBDIR00e) $(LIBDIR00g) $(LIBDIR00h) $(LIBDIR00i) $(LIBDIR00j)
+
+default : mk_exe
+
+mk_exe: 
+	(cd $(D1); make -j$(procs))
+	(cd $(D2); make -j$(procs))
+	(cd $(D6); make -j$(procs))
+	(cd $(D8); make -j$(procs))
+	(cd $(D8_1); make -j$(procs))
+	(cd $(D8_2); make -j$(procs))
+	(cd $(D8_3); make -j$(procs))
+	(cd $(D8_4); make -j$(procs))
+	(cd $(D8_5); make -j$(procs))
+	(cd $(D8_6); make -j$(procs))
+	(cd $(D8_7); make -j$(procs))
+	(cd $(D8_8); make -j$(procs))
+	(cd $(D8_9); make -j$(procs))
+	(cd $(D8_10); make -j$(procs))
+	(cd $(D8_11); make -j$(procs))
+	(cd $(D8_12); make -j$(procs))
+	(cd $(D8_13); make -j$(procs))
+	(cd $(D8_14); make -j$(procs))
+	(cd $(D8_15); make -j$(procs))
+	(cd $(D8_16); make -j$(procs))
+	(cd $(D8_17); make -j$(procs))
+	(cd $(D8_18); make -j$(procs))
+	(cd $(D8_19); make -j$(procs))
+	(cd $(D8_20); make -j$(procs))
+	(cd $(D8_21); make -j$(procs))
+	(cd $(D8_22); make -j$(procs))
+	(cd $(D8_23); make -j$(procs))
+	(cd $(D8_24); make -j$(procs))
+	(cd $(D9); make -j$(procs))
+	$(LD) -o $(EXCNAME) $(OFLAGS) $(OBJS) $(LIBS) $(LIBDIR)
+new : clean default
+
