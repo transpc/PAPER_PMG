@@ -39,6 +39,7 @@ texput.log
 *.smod
 *.a
 *.optrpt
+*.i90
 code/Source/Modules/
 code/Source/cupid.x
 code/Source/1

@@ -229,3 +229,20 @@
   - **솔버 품질 관찰 (논문·고도화 후보)**: s30 에서 참 잔차 ‖b−Au‖ ≈ 4.4e-7·‖r₀‖ vs 솔버 자기보고 2.8e-11·‖r₀‖ — **재귀 잔차 ~1.6e4 배 드리프트**. 충실도 6.7e-12 로 재생=프로덕션이므로 프로덕션 고유 특성. 재생 모드 res_gate 는 보고 전용(WARN) 으로 설계 확정 — 독립 잔차 하네스가 설계 목적(자기보고에 안 속기)을 정확히 수행한 사례
 - 판정: **PASS** — 골든 3스텝 재생 전부 green (충실도+its+bitwise 3중 게이트). run_tests.sh 로 합성 3 + 골든 3 통합
 - 다음: 안전망 완성 — C010(G1)/C011(G2)/C012(G3) 착수 가능. 골든 바이너리는 git 제외 (재채취: meta.md 절차)
+
+---
+
+## C012-1 | 2026-08-10 | G3 리팩터링 1차 — 컴파일러 기반 미사용 코드 제거 (bitwise 게이트 첫 실전)
+
+- 목표: 논문 핵심 경로 3파일의 미사용 변수·죽은 코드를 제거하되 run_tests 6/6 + bitwise green 유지
+- 변경:
+  - `-warn unused -syntax-only` 전수 스캔으로 인벤토리 작성 (오브젝트 무변경 검사) → GMG 전체에서 IMPLICIT NONE 공백은 `blaslapack_sub_n.f90`(1996줄) 1개뿐 — 별도 사이클로 이관
+  - `6_solver_pbcg_mg.f90`: 미사용 import `ju, alu, crit` + 로컬 `i1` 제거
+  - `1_read_input.f90`: 미사용 import `isol, ns, nd_max` 제거 (Znode USE 라인 자체 삭제)
+  - `7_SOLVE_GMG.f90`: 20개 라인에서 미사용 36건 제거 (`status(mpi_status_size), tag` 미사용 MPI 상태 변수 3벌, 스무더 쌍둥이 루틴의 중복 미사용 등) + 죽은 주석 호출 1건
+  - **`6_solver_pbcg_ali.f90` 삭제** (314줄 — 프로덕션 makefile 미등재 확인, 참조는 주석 1건뿐)
+- 과정 기록: 자동 콤마 정리 스크립트가 연속행(`, &`)의 필수 콤마까지 제거해 9개 라인 파손 → 컴파일러 에러 목록 따라 수동 교정 → 3파일 에러 0 + 미사용 remark 0 확인
+- 실행: `build.sh`(프로덕션, 에러 0) → `run_tests.sh` 전체
+- 결과: **run_tests 6/6 PASS (exit 0)** — 합성 3/3 (its 4/4/5 불변, res_gate 수치 동일), 골든 3/3 (fid 5.3e-15/9.6e-11/2.3e-12, its 22/22/33) + **베이스라인 bitwise(cmp) 전부 통과** = 리팩터링 전과 해가 비트 단위 동일
+- 판정: **PASS** — L1 green(빌드 에러 0), L2 green(its ±0), L3 상당(bitwise) green. 총 -317줄 순감 (죽은 파일 314 + 미사용 43건 정리 vs 서식 정리)
+- 다음: C012-2 후보 — `blaslapack_sub_n.f90` IMPLICIT NONE 전환(1996줄), 나머지 GMG 파일 미사용 정리(06_solver_pcg_ilu 등), 죽은 주석 블록 정리. 유닛 번호 파라미터화는 G1 에서 (PLAN §5-4)

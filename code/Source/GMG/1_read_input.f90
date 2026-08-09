@@ -1,6 +1,6 @@
       SUBROUTINE read_input_mg
 ! ---
-         USE MD_parameter, ONLY: ndim, maxit, mdf_matrix, isol, ip_inter, ndom, ipar, &
+         USE MD_parameter, ONLY: ndim, maxit, mdf_matrix, ip_inter, ndom, ipar, &
                                  isemi, crit, teta, teta_p, alpha
          USE MD_MG_index, ONLY: nlevel, ncycle, mxnbne, maxit_1, ip_nmax, &
                                 iter_mg, n_GC, isth, AR_hi, crit_1, relax, &
@@ -11,8 +11,7 @@
          USE MD_MG_Global_C, ONLY: i_dir, nlv_glo, nlv_glomax, igather
          USE MD_MPI_MG, ONLY: icommu, iGS, nGS, iallocate_c
          USE MD_OpenMP
-         USE Zparam, ONLY: ns, ndim_cupid => ndim
-         USE Znode, ONLY: nd_max
+         USE Zparam, ONLY:  ndim_cupid => ndim
          USE Zbicg, ONLY: eps_mg => eps_bicg
          USE Zcore, ONLY: myrank_mg => myrank, np_mg => np
 !

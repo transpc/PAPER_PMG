@@ -4,8 +4,8 @@
 !
       USE MD_MPI,       ONLY: nintf,myrank
       USE MD_geometry,  ONLY: nnode
-      USE MD_matrix,    ONLY: nnz,ia,ja,ju,au,u,b,alu
-      USE MD_parameter, ONLY: maxit,crit,ndom
+      USE MD_matrix,    ONLY: nnz,ia,ja, au,u,b
+      USE MD_parameter, ONLY: maxit, ndom
       USE MD_MG_index,  ONLY: crit_bcg_mg,ihybrid
 	  
 	  
@@ -15,7 +15,7 @@
 !.....Output: u
       integer :: ierr
 !.....Local variable
-      INTEGER :: i,i1,n,np
+      INTEGER :: i, n,np
       INTEGER :: its
       INTEGER :: maxiter
       REAL(8) :: beta,alpha,alphad,omega,omegan,omegad

@@ -18,8 +18,7 @@
         INCLUDE 'mpif.h'
 !DEC$ENDIF
 
-        INTEGER(4) ierr, id, icase, i, j
-        REAL(8) t1, t2
+        INTEGER(4) ierr, id, icase, i
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - !
 !    SOLVE equation by PMG
@@ -90,7 +89,6 @@
         ELSEIF (isol_mg .LE. 0) THEN
 
            CALL solve_pbcg_mg(ierr)
-!            call solve_pbcg_ali(ierr)
 
         END IF
 ! - - - - - - -
@@ -127,7 +125,7 @@
         USE MD_MPI
         USE MD_MPI_MG
         USE MD_geometry, ONLY: nnode
-        USE MD_matrix, ONLY: nnz, ia, ja, ju, au, u, b, ut
+        USE MD_matrix, ONLY: nnz, ia, ja, ju, au, u, b
         USE MD_parameter, ONLY: crit, ndom
         USE MD_MG_matrix, ONLY: r, rt, rc, rs, e, et, es, &
                                 iac, jac, juc, ias, jas, jus, &
@@ -135,7 +133,7 @@
                                 auc, aus, Xrest, Xintp, nnzs
         USE MD_MG_index, ONLY: ncycle, iter_mg, nlevel, n_GC, &
                                relax, crit_1, maxit_1, isth
-        USE MD_MG_coord, ONLY: ialv, nnods, ncolc, ncolf
+        USE MD_MG_coord, ONLY: ialv, nnods
 
 !---------------------------------------------------------------------!
         IMPLICIT NONE
@@ -144,12 +142,12 @@
 !DEC$ENDIF
         INTEGER(4) ierror
 ! --- temp
-        INTEGER(4) icycle, i, np, j, k, i1, i2, Iter0
+        INTEGER(4) icycle, i, np, i1, i2, Iter0
         INTEGER(4) ilv, ista, iend
         REAL(8) res, res0, res1
 !
 !DEC$IF defined (mpi_flag)
-        INTEGER(4)::status(mpi_status_size), tag, ierr
+        INTEGER(4):: ierr
 !DEC$ENDIF
 
 ! ====================================================================!
@@ -665,7 +663,7 @@
         REAL(8) au(*)
         REAL(8) rt(*)
 ! temp
-        INTEGER(4) i, j1, j2, j, k
+        INTEGER(4) i, j1, j2, j
         REAL(8) temp
 ! ---
 
@@ -709,7 +707,7 @@
         REAL(8) au(*)
         REAL(8) rt(*)
 ! temp
-        INTEGER(4) i, j1, j2, j, k
+        INTEGER(4) i, j1, j2, j
         REAL(8) temp
 ! ---
 
@@ -748,7 +746,7 @@
         IMPLICIT NONE
 
         INTEGER(4) icase
-        INTEGER ie, i1, i2, nd, j, id, i
+        INTEGER ie, i1, i2,  j,  i
 
         REAL(8) xtmp
 
@@ -805,7 +803,7 @@
 !----------------------------------!
         IMPLICIT NONE
 
-        INTEGER ie, i1, i2, nd, j, id, i
+        INTEGER ie, i1, i2, i
 
         REAL(8) xtmp
 !
@@ -846,9 +844,9 @@
                                 iac, jac, juc, ias, jas, jus, &
                                 iai, jai, iar, jar, &
                                 auc, aus, Xrest, Xintp, nnzs, diagrc
-        USE MD_MG_index, ONLY: ncycle, iter_mg, nlevel, n_GC, &
+        USE MD_MG_index, ONLY: ncycle, nlevel, n_GC, &
                                relax, crit_1, maxit_1, isth, id_GS_sym, itergs
-        USE MD_MG_coord, ONLY: ialv, nnods, ncolc, ncolf
+        USE MD_MG_coord, ONLY: ialv, nnods, ncolc
 
         USE MD_MPI_ARP, ONLY: nnbdA, sptA, rptA, sintfA, rintfA, nbdomA, &
                               nnbdR, sptR, rptR, sintfR, rintfR, nbdomR
@@ -861,12 +859,12 @@
 !DEC$ENDIF
         INTEGER(4) ierror
 ! --- temp
-        INTEGER(4) icycle, i, np, j, k, i1, i2, Iter0, iter1, id
+        INTEGER(4) icycle, i, np, j,  i1, i2, Iter0,  id
         INTEGER(4) ilv, ista, iend
-        REAL(8) res, res0, res1, t1, t2, t3
+        REAL(8) res, res0, res1
 !
 !DEC$IF defined (mpi_flag)
-        INTEGER(4)::status(mpi_status_size), tag, ierr
+        INTEGER(4):: ierr
 !DEC$ENDIF
 
 ! ====================================================================!
@@ -1195,9 +1193,9 @@
                                 iac, jac, juc, ias, jas, jus, &
                                 iai, jai, iar, jar, &
                                 auc, aus, Xrest, Xintp, nnzs, diagrc
-        USE MD_MG_index, ONLY: ncycle, iter_mg, nlevel, n_GC, &
+        USE MD_MG_index, ONLY: ncycle, nlevel, n_GC, &
                                relax, crit_1, maxit_1, isth, id_GS_sym, itergs
-        USE MD_MG_coord, ONLY: ialv, nnods, ncolc, ncolf
+        USE MD_MG_coord, ONLY: ialv, nnods, ncolc
 
         USE MD_MPI_ARP, ONLY: nnbdA, sptA, rptA, sintfA, rintfA, nbdomA, &
                               nnbdR, sptR, rptR, sintfR, rintfR, nbdomR
@@ -1210,12 +1208,12 @@
 !DEC$ENDIF
         INTEGER(4) ierror
 ! --- temp
-        INTEGER(4) icycle, i, np, j, k, i1, i2, Iter0, iter1, id
+        INTEGER(4) icycle, i, np, j,  i1, i2, Iter0,  id
         INTEGER(4) ilv, ista, iend
-        REAL(8) res, res0, res1, t1, t2, t3
+        REAL(8) res, res0, res1
 !
 !DEC$IF defined (mpi_flag)
-        INTEGER(4)::status(mpi_status_size), tag, ierr
+        INTEGER(4):: ierr
 !DEC$ENDIF
 
 ! ====================================================================!
