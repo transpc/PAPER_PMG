@@ -63,3 +63,4 @@ code/**/saveout.dat
 code/**/somaPlot.viw
 *__genmod.f90
 *.sif
+code/pmg_standalone/build/

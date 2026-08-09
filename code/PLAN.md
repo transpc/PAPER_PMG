@@ -193,21 +193,20 @@ exec apptainer exec --bind "$CODE_DIR" "$SIF" "$@"
 - **테스트 2계층**: ① 합성 문제 유닛 테스트(입력 데이터 불필요 → 즉시 착수 가능), ② 실제 케이스 덤프 기반 골든 회귀(somaFlow.in 확보 후).
 - **직렬 우선**: np=1 하네스를 먼저 완성하고, 논문 핵심인 통신 저감(`nlv_glomax`) 검증을 위해 MPI(2, 4 rank) 하네스로 확장.
 
-### 4-1. 스텁 모듈 작성 (`pmg_standalone/stub/`)
+### 4-1. 의존성 클로저 (`pmg_standalone/`) — C006 에서 확정된 실제 구성
 
-GMG가 `USE ... ONLY:`로 참조하는 CUPID 본체 심볼만 최소 구현:
+당초 스텁 모듈 다수를 예상했으나, 조사 결과 **`GMG/module/` 이 MD_* 계열 전 모듈을 자체 보유**하고 CUPID 본체 의존은 리프(무의존) 데이터 모듈뿐이라 원본 직접 컴파일로 해결됨 (LOG C006):
 
-| 스텁 | 제공할 심볼 (조사 결과 기준) |
-|------|------------------------------|
-| `MD_matrix` | `nnz, ia, ja, ju, au, u, b, alu` (CSR) |
-| `MD_geometry` | `nnode, nelem, coord, num_neigh_mg, neigh_mg, imap` |
-| `MD_MPI` | `nintf, myrank, myrankt` 등 |
-| `MD_parameter` | `maxit, crit, ndom, ndim, teta, ...` |
-| `MD_connectivity` | `ia_neigh, ja_neigh, nnz_neigh, ...` |
-| `Zbicg, Zcore, Znode, Zparam` | `eps_bicg, myrank, np, nd_max, ns, ndim` 등 `ONLY:` 참조분만 |
+| 구성 | 내용 |
+|------|------|
+| Z-모듈 12개 | `Zparam, Zbicg, Zcoord1, Znode, Ztimecon, Zzone, Znum_cell, Zcore, Zmpi, Zrv_mpi, Zrv_hts_2d, Zinterface` — **전부 원본 파일 직접 컴파일** (USE=0 리프 확인, Zinterface 만 위 리프들에 의존) |
+| GMG 모듈 8개 | `GMG/module/makefile` 의 FSRCS 순서 그대로 |
+| GMG 본체 43개 + `padiso.f` | `GMG/makefile` 의 FSRCS 순서 그대로 (`6_solver_pbcg_ali.f90`·genmod 제외 — 프로덕션도 미컴파일) |
+| MPI 래퍼 | `06_MPI/allreduce_fns.f90` **원본** (np=1 분기 내장) + **유일한 스텁** `stub/communicate_serial.f90` (직렬에선 고스트 교환이 항등 — MPI 확장 시 실물로 교체, 조건은 스텁 주석에 명시) |
 
-- `GMG/module/MD_MG_*.f90`는 GMG 전용이므로 스텁 불필요 — 그대로 컴파일.
-- 작성 절차: `grep "^ *USE" Source/GMG/*.f90 | sort -u`로 전체 의존 목록을 기계적으로 추출 → 스텁 뼈대 생성 → 컴파일 에러를 따라 보강 (컴파일러가 명세서 역할).
+- 플래그는 `../Source/makefile.in` 을 include — 프로덕션과 동일 (골든 재현성 전제)
+- 컴파일은 목록 순서 직렬 (`-j` 금지), `.mod`/`.o` 는 `build/` 에 격리
+- 링크 클로저 검증: `make probe` → `build/link_probe` 실행 "OK" (미정의 외부 0)
 
 ### 4-2. 덤프 계층 (CUPID 본체 계측)
 
@@ -330,7 +329,7 @@ Phase 2  ☑ Source/makefile.in.apptainer 작성 (AVX2, p=12)                  [
          ☑ scripts/prepare_case.sh (7z 해제) + run.sh 작성                 [LOG C003·C005]
          ☑ iSMR 케이스 스모크 실행 — 38스텝·PMG 76솔브 (its 1~3)           [LOG C005-r8]
            (완주 검증은 rv_parameters.in 확보 후 — §7-1)
-Phase 3  □ pmg_standalone/stub 모듈 작성 (grep USE 기반)
+Phase 3  ☑ pmg_standalone 의존성 클로저 (스텁 1개 + 원본 직접 컴파일)      [LOG C006]
          □ 합성 문제 생성기 + driver_pmg.f90 → 유닛 테스트 green
          □ 본체에 dump_pmg 훅 추가 (환경변수 게이트)
          □ [실행 가능 시] 골든 덤프 채취 (직렬 → MPI)

@@ -144,3 +144,18 @@
 - 추정: **rv_model=0 우회가 물리 셋업을 변경**(노심 유동저항/열원 부재)해 과도 자체가 발산. 솔버 결함 증거는 현재 없음. 확정하려면 rv_parameters.in 확보 후 rv_model=1 재실행 필요
 - 판정: **PASS (스모크 기준)** — C005 의 DoD(수 timestep + PMG 경로 진입 로그)는 초과 달성 (38 스텝, PMG 76 솔브). 완주(t_end=2s)는 물리 셋업 문제로 미달 — rv_model=1 복원 후 재확인 항목으로 이관
 - 다음: ① rv_parameters.in 확보 (PLAN §7-1, 여전히 권장) ② C006 (stub 모듈) 착수 가능 ③ 이번 fort.501 관측치를 LOOP §2 ref_its 표에 잠정 등재
+
+---
+
+## C006 | 2026-08-10 | pmg_standalone 의존성 클로저 — 스텁 1개로 컴파일·링크 통과
+
+- 목표: CUPID 본체 없이 GMG(PMG) 전체를 컴파일·링크 (스텁 최소화, 소스 이원화 금지)
+- 변경: `pmg_standalone/makefile` 신규 (원본 파일 직접 참조, `../Source/makefile.in` include 로 플래그 동일), `stub/communicate_serial.f90` (8줄), `driver/link_probe.f90`, `.gitignore` 에 `build/` 추가
+- 실행: `in_contain.sh make -C pmg_standalone probe` → `build/link_probe` 실행
+- 결과:
+  - **의존성 조사가 계획을 단순화**: GMG 가 USE 하는 모듈 22종 중 md_* 12종은 `GMG/module/` 이 자체 보유 (스텁 불요). CUPID 측은 Z-모듈 9종 + Zinterface 클로저 3종 = 12개 파일 — **전부 USE=0 리프**로 확인되어 원본 직접 컴파일 (당초 계획한 MD_matrix 등 스텁 작성 자체가 불필요했음 → PLAN §4-1 을 실측 기준으로 개정)
+  - 컴파일: 12(Z) + 8(GMG/module) + 2(allreduce 원본 + communicate 직렬 스텁) + 43(GMG FSRCS) + padiso.f = **66 오브젝트, 에러 0, 1차 시도 통과**
+  - 링크 프로브: 미정의 외부 심볼이 정확히 3개(`communicate`, `allreduce_r`, `allreducei_r1`)로 수렴 → allreduce 2종은 원본 `06_MPI/allreduce_fns.f90` 포함으로, `communicate` 는 직렬 스텁(np=1 에서 고스트 교환=항등, 시그니처는 원본 `communicate.f90:1330` 과 동일)으로 해소 → **미정의 0, `link_probe: OK`**
+  - 제외 파일 확인: `6_solver_pbcg_ali.f90` 은 프로덕션 GMG makefile 에도 없음 (미컴파일 변형) — 동일하게 제외
+- 판정: **PASS** — C006 DoD(컴파일 통과) + 링크 클로저까지 초과 달성. L2 비해당 (실행 로직 무변경)
+- 다음: C007 — 합성 Poisson 생성기 + driver_pmg.f90 (덤프 로더·PREP 체인 호출·ref_its 채취)
