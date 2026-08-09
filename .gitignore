@@ -53,10 +53,13 @@ code/**/foamGrid.in
 *.save
 .nfs*
 
-# CUPID runtime artifacts (LOOP C003)
+# CUPID runtime artifacts (LOOP C003, C005)
 MG_tmp/
 fort.*
 code/**/cupid.x
 code/**/run_*.log
+code/**/log.dat
+code/**/saveout.dat
+code/**/somaPlot.viw
 *__genmod.f90
 *.sif

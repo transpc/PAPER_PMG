@@ -87,3 +87,33 @@
 - 실행: 스모크는 **somaFlow.in 부재로 실행 불가** (prepare_case.sh 가 exit 2 로 차단함을 C003 에서 확인)
 - 판정: 부분 완료 — 스크립트 작성분만. 실행 검증은 블로커 해소 후 이 사이클을 재개(C005-r1)하여 판정
 - 다음: 사용자에게 somaFlow.in 요청 유지 (PLAN §7-1)
+
+---
+
+## C005-r1~r5 | 2026-08-09~10 | iSMR 스모크 — 블로커 3종 순차 해소 (somaFlow.in 확보 후 재개)
+
+사용자가 somaFlow.in 제공 → 스모크 재개. 5회 리비전으로 서로 다른 3개 층위의 문제를 확정·해소:
+
+**r1 — FAIL: namelist 불일치 (소스 내부 불일치)**
+- `severe (19): invalid reference ... line 6` = `nfluid`. 소스 검증: `read_flow.f90:114` 의 `problem_description` 선언에는 `nfluid` **있음**(`STM_TBL_cupid` 모듈 변수, 주석에 "somaFlow 에서 설정" 명시), 먼저 READ 하는 `open_files.f90:36` 선언에만 없음 — 제공된 입력이 아니라 **소스 두 선언의 불일치**가 원인
+- 조치: `open_files.f90` 에 `USE STM_TBL_cupid, ONLY: nfluid` + namelist 에 `nfluid` 추가 (입력 수정 대신 소스 정렬 — 입력에서 지우면 기본값 물리로 바뀔 위험)
+
+**r2 — FAIL 이동: line 316 (`HS_coupling`)**
+- 재빌드(에러 0) 후 크래시가 6행→316행으로 이동. 입력의 4개 변수(`HS_coupling`, `vfporous`, `i_droplet`, `i_fs_temp_intpol`)는 **이 소스의 어떤 namelist 선언에도 없음**(신형 CUPID 옵션) — 전수 대조 스크립트로 확인
+- 정정: 앞서 "misc_option 은 읽히지 않는다"고 했던 판단은 오류 (case-sensitive grep 착오). 런타임이 해당 그룹을 검증하는 것은 사실. 정확한 리더 위치는 미상 — 경험적으로 처리
+
+**r3 — 조치+FAIL: 4개 변수 주석 처리 → SIGSEGV**
+- 입력의 4개 변수를 `!` 주석 처리 (원본은 scratchpad 에 `somaFlow.in.user_original` 백업). 이 소스는 해당 옵션을 아예 모르므로 의미상 무손실. 입력값이 전부 0(OFF)이라 물리 의도와도 일치
+- namelist 전 구간 통과, `Successful grid generation` 후 **SIGSEGV** (np=4, rank 0 은 SIGKILL)
+
+**r4 — 판별 실험: 직렬(np=1)도 동일 SIGSEGV**
+- RSS ~2GB 수준(총 7.7GiB 중)에서 결정적 크래시 → **OOM 배제**, 결정적 버그로 확정. 크래시 지점: `read_grid.f90:508` "test,after ilu" 직후의 `gener_vect_size/gener_vect_u`(벡터화 재배열)
+
+**r5 — PASS(해당 구간): 스택 오버플로 확정**
+- 가설: `-auto`(로컬 전부 스택) + 셀 수 규모의 자동 배열 vs 컨테이너 기본 스택 8MB
+- `ulimit -s unlimited` 적용 → SIGSEGV **해소**, 해당 구간 통과. `run.sh` 에 영구 반영
+- 새 정지점(정상 입력 검증): `### rv_parameters.in is required when rv_model=1.` (exit 0) — 입력 `&rv_models` 가 `rv_model=1`. 리더는 사전 빌드 라이브러리(`03_Model/rv_model/io/libcupidMODrv5.a`) 내부로 소스 추적 불가
+
+- 판정: r5 시점 기준 **진행 중** — 실행 파이프라인의 소스/입력/환경 3개 층위 문제를 모두 해소했고, 남은 것은 **케이스 입력 파일 1개 부재**
+- 참고: 스택 요구는 클러스터(보통 unlimited 기본)에선 잠복했을 환경 요인 — G1 의 "환경 요인 점검" 항목과 연결
+- 다음: **신규 블로커 — `rv_parameters.in` 을 원본 케이스에서 확보** (rv_ht_str=0 이므로 ht_str_*.in 은 불요 추정). 확보 후 C005-r6 재개

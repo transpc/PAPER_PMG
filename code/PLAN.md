@@ -309,10 +309,12 @@ driver_pmg.f90 흐름:
 
 ## 7. 미결 사항 (사용자 확인 필요)
 
-1. **`somaFlow.in` 확보** — `2_iSMR_ECT_res1`에 없음. 원본 케이스(클러스터 등)에서 가져와야 함. 논문의 다른 케이스(MSFR 정상상태, iSMR 일일부하추종)도 추후 같은 구조로 추가할지?
+1. **`rv_parameters.in` 확보** — 입력이 `rv_model=1` 이라 필수 (`### rv_parameters.in is required` 로 정상 종료, LOG C005-r5). 원본 케이스에서 가져와 `2_iSMR_ECT_res1`에 두면 C005-r6 재개. (`rv_ht_str=0` 이므로 `ht_str_*.in` 은 불요 추정)
 2. **골든 기준 rank 구성** — 1/2/4 rank 제안. 논문 스케일링 실험 계획에 맞춰 조정할지?
+3. 논문의 다른 케이스(MSFR 정상상태, iSMR 일일부하추종)도 추후 같은 구조로 추가할지?
 
 > (해소됨) oneAPI 버전 선택 — 기존 `hpc23.sif`(oneAPI 2023.2.1, ifort classic 2021.10.0) 사용으로 확정.
+> (해소됨) `somaFlow.in` — 2026-08-09 사용자 제공. 이 소스가 모르는 신형 옵션 4개(`HS_coupling`, `vfporous`, `i_droplet`, `i_fs_temp_intpol`, 전부 0=OFF)는 주석 처리함 (LOG C005-r3, 원본 백업 보관).
 
 ---
 

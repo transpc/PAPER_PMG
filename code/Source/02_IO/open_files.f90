@@ -14,6 +14,7 @@
       USE viewData_common , ONLY: viewField      
       !USE Zgradoption , ONLY: ifrink
       USE Znode        , ONLY: nmax_vertex,n_node
+      USE STM_TBL_cupid, ONLY: nfluid     ! read_flow 의 problem_description 선언과 정합 (LOG C005-r2)
 !      USE Zporous     , ONLY: vfporous
       USE unitManager  , ONLY: createUnit
 !
@@ -33,7 +34,7 @@
 !            
       INTEGER save_option,noutput,iprn,itim
       REAL(8) tplot_dt, tplot_num, tplot_prop
-      NAMELIST /problem_description/ vv_prob, ndim, num_fzone_count, num_szone_count
+      NAMELIST /problem_description/ vv_prob, ndim, num_fzone_count, num_szone_count, nfluid
       NAMELIST /post/ save_option,noutput,iprn,restart,itim,tplot_dt,tplot_num,tplot_prop,viewField
 !      NAMELIST /misc_option/ mboron,mdiffoff,cplmars,cplmaster,topolsurface,mdiffscheme,iso_thermal,ifrink,vfporous,&
 !                              vfporous,i_droplet,i_fs_temp_intpol

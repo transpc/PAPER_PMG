@@ -1,0 +1,430 @@
+ &problem_description
+               vv_prob='11' 
+                  ndim=               3
+       num_fzone_count=               5
+       num_szone_count=               0
+                nfluid=               1
+ /
+
+
+ &initial_condition
+               grav(:)=     0.000000     0.000000    -9.81
+               v0(1,:)=     0.000000     0.000000     0.000000
+                p0( 1)=  15000000.00000
+               tl0( 1)=       300.0
+               tg0( 1)=       300.0
+              a0_g( 1)=    0.d0 !0.700000D-02
+            quala0( 1)=        0.000000
+           cboron0( 1)=        0.000000
+            q0_gas( 1)=        0.000000
+            q0_liq( 1)=        0.000000
+            
+               v0(2,:)=     0.000000     0.000000     0.000000
+                p0( 2)=  100000.00000
+               tl0( 2)=      300.0d0
+               tg0( 2)=      300.0d0
+              a0_g( 2)=    0.0000D+00
+            quala0( 2)=        1.000000
+           cboron0( 2)=        0.000000
+            q0_gas( 2)=        0.000000
+            q0_liq( 2)=        0.000000      
+
+               v0(3,:)=     0.000000     0.000000     0.000000
+                p0( 3)=  100000.00000
+               tl0( 3)=      300.0d0
+               tg0( 3)=      300.0d0
+              a0_g( 3)=    0.0000D+00
+            quala0( 3)=        1.000000
+           cboron0( 3)=        0.000000
+            q0_gas( 3)=        0.000000
+            q0_liq( 3)=        0.000000      
+
+               v0(4,:)=     0.000000     0.000000     0.000000
+                p0( 4)=  100000.00000
+               tl0( 4)=      300.0d0
+               tg0( 4)=      300.0d0
+              a0_g( 4)=    0.0000D+00
+            quala0( 4)=        1.000000
+           cboron0( 4)=        0.000000
+            q0_gas( 4)=        0.000000
+            q0_liq( 4)=        0.000000      
+
+               v0(5,:)=     0.000000     0.000000     0.000000
+                p0( 5)=  100000.00000
+               tl0( 5)=      300.0d0
+               tg0( 5)=      300.0d0
+              a0_g( 5)=    0.0000D+00
+            quala0( 5)=        1.000000
+           cboron0( 5)=        0.000000
+            q0_gas( 5)=        0.000000
+            q0_liq( 5)=        0.000000      
+              stime_vup=        0.000000
+           stime_vflat=        0.000000
+             stime_hup=        0.000000
+           stime_hflat=        0.000000
+ /
+
+ &boundary_condition
+                  nvin=               0
+          vin_norm( 1)=               1
+          vb_liq( 1,:)=     0.000000     0.000000     0.000000
+          vb_gas( 1,:)=     0.000000     0.000000     0.000000
+        alphab_gas( 1)=        0.000000
+            qualab( 1)=        0.000000
+           cboronb( 1)=        0.000000
+              p_fb( 1)=  15000000.00000
+            tb_liq( 1)=      583.56 !  568.5d0
+            tb_gas( 1)=      583.56 !  568.5d0
+           vin_mfr( 1)=               0
+
+                  npin=               1
+              pbnd( 1)=  15000000.00000
+          t_liq_nd( 1)=      615.5d0
+          t_gas_nd( 1)=      615.5d0
+      alpha_gas_nd( 1)=      100.000000
+          quala_nd( 1)=        0.000000
+          i_horizontal_outlet=        0
+
+          n_constTwall=               0
+
+          n_constqwall=               0
+ /
+
+
+ &n_scheme
+              parallel=               1
+                psolve=               4
+                 metis=               1
+                   lev=               0
+              lev_type=               0
+                levmpi=               0
+           levmpi_type=               0
+              eps_bicg=    0.100000D-07
+              max_bicg=            10000
+              min_bicg=              15
+              iavgtype=               0
+              irc_damp=               1
+             grav_grad=               0
+             iter_grad=               1
+              non_orth=               1
+         non_orth_iter=               1
+         non_orth_diff=               0 !1
+          non_orth_eng=               0 !1
+         non_orth_turb=               0
+           p_work_face=               0
+             fric_face=               0
+               nd_face=               0
+               relax_u=        0.000000
+               relax_p=        0.000000
+             alpha_min=    0.100000D-07
+            lsquareoff=               1
+ /
+
+
+ &imp_scheme
+          imp_mom_conv=            1
+          imp_mom_diff=            1
+             imp_alpha=            1
+       imp_scalar_conv=            1
+       imp_scalar_diff=            1
+           imp_ke_diff=            0
+           iter_scalar=            2
+       skip_imp_scalar=            1
+              iter_mom=            1
+             
+     stmtbl_repeat_for_nc=1 !1
+     max_ihtc_opt=1 !1
+     max_ihtc_opt_coeff=0.5d0
+     relax_interface_dtemp=0 !1
+
+     limit_eng_src_opt=    1
+         limit_iht_opt=    1 !1
+       suspend_iht_opt=    1 !1
+       suspend_erg_opt=    1 !1
+        smac3_pres_eng=    0 !1
+           prn_div_eng=    0
+            ag_min_hig=    1.0d-5
+            al_min_hil=    1.0d-5
+            qu_min_hgf=    1.0d-5
+                  dsrc=    0.1d0                
+
+              al_min_c=    0.100000D-07
+              ag_min_c=    0.100000D-07
+              al_min_e=    0.100000D-08
+              ag_min_e=    0.100000D-08
+              al_min_m=    0.100000D-09
+              ag_min_m=    0.100000D-09
+
+           eps_imp_mom=    0.100000D-07
+         eps_imp_alpha=    0.100000D-07
+        eps_imp_scalar=    0.100000D-07
+            eps_imp_ke=    0.100000D-07
+            eps_imp_dp=    0.100000D-07
+           eps_imp_rad=    0.100000D-07
+
+          max_iter_mom=             100
+        max_iter_alpha=             100
+       max_iter_scalar=             100
+           max_iter_ke=             100
+           max_iter_dp=             100
+          max_iter_rad=             100
+ /
+
+
+ &second_order
+         mass_conv_2nd=               0
+          mom_conv_2nd=               0
+          eng_conv_2nd=               0
+         qula_conv_2nd=               0
+          ncg_conv_2nd=               0
+        boron_conv_2nd=               0
+         turb_conv_2nd=               0
+
+          limiter_mass=               0
+           limiter_mom=               0
+           limiter_eng=               0
+            limiter_xn=               0
+            limiter_qn=               0
+         limiter_boron=               0
+          limiter_turb=               0
+
+                faclim=        1.000000
+                   vkt=        0.000000
+ /
+
+
+ &turb
+                 iturb=              -1
+            turb_phase=               3
+           lowreynolds=               0
+         buoyancy_turb=               0
+                tlengs=        0.000000
+             turbubble=               0
+               turboil=               0
+             iVisRatio=               0
+             vis_ratio=            10.0
+		i_macroturb_source=           	  0     !macroscopic turbulece model (0=none, 1=chandesris, 2=nakayama)
+           i_turb_zero=         	    1     !zero equation model (0=none, 1=constant, 2=telluride, 3=cfx, 4=vanDriest, 5=Baldwin_Lomax, 6=noto, 7=user)
+           i_wall_fric=               0     !wall friction model (0=none, 1=kakac, 2=darcy, 3=udf)                
+ /
+
+
+ &int_ht
+                 mtopol=              1
+                  mHTC=               1
+          H_il_coeff_a=    1.000000D+06 !0.d0
+          H_il_coeff_b=    1.000000D+07
+              H_il_min=        10.0000
+          H_ig_coeff_a=    3.000000D+06
+          H_ig_coeff_b=    1.000000D+07
+              H_ig_min=        10.0000
+          H_fg_coeff_a=    0.000000D+00
+          H_fg_coeff_b=    1.000000D+07
+              H_fg_min=        10.0000
+                   dtl=        3.000000
+                   dtg=        3.000000
+         H_il_min_user=    1.000000D+07
+         H_il_min_ag99=    1.000000D+06
+             relax_hik=        0.000000
+            l_th_equil=               1
+             l_min_hik=               0
+            alphag_min=    0.100000D-07
+            alphal_min=    0.100000D-07
+              i_weight=               0     !modifying weighting value for drag force when mdrag>=1        
+ /
+
+
+ &int_mom
+                 mdrag=               0
+                  Ntdf=       -1.000000
+                 Nlift=       -1.000000
+                  Nwlf=       -1.000000
+          Drag_coeff_a=    12000.00D+00
+          Drag_coeff_b=    0.100000D+05
+            vFgl_1_min=        1.000000
+            vFgl_2_min=        1.000000
+            vFgl_3_min=      100.000000
+
+           Cd_min_user=        0.100000
+           Cd_min_ag99=        0.100000
+              relax_cd=        0.990000
+           i_turb_disp=           		1      !turbulent dispersion force model (0=none, 1=cfx, 2=gosman, 3=burns, 4=udf)
+            i_wall_lub=          			1      !wall lubrication force model     (0=none, 1=antal&cfx, 2=antal&antal, 3=tomiyama, 4=udf)             
+ /
+
+
+ &iat_heatpart
+                   iat=              -1
+          dbubble_init=        0.000000
+             iheatpart=               0
+               kfactor=        4.000000
+               wconden=               0
+     rv_htmodel_forCFD=               0      !use RV-wall heat transfer model package for fluid-solid interface without RV heat structures
+               dia_rod_cfd=             0.0      !rod or pipe diameter for condensation HTC model (IF rv option is ON, dia_rod in rv_parameter
+             rad_model=               0
+             abs_coeff=             1.0
+            wall_emiss=             1.0
+
+     i_bubble_diameter=               1      !bubble diameter model (0=none, 1=yoneda, 2=trac, 3=modified_yoneda, 4=viswanathan, 5=hibiki, 6=yun)
+           r_dh_hibiki=        25.52d-3      !hd for Hibiki model
+              r_db_min=          0.0001               
+              r_db_max=            0.05                 
+       i_drop_diameter=               1      !droplet diameter model (0=none, 1=constant)
+               r_ddrop=           0.001         
+ /
+
+
+ &ncg
+              n_ncg_sp=               1
+              ncg_diff=               0 !1
+               imp_ncg=               0 !1
+             i_ncg_vis=               1 !1      !exact viscosity when ncg-gas exists. (0=OFF, 1=ON but slow) 
+       ncg_species( 1)=               6
+          qn_cell0( 1)=        1.000000
+         qn_nvin(1, 1)=        1.000000
+         qn_npin(1, 1)=        1.000000
+ /
+
+
+ &rv_models
+              rv_model=               1
+             rv_fw_reg=               1
+             rv_ht_str=               0
+               rv_ht_w=               0
+             rv_fric_i=              -1
+               rv_ht_i=              -1
+             rv_fric_w=               0
+              rv_choke=               0
+            rv_gapcond=               0
+/
+
+&smr_models
+              smr_model=               1
+              smr_choke=               1
+              smr_rcp=                 1
+              smr_valve=               1
+              smr_bigvol=              0
+              smr_rrv=                 1
+              smr_valvearea=           0
+/
+
+ &misc_option
+                mboron=               0
+              mdiffoff=               0
+               cplmars=               0
+             cplmaster=               0
+!           HS_coupling=               0 !0 !1 			 
+          topolsurface=               1
+           mdiffscheme=               0
+           iso_thermal=               0
+                ifrink=               0
+!              vfporous=               0 !1      
+!             i_droplet=               0      ! droplet field (0=OFF, 1=ON)            
+!      i_fs_temp_intpol=               0      ! wall temperature interpolation when fluid-surface heat transfer is solved (0=OFF, 1=ON)          
+ /
+
+
+ &time_control
+              ctrl_opt=               1
+                    dt=    0.500000D-07
+             cfl_ratio=        2.000000D1
+                 t_end=        2.000000
+              toutstep=        0.20000
+             treststep=    0.100000D+05
+         cfl_ratio_max=        2.000000D1
+                  smac=               3
+                dt_opt=               4
+                dt_max=    0.300000D0
+
+                 nctrl=                5
+        t_end_ctrl( 1)=        1.00000
+     toutstep_ctrl( 1)=        1.0
+    treststep_ctrl( 1)=        0.100000D+10
+cfl_ratio_max_ctrl( 1)=       50. !20.0 !10.000d0
+         smac_ctrl( 1)=               3
+       dt_opt_ctrl( 1)=               4
+       dt_max_ctrl( 1)=        0.1
+       
+        t_end_ctrl( 2)=        10.000000
+     toutstep_ctrl( 2)=        1.00
+    treststep_ctrl( 2)=        0.100000D+10
+cfl_ratio_max_ctrl( 2)=       50. !20. ! 5.0 !1.00000d0
+         smac_ctrl( 2)=               3
+       dt_opt_ctrl( 2)=               4
+       dt_max_ctrl( 2)=        1.0 !0.1
+       
+        t_end_ctrl( 3)=        400.d0
+     toutstep_ctrl( 3)=        50.0
+    treststep_ctrl( 3)=        1.000000D10
+cfl_ratio_max_ctrl( 3)=       100. !20. ! 5.00000d0
+         smac_ctrl( 3)=               3
+       dt_opt_ctrl( 3)=               4
+       dt_max_ctrl( 3)=        1.0 !0.1
+       
+        t_end_ctrl( 4)=        3000.0 !1300.000000
+     toutstep_ctrl( 4)=        50.
+    treststep_ctrl( 4)=        0.100000D+10
+cfl_ratio_max_ctrl( 4)=       100. !   0.1000d0
+         smac_ctrl( 4)=               3
+       dt_opt_ctrl( 4)=               4
+       dt_max_ctrl( 4)=        0.1       
+
+        t_end_ctrl( 5)=        30000.0 !1300.000000
+     toutstep_ctrl( 5)=        500.
+    treststep_ctrl( 5)=        0.100000D+10
+cfl_ratio_max_ctrl( 5)=       100. !   0.1000d0
+         smac_ctrl( 5)=               3
+       dt_opt_ctrl( 5)=               4
+       dt_max_ctrl( 5)=        0.1     
+	   
+        t_end_ctrl( 6)=       3000.000000
+     toutstep_ctrl( 6)=        50.d0
+    treststep_ctrl( 6)=        0.100000D+10
+cfl_ratio_max_ctrl( 6)=        10.0000d0
+         smac_ctrl( 6)=               3
+       dt_opt_ctrl( 6)=               4
+       dt_max_ctrl( 6)=        0.1      	 
+
+        t_end_ctrl( 7)=       2200.000000
+     toutstep_ctrl( 7)=        10.d0
+    treststep_ctrl( 7)=        0.100000D+10
+cfl_ratio_max_ctrl( 7)=        0.10000d0
+         smac_ctrl( 7)=               3
+       dt_opt_ctrl( 7)=               4
+       dt_max_ctrl( 7)=        0.0001     	   
+
+        t_end_ctrl( 8)=       14950.000000
+     toutstep_ctrl( 8)=        50.d0
+    treststep_ctrl( 8)=        0.100000D+10
+cfl_ratio_max_ctrl( 8)=        0.50000d0
+         smac_ctrl( 8)=               3
+       dt_opt_ctrl( 8)=               4
+       dt_max_ctrl( 8)=        0.01     
+ /
+
+
+ &post
+           save_option=               0
+               noutput=               1
+                  iprn=               1
+               restart=               0
+                  itim=            8270
+
+              tplot_dt=        1.000000
+             tplot_num=               0
+            tplot_prop=               0
+
+    viewField%nVectors=               2
+    viewField%nScalars=               6
+    viewField%vectorVar(1: 2)=  vl  vg 
+    viewField%scalarVar(1: 6)= p tl tg  qvol_liq qvol_gas alphag   
+ /
+
+
+ &ipara
+ /
+
+
+
+
+
