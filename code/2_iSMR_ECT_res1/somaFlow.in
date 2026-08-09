@@ -287,7 +287,7 @@
 
 
  &rv_models
-              rv_model=               1
+              rv_model=               0
              rv_fw_reg=               1
              rv_ht_str=               0
                rv_ht_w=               0
@@ -299,7 +299,7 @@
 /
 
 &smr_models
-              smr_model=               1
+              smr_model=               0
               smr_choke=               1
               smr_rcp=                 1
               smr_valve=               1
@@ -415,9 +415,9 @@ cfl_ratio_max_ctrl( 8)=        0.50000d0
             tplot_prop=               0
 
     viewField%nVectors=               2
-    viewField%nScalars=               6
+    viewField%nScalars=               5
     viewField%vectorVar(1: 2)=  vl  vg 
-    viewField%scalarVar(1: 6)= p tl tg  qvol_liq qvol_gas alphag   
+    viewField%scalarVar(1: 5)= p tl tg  qvol_liq alphag   
  /
 
 

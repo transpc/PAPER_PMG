@@ -31,8 +31,8 @@
 ! 
       cupid_alone=1
       cupid_mars=0
-      ! MG_solver = .true.
-    MG_solver = .false.
+      MG_solver = .true.
+      ! MG_solver = .false.
 !
       time=0.d0
       itim=0

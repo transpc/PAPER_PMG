@@ -60,8 +60,9 @@ CSR 덤프 `(A, b)` 만 있으면 어떤 변경 후에도 `‖b − A·u‖ / �
 |------|------|-----------|---------|---------------|-------------|
 | 합성 Poisson 등방 | 1 | — | (미채취) | | |
 | 합성 Poisson 이방성 | 1 | — | (미채취) | | |
-| iSMR ECT 덤프 #1 | 1 | 초기 과도 | (미채취, somaFlow.in 대기) | | |
-| iSMR ECT 덤프 #2 | 2, 4 | 준정상 | (미채취, somaFlow.in 대기) | | |
+| iSMR ECT 436K셀 (잠정, rv_model=0) | 4 | 초기 과도 step 1~38 | **1~3 (최빈 2)** | ≤ 8.9e-9 | C005-r8 (fort.501, 76솔브) |
+| iSMR ECT 덤프 #1 (정식) | 1 | 초기 과도 | (미채취 — rv_model=1 복원 후) | | |
+| iSMR ECT 덤프 #2 (정식) | 2, 4 | 준정상 | (미채취) | | |
 
 ---
 
@@ -125,7 +126,7 @@ CSR 덤프 `(A, b)` 만 있으면 어떤 변경 후에도 `‖b − A·u‖ / �
 | C002 | `makefile.in.apptainer` (AVX2, p=12, METIS_LIB/rpath) + `build.sh` → `cupid.x` 링크 성공 | §3-1 | C001 | ✔ [LOG C002](LOG.md) (r1) |
 | C003 | `.gitignore` 정비 + `prepare_case.sh` (호스트 7z 해제) | §3-1(5), §3-2 | — | ✔ [LOG C003](LOG.md) |
 | C004 | `cupid.x` 단독 실행 → 입력 단계 도달 확인 (관측: 부재 가드는 죽은 코드, EOF 런타임 에러로 종료 — LOG 참조) | §3-1(3) | C002 | ✔ [LOG C004](LOG.md) |
-| C005 | `run.sh` 작성 + iSMR 케이스 스모크 (수 timestep, PMG 경로 진입 로그) | §3-3, §3-4 | C004, ~~somaFlow.in~~, **rv_parameters.in** | ▶ r1~r5 로 namelist·입력·스택 3개 층위 해소, 잔여 블로커 1개 [LOG C005-r1~r5](LOG.md) |
+| C005 | `run.sh` 작성 + iSMR 케이스 스모크 (수 timestep, PMG 경로 진입 로그) | §3-3, §3-4 | C004 | ✔ **PASS(스모크 기준)** — 38스텝·PMG 76솔브(its 1~3). 완주는 rv_model=0 물리 발산으로 미달 → rv_parameters.in 확보 후 재확인 [LOG C005-r1~r8](LOG.md) |
 | C006 | `pmg_standalone/stub/` 모듈 뼈대 (grep USE 기반) + GMG 컴파일 통과 | §4-1 | C002 | ☐ |
 | C007 | 합성 Poisson 생성기 + `driver_pmg.f90` → 첫 수렴, **ref_its 초기 채취** | §4-3 | C006 | ☐ |
 | C008 | 덤프 훅 `dump_pmg.f90` (환경변수 게이트) + 본체 재빌드 green | §4-2 | C002 | ☐ |

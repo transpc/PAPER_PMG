@@ -117,3 +117,30 @@
 - 판정: r5 시점 기준 **진행 중** — 실행 파이프라인의 소스/입력/환경 3개 층위 문제를 모두 해소했고, 남은 것은 **케이스 입력 파일 1개 부재**
 - 참고: 스택 요구는 클러스터(보통 unlimited 기본)에선 잠복했을 환경 요인 — G1 의 "환경 요인 점검" 항목과 연결
 - 다음: **신규 블로커 — `rv_parameters.in` 을 원본 케이스에서 확보** (rv_ht_str=0 이므로 ht_str_*.in 은 불요 추정). 확보 후 C005-r6 재개
+
+---
+
+## C005-r6~r8 | 2026-08-10 | 첫 PMG 가동 성공 — 스모크 목표 달성, 완주는 물리 발산으로 미달
+
+**r6 — rv_model=0 우회 (사용자 결정) → 새 정지점**
+- 사용자가 rv_parameters.in 대신 `rv_model=1→0` 으로 우회. 재실행 → rv 체크 통과, **시간 전진 직전 도달** (`Problem: 11 3D 436136 cells`)
+- 정지: `Check variable names ... write_fieldview.f90` + `2 2 5 6` — `write_fieldview.f90:991` 의 출력 변수 검증. nscalar(인식 5) ≠ nScalars(요청 6). 전수 확인 결과 **`qvol_gas` 만 이 소스에 없음** (`qvol_liq` 은 있음)
+
+**r7 — 입력 수정 → 직렬 시간 전진 확인 + 핵심 발견**
+- `viewField%nScalars=5`, `scalarVar` 에서 `qvol_gas` 제거 (순수 후처리 항목 — 솔버 물리 무관)
+- 직렬(np=1) 18+ 스텝 전진 확인. 단 **fort.501 부재 → `solve_pbcg_mg` 미호출** 발견
+- 원인 추적: `pressure_solve.f90` 의 MG 경로는 `parallel==1 .and. MG_solver` 조건인데 **`cupid_main.f90:35` 에 `MG_solver = .false.` 하드코딩** — 사용자 확인 후 `.true.` 로 전환 (실행 중이던 r7 은 중지)
+
+**r8 — MG_solver=.true. + np=4: 첫 PMG 가동 (PASS with caveat)**
+- 재빌드(에러 0) → np=4 실행: METIS 분할 성공, **MG_tmp 파일 기반 셋업 라이브 관측**(`part001~004.out`, `part_MG*.out` — G1/G2 대상 메커니즘), GMG 계층 구성 후 시간 전진
+- **PMG-BiCGSTAB 76회 솔브 성공**:
+
+| 문제 | rank | its 분포 | 독립 residual | 비고 |
+|------|------|----------|---------------|------|
+| iSMR ECT 436,136셀 (rv_model=0) | 4 | 1×5회, **2×53회**, 3×18회 | max 8.9e-9, mean 1.2e-9 | 솔버 자기보고치(fort.501). step 1~38 |
+
+- **step 38 에서 발산 정지**: `Iteration number for PBCG_MG exceeds 1000` ×2 → `divergence => stop` (제어된 종료)
+- 사실관계: 정지 전부터 DP_MAX 가 지수 성장(26 → 4.3e6, ×1.4/스텝), TOTAL_MASS 드리프트(1.823e7→1.814e7). 솔버는 its 1~3 으로 건전하다가 물리가 무너진 뒤에야 한계 도달
+- 추정: **rv_model=0 우회가 물리 셋업을 변경**(노심 유동저항/열원 부재)해 과도 자체가 발산. 솔버 결함 증거는 현재 없음. 확정하려면 rv_parameters.in 확보 후 rv_model=1 재실행 필요
+- 판정: **PASS (스모크 기준)** — C005 의 DoD(수 timestep + PMG 경로 진입 로그)는 초과 달성 (38 스텝, PMG 76 솔브). 완주(t_end=2s)는 물리 셋업 문제로 미달 — rv_model=1 복원 후 재확인 항목으로 이관
+- 다음: ① rv_parameters.in 확보 (PLAN §7-1, 여전히 권장) ② C006 (stub 모듈) 착수 가능 ③ 이번 fort.501 관측치를 LOOP §2 ref_its 표에 잠정 등재

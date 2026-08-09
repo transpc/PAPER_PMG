@@ -309,7 +309,7 @@ driver_pmg.f90 흐름:
 
 ## 7. 미결 사항 (사용자 확인 필요)
 
-1. **`rv_parameters.in` 확보** — 입력이 `rv_model=1` 이라 필수 (`### rv_parameters.in is required` 로 정상 종료, LOG C005-r5). 원본 케이스에서 가져와 `2_iSMR_ECT_res1`에 두면 C005-r6 재개. (`rv_ht_str=0` 이므로 `ht_str_*.in` 은 불요 추정)
+1. **`rv_parameters.in` 확보 (여전히 권장)** — 사용자가 `rv_model=0` 으로 우회해 스모크는 통과했으나(LOG C005-r8), **step 38 에서 과도가 물리적으로 발산** (DP_MAX 지수 성장 후 솔버 한계 도달). 추정 원인이 rv 모델 부재(노심 저항/열원)이므로, 골든 덤프 채취(C009)와 완주 검증에는 rv_model=1 + rv_parameters.in 복원이 필요. (`rv_ht_str=0` 이므로 `ht_str_*.in` 은 불요 추정)
 2. **골든 기준 rank 구성** — 1/2/4 rank 제안. 논문 스케일링 실험 계획에 맞춰 조정할지?
 3. 논문의 다른 케이스(MSFR 정상상태, iSMR 일일부하추종)도 추후 같은 구조로 추가할지?
 
@@ -328,7 +328,8 @@ Phase 2  ☑ Source/makefile.in.apptainer 작성 (AVX2, p=12)                  [
          ☑ scripts/build.sh 작성 → cupid.x 빌드 성공 (r1: Modules/ mkdir)  [LOG C002]
          ☑ .gitignore 정비                                                 [LOG C003]
          ☑ scripts/prepare_case.sh (7z 해제) + run.sh 작성                 [LOG C003·C005]
-         □ [somaFlow.in 확보 후] iSMR 케이스 스모크 실행                    (블로킹)
+         ☑ iSMR 케이스 스모크 실행 — 38스텝·PMG 76솔브 (its 1~3)           [LOG C005-r8]
+           (완주 검증은 rv_parameters.in 확보 후 — §7-1)
 Phase 3  □ pmg_standalone/stub 모듈 작성 (grep USE 기반)
          □ 합성 문제 생성기 + driver_pmg.f90 → 유닛 테스트 green
          □ 본체에 dump_pmg 훅 추가 (환경변수 게이트)
