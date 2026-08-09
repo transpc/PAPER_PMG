@@ -159,3 +159,26 @@
   - 제외 파일 확인: `6_solver_pbcg_ali.f90` 은 프로덕션 GMG makefile 에도 없음 (미컴파일 변형) — 동일하게 제외
 - 판정: **PASS** — C006 DoD(컴파일 통과) + 링크 클로저까지 초과 달성. L2 비해당 (실행 로직 무변경)
 - 다음: C007 — 합성 Poisson 생성기 + driver_pmg.f90 (덤프 로더·PREP 체인 호출·ref_its 채취)
+
+---
+
+## C007 | 2026-08-10 | 합성 Poisson 유닛 테스트 — PMG 단독 첫 수렴, ref_its 채취
+
+- 목표: CUPID 없이 합성 문제로 `solve_pbcg_mg` 수렴 확인 + LOOP §2 ref_its 초기 채취
+- 변경: `driver/driver_pmg.f90`(제작해 기반 검증 드라이버), `tests/mg.in`(케이스 사본), makefile `driver` 타깃, `run_tests.sh`(러너)
+- 조사로 확정한 프로덕션 체인 (드라이버가 그대로 재현):
+  `read_input_mg` → `subdomain_infor_MG`(rank0, MG_tmp 기록) → `read_mesh_MPI` → `Prep_fine_P` → `Prep_MG_GarL`, 솔브는 `assemble_FVM` → `SOLVE_GMG`(isol_mg≤0 → `solve_pbcg_mg`). 드라이버 입력: `num_neigh_mg`/`neigh_mg`(7점 스텐실), `xloc_tmp(ncell,ndim)`, `celem=1`, `Zbicg%eps_bicg`(→crit_bcg_mg 로 전파, `1_read_input.f90:167`)
+- **실패 2건과 해소 (설계 지식으로 기록)**:
+  - r1: SIGSEGV at coord 접근 — **`Prep_fine_P` 가 fine 좌표를 해제** (`3_Prep_fine_P.f90:130`) → `read_mesh_MPI` 직후 스냅샷으로 해소. 행렬 계수는 GMG 자신의 재배열된 ia/ja/coord 기준으로 생성 (permutation 무관)
+  - r2: 발산(its>1000) — **GMG CSR 은 대각을 au 안에 포함** (`ju` 가 위치 지정; `mt_amux1`/`resi_normP` 는 full-row 로 A·x). 증거: nnz=93312 = off-diag 79488 + 대각 13824. `assemble_FVM` 의 별도 diag 인자는 스무더 스케일링용(`diagt=1/diag`)이지 A 의 가산 항이 아님. 드라이버가 대각 위치에 `-vol/0=Inf` 를 넣고 있었음 → 대각값으로 교정
+- 결과 (`run_tests.sh`, 전부 **PASS**, 판정은 드라이버의 **독립 residual** — 솔버 자기보고와 별도 계산):
+
+| 문제 | ncell | its | 독립 rel_res | 제작해 오차 |
+|------|-------|-----|-------------|------------|
+| 등방 24³ | 13,824 | **4** | 3.97e-9 | 3.6e-9 |
+| 이방 24³ (aspect=100) | 13,824 | **4** | 1.28e-10 | 3.0e-10 |
+| 등방 48³ | 110,592 | **5** | 1.63e-10 | 6.5e-10 |
+
+  - 이방성에서 its 불변 → semi-coarsening 유효. 격자 8배에 its 4→5 → 격자 무관 수렴. 제작해 오차 ~1e-9 → 해 자체 정확
+- 판정: **PASS** — L1(빌드)·L2(독립 residual ≤ 10·crit, its 채취) green. ref_its 3종을 LOOP §2 표에 등재 — **이 시점부터 C012(리팩터링) 계열의 L2 안전망 가동**
+- 다음: C008(덤프 훅) 또는 C012(G3 리팩터링, 합성 ref 로 판정 가능). C009 골든은 rv_parameters.in 대기

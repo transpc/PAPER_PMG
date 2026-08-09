@@ -330,7 +330,7 @@ Phase 2  ☑ Source/makefile.in.apptainer 작성 (AVX2, p=12)                  [
          ☑ iSMR 케이스 스모크 실행 — 38스텝·PMG 76솔브 (its 1~3)           [LOG C005-r8]
            (완주 검증은 rv_parameters.in 확보 후 — §7-1)
 Phase 3  ☑ pmg_standalone 의존성 클로저 (스텁 1개 + 원본 직접 컴파일)      [LOG C006]
-         □ 합성 문제 생성기 + driver_pmg.f90 → 유닛 테스트 green
+         ☑ 합성 문제 생성기 + driver_pmg.f90 → 유닛 테스트 3종 green       [LOG C007]
          □ 본체에 dump_pmg 훅 추가 (환경변수 게이트)
          □ [실행 가능 시] 골든 덤프 채취 (직렬 → MPI)
          □ run_tests.sh 완성, 추출 무결성 검증 (its/u* 일치)

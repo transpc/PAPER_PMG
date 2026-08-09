@@ -63,3 +63,10 @@ probe: objs $(BUILD)/link_probe.o
 
 $(BUILD)/link_probe.o: driver/link_probe.f90 | $(BUILD)
 	$(FC) $(FOPTFLAGS) -module $(BUILD) -c $< -o $@
+
+# 합성 Poisson 테스트 드라이버 (C007)
+driver: objs $(BUILD)/driver_pmg.o
+	$(FC) -o $(BUILD)/driver_pmg $(BUILD)/driver_pmg.o $(OBJS) $(LIBDIR)
+
+$(BUILD)/driver_pmg.o: driver/driver_pmg.f90 | $(BUILD)
+	$(FC) $(FOPTFLAGS) -module $(BUILD) -c $< -o $@
