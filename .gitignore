@@ -65,3 +65,9 @@ code/**/somaPlot.viw
 *.sif
 code/pmg_standalone/build/
 pmg_dump/
+# 골든 덤프 바이너리 (대용량 — meta/checksums 만 커밋)
+code/pmg_standalone/golden/**/*.pre
+code/pmg_standalone/golden/**/*.post
+code/pmg_standalone/golden/**/*.bin
+code/pmg_standalone/golden/**/*.u
+code/pmg_standalone/tests/replay_*.u

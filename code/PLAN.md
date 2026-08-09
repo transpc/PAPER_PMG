@@ -332,8 +332,8 @@ Phase 2  ☑ Source/makefile.in.apptainer 작성 (AVX2, p=12)                  [
 Phase 3  ☑ pmg_standalone 의존성 클로저 (스텁 1개 + 원본 직접 컴파일)      [LOG C006]
          ☑ 합성 문제 생성기 + driver_pmg.f90 → 유닛 테스트 3종 green       [LOG C007]
          ☑ 본체에 dump_pmg 훅 추가 (환경변수 게이트, 바이트 검증 완료)      [LOG C008]
-         □ [실행 가능 시] 골든 덤프 채취 (직렬 → MPI)
-         □ run_tests.sh 완성, 추출 무결성 검증 (its/u* 일치)
+         ☑ 골든 덤프 채취 (직렬 s1/s10/s30 — MPI 채취는 C010 준비로 이관)   [LOG C009]
+         ☑ run_tests.sh 완성 (합성 3 + 골든 3, 충실도·its·bitwise 3중 게이트) [LOG C009]
 Phase 4  □ 베이스라인 태그 + 성능 기준표
          □ G1: np=900 실패 원인 확정 (유닛 충돌·파일명·fan-out) → 파일 방식 유지 수정
          □ G2: MG_tmp 파일 왕복 → MPI 통신 대체 (과도기 이중 모드로 bitwise 검증)

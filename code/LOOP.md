@@ -62,6 +62,7 @@ CSR 덤프 `(A, b)` 만 있으면 어떤 변경 후에도 `‖b − A·u‖ / �
 | 합성 Poisson 이방 24³ (aspect=100) | 1 | crit=1e-8 | **4** | 1.28e-10 | C007 |
 | 합성 Poisson 등방 48³ (110,592셀) | 1 | crit=1e-8 | **5** | 1.63e-10 | C007 |
 | iSMR ECT 436K셀 (rv_model=0) | 4 | 초기 과도 step 1~38 | **1~3 (최빈 2)** | ≤ 8.9e-9 | C005-r8 (fort.501, 76솔브) |
+| **골든 재생** iSMR 436K (하네스 기준) | 1 | s1/s10: its **2,2** · s30: **3,3** | 좌동 | 충실도 ≤1e-10, 베이스라인 bitwise | C009 (golden/meta.md) |
 
 ---
 
@@ -129,7 +130,7 @@ CSR 덤프 `(A, b)` 만 있으면 어떤 변경 후에도 `‖b − A·u‖ / �
 | C006 | `pmg_standalone/` 의존성 클로저 + GMG 단독 컴파일·링크 통과 | §4-1 | C002 | ✔ 스텁 1개(직렬 communicate)로 클로저 완성, probe 실행 OK [LOG C006](LOG.md) |
 | C007 | 합성 Poisson 생성기 + `driver_pmg.f90` → 첫 수렴, **ref_its 초기 채취** | §4-3 | C006 | ✔ 3종 PASS (its 4/4/5), `run_tests.sh` 가동 [LOG C007](LOG.md) |
 | C008 | 덤프 훅 `dump_pmg.f90` (환경변수 게이트) + 본체 재빌드 green | §4-2 | C002 | ✔ setup+pre/post 캡처, 바이트 검증 완료 (r1: 셋업 덤프를 셋업 시점으로 이동) [LOG C008](LOG.md) |
-| C009 | 골든 덤프 채취 (rank 1/2/4, rv_model=0 스모크 구간 step 1~38) + **ref_its 기준표 확정** + `run_tests.sh` 완성 | §4-2, §4-4 | C005, C007, C008 | ☐ |
+| C009 | 골든 덤프 채취 (rv_model=0 스모크 구간) + **ref 기준 확정** + `run_tests.sh` 완성 | §4-2, §4-4 | C005, C007, C008 | ✔ np=1 s1/s10/s30 — 3중 게이트(충실도·its·bitwise) green. np=2/4 채취는 MPI 하네스 확장(C010 준비)으로 이관 [LOG C009](LOG.md) |
 | C010 | **G1**: np=900 실행 가능하게 (파일 방식 유지 최소 수정) — 1차 목표는 **실패 재현·원인 확정** (후보 목록: PLAN §5-1 + 아래 검증 메모) | PLAN §5-1 | C007 | ☐ |
 | C011 | **G2**: 파일 경유 분배(`MG_tmp/part###.out`)를 MPI 통신으로 대체 — 과도기 파일/통신 이중 모드로 bitwise 일치 확인 후 파일 경로 삭제 | PLAN §5-2 | C010 | ☐ |
 | C012 | **G3**: 코드 간소화·가독성 (동작 불변 리팩터링) — its ±0 / bitwise 기준 | PLAN §5-3 | C007 | ☐ |
