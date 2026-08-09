@@ -182,3 +182,25 @@
   - 이방성에서 its 불변 → semi-coarsening 유효. 격자 8배에 its 4→5 → 격자 무관 수렴. 제작해 오차 ~1e-9 → 해 자체 정확
 - 판정: **PASS** — L1(빌드)·L2(독립 residual ≤ 10·crit, its 채취) green. ref_its 3종을 LOOP §2 표에 등재 — **이 시점부터 C012(리팩터링) 계열의 L2 안전망 가동**
 - 다음: C008(덤프 훅) 또는 C012(G3 리팩터링, 합성 ref 로 판정 가능). C009 골든은 rv_parameters.in 대기
+
+---
+
+## C008 | 2026-08-10 | 골든 덤프 훅 — env 게이트, 셋업+솔브 입출력 캡처
+
+- 목표: `CUPID_PMG_DUMP=<step>` 설정 시에만 PMG 솔브의 입력(CSR·RHS·diag)과 출력(u*), 그리고 standalone 재생에 필요한 셋업 배열을 파일로 캡처 (미설정 시 오버헤드 ~0)
+- 변경: `Source/GMG/module/dump_pmg.f90` 신규 (모듈, `NEWUNIT=` 사용 — §5-1 유닛 위생 준수), `pressure_solve.f90` 두 SOLVE_GMG 사이트에 pre/post 훅, `read_grid.f90` 에 셋업 훅, GMG/module·05_Solver makefile, `.gitignore` 에 `pmg_dump/`
+- 사전 확인: `parallel` 은 somaFlow.in 입력값(=1)이지 np 파생이 아님 → **직렬(np=1)에서도 MG 경로 진입** = 직렬 골든 채취 가능
+- **r0 FAIL — 셋업 덤프 불완전**: `setup_r0.bin` 크기가 정확히 `num_neigh_mg`+`neigh_mg` 분량만큼 부족 (12,211,824 vs 27,912,720). 바이트 판독으로 xloc·celem 만 기록됐음을 확정 — 두 배열은 **`subdomain_infor_mg` 종료 시 DEALLOCATE** 됨 (`6_subdomain_infor_mg.f90:644`). 정정: 사전 생존 검사에서 GMG 디렉토리를 grep 범위에서 누락했던 것이 원인 (ifort 는 미할당 allocatable 의 slice WRITE 를 0 바이트로 통과시킴 — 조용한 실패 모드)
+- **r1 — 셋업 덤프를 셋업 시점으로 이동**: `dump_pmg_setup_hook` 을 `read_grid` 의 `subdomain_infor_MG` 호출 직전에 배치. 빌드 순서상 모듈을 `05_Solver` → `GMG/module/`(선행 빌드 그룹)로 이동 (02_IO 에서도 USE 가능). 이동 잔재 `05_Solver/dump_pmg.o` 가 글롭 링크에 걸려 multiple definition → 제거 후 green
+- 검증 (np=1, step 1 캡처 후 중단):
+
+| 파일 | 크기 | 내용 검증 |
+|------|------|-----------|
+| `setup_r0.bin` | 27,912,720 = 기대치 | ndim=3, nelem=436,136, nf_max=8, num_neigh 샘플 5~6 (비정렬 격자 유효값) |
+| `s1_k{1,2}_r0_c1.pre` | 31,038,424 = 기대치 | n=436,136, nnz=3,007,528, src 실수값 |
+| `s1_k{1,2}_r0_c1.post` | 3,489,108 = 기대치 | u* 실수값 (site1 ≈ −10.1, site2 ≈ 2e-10) |
+
+  - site1 u* 샘플이 r0 시도의 값과 동일 — 실행 간 결정적 재현 (‑fp-model strict) 신호
+  - fort.501 step1: its=3, 2
+- 판정: **PASS** — L1 green(에러 0), 덤프 무결성 바이트 단위 검증 완료. L2 비해당 (솔버 로직 무변경 — 훅은 env 미설정 시 즉시 반환)
+- 다음: C009 — 골든 채취·재생 (사용자 결정으로 rv_model=0 유지 확정 → **블로킹 해제**, 현행 케이스 step 1~38 구간이 골든 원천)

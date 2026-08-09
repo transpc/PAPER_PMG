@@ -16,6 +16,7 @@
       USE Zbc_index    , ONLY: nbcon,cellvin,cellpin,iface_wall1
       USE Zconst1      , ONLY: cplmaster,iturb,Nwlf,iheatpart,rv_htmodel_forCFD
       USE Zcoord1      , ONLY: xloc,xloc_tmp
+      USE dump_pmg     , ONLY: dump_pmg_setup_hook   ! 골든 셋업 덤프 (LOOP C008-r1)
       USE Zcoord3      , ONLY: porosity
       USE Zcoord4      , ONLY: sa
       USE Znum_cell    , ONLY: ncell,neigh,num_neigh_tmp, &
@@ -246,6 +247,9 @@
 ! PMG
       IF(MG_solver) THEN
          IF(myrankt .EQ. 0) THEN
+!          셋업 덤프는 반드시 이 시점 — subdomain_infor_MG 가 종료 시
+!          num_neigh_mg/neigh_mg 를 해제함 (LOOP C008-r1)
+           CALL dump_pmg_setup_hook
            CALL subdomain_infor_MG
          END IF
       END IF

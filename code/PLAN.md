@@ -308,11 +308,11 @@ driver_pmg.f90 흐름:
 
 ## 7. 미결 사항 (사용자 확인 필요)
 
-1. **`rv_parameters.in` 확보 (여전히 권장)** — 사용자가 `rv_model=0` 으로 우회해 스모크는 통과했으나(LOG C005-r8), **step 38 에서 과도가 물리적으로 발산** (DP_MAX 지수 성장 후 솔버 한계 도달). 추정 원인이 rv 모델 부재(노심 저항/열원)이므로, 골든 덤프 채취(C009)와 완주 검증에는 rv_model=1 + rv_parameters.in 복원이 필요. (`rv_ht_str=0` 이므로 `ht_str_*.in` 은 불요 추정)
-2. **골든 기준 rank 구성** — 1/2/4 rank 제안. 논문 스케일링 실험 계획에 맞춰 조정할지?
-3. 논문의 다른 케이스(MSFR 정상상태, iSMR 일일부하추종)도 추후 같은 구조로 추가할지?
+1. **골든 기준 rank 구성** — 1/2/4 rank 제안. 논문 스케일링 실험 계획에 맞춰 조정할지?
+2. 논문의 다른 케이스(MSFR 정상상태, iSMR 일일부하추종)도 추후 같은 구조로 추가할지?
 
 > (해소됨) oneAPI 버전 선택 — 기존 `hpc23.sif`(oneAPI 2023.2.1, ifort classic 2021.10.0) 사용으로 확정.
+> (해소됨) `rv_parameters.in` 확보 — **rv_model 은 고려하지 않기로 결정 (2026-08-10)**. `rv_model=0` 상태를 기준 구성으로 확정하고, 골든 덤프 채취(C009)도 이 구성의 스모크 구간(step 1~38, 발산 전)에서 수행한다. step 38 물리 발산(추정: rv 모델 부재)은 알려진 한계로 기록만 유지.
 > (해소됨) `somaFlow.in` — 2026-08-09 사용자 제공. 이 소스가 모르는 신형 옵션 4개(`HS_coupling`, `vfporous`, `i_droplet`, `i_fs_temp_intpol`, 전부 0=OFF)는 주석 처리함 (LOG C005-r3, 원본 백업 보관).
 
 ---
@@ -328,10 +328,10 @@ Phase 2  ☑ Source/makefile.in.apptainer 작성 (AVX2, p=12)                  [
          ☑ .gitignore 정비                                                 [LOG C003]
          ☑ scripts/prepare_case.sh (7z 해제) + run.sh 작성                 [LOG C003·C005]
          ☑ iSMR 케이스 스모크 실행 — 38스텝·PMG 76솔브 (its 1~3)           [LOG C005-r8]
-           (완주 검증은 rv_parameters.in 확보 후 — §7-1)
+           (rv_model 미고려 결정 — 완주 검증 대신 스모크 구간을 기준으로 확정, §7)
 Phase 3  ☑ pmg_standalone 의존성 클로저 (스텁 1개 + 원본 직접 컴파일)      [LOG C006]
          ☑ 합성 문제 생성기 + driver_pmg.f90 → 유닛 테스트 3종 green       [LOG C007]
-         □ 본체에 dump_pmg 훅 추가 (환경변수 게이트)
+         ☑ 본체에 dump_pmg 훅 추가 (환경변수 게이트, 바이트 검증 완료)      [LOG C008]
          □ [실행 가능 시] 골든 덤프 채취 (직렬 → MPI)
          □ run_tests.sh 완성, 추출 무결성 검증 (its/u* 일치)
 Phase 4  □ 베이스라인 태그 + 성능 기준표

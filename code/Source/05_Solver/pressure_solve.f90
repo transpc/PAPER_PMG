@@ -15,6 +15,7 @@
                                 right_nb_k,istart_nfs,nf_number_id,istart_nf
       USE Zvec_index    , ONLY: left_nf,right_non
       USE Zconst1       , ONLY: parallel,fric_face,nd_face
+      USE dump_pmg      , ONLY: dump_pmg_pre,dump_pmg_post   ! 골든 덤프 훅 (LOOP C008)
       USE Zconst2       , ONLY: dt
       USE Zgradoption   , ONLY: iter_grad,non_orth,non_orth_iter,grav_grad
       USE Zbc_index     , ONLY: npb
@@ -182,7 +183,9 @@
 !!DEC$ENDIF
 
 
+            CALL dump_pmg_pre(1, maxmt, src, au, poiss_diag)   ! env CUPID_PMG_DUMP 게이트
             CALL SOLVE_GMG(1)
+            CALL dump_pmg_post(1)
             pp = u
          ELSE
          CALL cupid_solvers(epsFactor,poiss_diag,non_orth,src,pp,izone)
@@ -253,7 +256,9 @@
                IF (MG_solver) THEN
 !                write(*,*)'MG-2'
                   CALL assemble_FVM(icase_mg,maxmt,src,au,poiss_diag)!,poiss_csr)
+                  CALL dump_pmg_pre(2, maxmt, src, au, poiss_diag)   ! env CUPID_PMG_DUMP 게이트
                   CALL SOLVE_GMG(icase_mg)
+                  CALL dump_pmg_post(2)
                   ppp = u
                ELSE
                CALL cupid_solve_non_orth(epsFactor,poiss_diag,src,ppp,izone)

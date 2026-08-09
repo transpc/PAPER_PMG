@@ -64,3 +64,4 @@ code/**/somaPlot.viw
 *__genmod.f90
 *.sif
 code/pmg_standalone/build/
+pmg_dump/

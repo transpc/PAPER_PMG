@@ -17,7 +17,8 @@ FSRCS = MD_matrix.f90\
 	MD_MG_coord.f90\
 	MD_MG_matrix.f90\
 	MD_connectivity.f90\
-	MD_MPI.f90
+	MD_MPI.f90\
+	dump_pmg.f90
 FSRCV = 
 #----------------------------------------------------------------------
 
@@ -40,6 +41,8 @@ default : mk_lib
 
 mk_exe: $(OBJS)
 	$(FC) -o $(EXCNAME) $(OBJS)  $(CFLAGS) $(LFLAGS)
+
+dump_pmg.o: MD_matrix.o MD_MPI.o MD_geometry.o MD_parameter.o
 
 mk_lib: $(OBJS)
 	$(ARCH) $(ARCHFLAGS) $(LIBNAME) $(OBJS)
