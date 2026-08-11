@@ -233,7 +233,7 @@ subroutine lanczos_eig_max(np,k,nintf,n,nnz,ia,ja,au,nnbd,nbdom,si,ri,sintf,rint
       ENDDO
 !
       IF(np.gt.1)THEN
-         CALL allreduce_r(xtmp,xtmp1)
+         CALL allreduce_r_s(xtmp,xtmp1)
          xtmp = xtmp1
       ENDIF
     
@@ -270,7 +270,7 @@ subroutine lanczos_eig_max(np,k,nintf,n,nnz,ia,ja,au,nnbd,nbdom,si,ri,sintf,rint
       ENDDO
 !
       IF(np.gt.1)THEN
-         CALL allreduce_r(xtmp,xtmp1)
+         CALL allreduce_r_s(xtmp,xtmp1)
          xtmp = xtmp1
       ENDIF
 ! 
@@ -288,7 +288,7 @@ subroutine lanczos_eig_max(np,k,nintf,n,nnz,ia,ja,au,nnbd,nbdom,si,ri,sintf,rint
       ENDDO
 !
       IF(np.gt.1)THEN
-         CALL allreduce_r(xtmp,xtmp1)
+         CALL allreduce_r_s(xtmp,xtmp1)
          xtmp = xtmp1
       ENDIF
 ! - - - - - 
@@ -304,7 +304,7 @@ subroutine lanczos_eig_max(np,k,nintf,n,nnz,ia,ja,au,nnbd,nbdom,si,ri,sintf,rint
       ENDDO
 !
       IF(np.gt.1)THEN
-         CALL allreduce_r(xtmp,xtmp1)
+         CALL allreduce_r_s(xtmp,xtmp1)
          xtmp = xtmp1
       ENDIF
 
