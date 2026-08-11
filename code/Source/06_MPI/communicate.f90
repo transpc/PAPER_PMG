@@ -26,7 +26,7 @@
 !     communicate_rv_2d       communicate  arrays 2d of the form  a(ncell_fuel_rod_p,nr_2d) max 2 arguments
 !
 !     ==>Initialization processing
-!     communicate_allb        communicate  specific arrays
+!     communicate_allb        communicate  specific arrays (→ communicate_allb.f90 로 분리, C010-1)
 !
 !     ==>Solver processing
 !     communicate             switching driver to enable solid or fluid communication via izone flag
@@ -1250,80 +1250,6 @@
 !DEC$ENDIF
 !
       END SUBROUTINE communicate_rv_2d
-!
-!------------------------------------------------------------------------------
-!     
-      SUBROUTINE communicate_allb
-!DEC$IF defined (mpi_flag)
-!
-!     Comunicate major variables for parallel computing
-!
-      USE Zinterface
-      USE VOL_DATA , ONLY: cell
-      USE Zmpi     , ONLY: ncell_fp
-      USE Zpress   , ONLY: p
-      USE Zvector  , ONLY: vg_o,vl_o,vd_o
-      USE Zare     , ONLY: are_gas,are_liq
-!
-      IMPLICIT NONE
-!
-!.....Local variables
-      LOGICAL,SAVE :: initial=.TRUE.
-      INTEGER :: i
-!
-      IF(initial)THEN
-         CALL communicate_1d(are_liq, &
-                             are_gas, &
-                             cell%eg)
-         initial=.false.
-      ENDIF
-      CALL communicate_1d(cell%alphag, &
-                          cell%alphal, &
-                          cell%alphad, &
-                          cell%quala,  &
-                          cell%tl_o,   &
-                          cell%tg_o,   &
-                          cell%condl,  &
-                          cell%condg)
-      CALL communicate_1d(cell%rhom,  &
-                          cell%rhomr, &
-                          cell%el,    &
-                          cell%hg,    &
-                          cell%hl,    &
-                          cell%rhog,  &
-                          cell%rhol,  &
-                          cell%ha)
-      CALL communicate_1d(p)
-      CALL communicate_2d(vl_o, &
-                          vg_o, &
-                          vd_o)
-!
-!.....For mass_conv, erg_conv
-!
-      DO i=1,ncell_fp
-         cell%alphag_o(i)=cell%alphag(i)
-         cell%alphal_o(i)=cell%alphal(i)
-         cell%alphad_o(i)=cell%alphad(i)
-      ENDDO
-!DEC$ELSE
-!
-      USE VOL_DATA , ONLY: cell
-      USE Zzone    , ONLY: ncell_fluid
-!
-      IMPLICIT NONE
-!.....Local variables
-      INTEGER :: i
-!
-!.....For mass_conv, erg_conv
-!
-      DO i=1,ncell_fluid
-         cell%alphag_o(i)=cell%alphag(i)
-         cell%alphal_o(i)=cell%alphal(i)
-         cell%alphad_o(i)=cell%alphad(i)
-      ENDDO
-!DEC$ENDIF
-!
-      END SUBROUTINE communicate_allb
 !
 !------------------------------------------------------------------------------
 !

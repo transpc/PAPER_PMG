@@ -300,3 +300,15 @@
 - 결과: 합성 1.01/0.99/3.83 s, 골든 재생 12.35/11.83/12.10 s (환경: sjdo/WSL2 20코어, hpc2023 SIF). 드라이버 내부 솔버 단독 타이밍 훅은 부재 — 향후 도입 항목으로 perf_log.md 에 명시
 - 판정: **PASS** — 인프라 사이클 DoD 충족 (기준표 존재 + 태그)
 - 다음: C010 착수 — MPI 하네스 확장 (communicate 스텁 → 실물, np=2/4 골든), np=900 재현
+
+---
+
+## C010-1 | 2026-08-11 | MPI 하네스 확장 1단계 — communicate 스텁 → 실물 교체
+
+- 목표: communicate_serial 스텁을 06_MPI/communicate.f90 실물로 교체하되 np=1 run_tests 6/6 + bitwise green 유지
+- 변경: `pmg_standalone/makefile` (SSRC 교체), `06_MPI/communicate_allb.f90` 신설 (communicate.f90 에서 verbatim 분리 — CUPID 본체 모듈 VOL_DATA/Zpress/Zvector/Zare 의존이 이 초기화 루틴뿐이라 파일 단위 분리로 하네스 클로저 성립), `06_MPI/makefile` FSRC1 추가
+- 실행: `build.sh` (프로덕션, 에러 0) → standalone clean 재빌드 → `run_tests.sh`
+- 결과: 6/6 PASS + 베이스라인 bitwise 전부 통과 — 실물 communicate 는 np=1 에서 항등(niut=0), allb 분리는 동작 불변
+- 관측: GMG 의 `communicate` 호출은 `06_solver_pcg_ilu.f90` (coarsest 경로) 7건뿐. 주 솔버 `6_solver_pbcg_mg` 는 자체 `communicate_s`, 스무더 계층은 `send_receive*` 사용 — np>1 확장 시 세 경로 모두 실물이 필요하며 이제 클로저에 전부 포함됨
+- 판정: **PASS** — L1/L2/L3(bitwise) green
+- 다음: C010-2 — 드라이버 MPI 모드 (합성 Poisson np=2 분할 실행, mpirun 하네스)

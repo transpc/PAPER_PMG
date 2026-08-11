@@ -14,6 +14,7 @@ CFLAGS =
 # extension type : .f90
 FSRC1 = allreduce_fns.f90\
 	communicate.f90\
+	communicate_allb.f90\
 	domain_decomposition.f90
 #----------------------------------------------------------------------
 
