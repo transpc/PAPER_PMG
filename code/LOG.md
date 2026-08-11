@@ -246,3 +246,46 @@
 - 결과: **run_tests 6/6 PASS (exit 0)** — 합성 3/3 (its 4/4/5 불변, res_gate 수치 동일), 골든 3/3 (fid 5.3e-15/9.6e-11/2.3e-12, its 22/22/33) + **베이스라인 bitwise(cmp) 전부 통과** = 리팩터링 전과 해가 비트 단위 동일
 - 판정: **PASS** — L1 green(빌드 에러 0), L2 green(its ±0), L3 상당(bitwise) green. 총 -317줄 순감 (죽은 파일 314 + 미사용 43건 정리 vs 서식 정리)
 - 다음: C012-2 후보 — `blaslapack_sub_n.f90` IMPLICIT NONE 전환(1996줄), 나머지 GMG 파일 미사용 정리(06_solver_pcg_ilu 등), 죽은 주석 블록 정리. 유닛 번호 파라미터화는 G1 에서 (PLAN §5-4)
+
+---
+
+## C013 | 2026-08-11 | 환경 이주 (root→sjdo) — 빌드 복원 + 잠재 인터페이스 버그 발견·수정
+
+- 목표: 새 환경(sjdo 계정, 신규 SIF)에서 빌드·합성 테스트 체계를 green 으로 복원
+- 변경: `scripts/env.sh` (SIF=`~/00_apptainer/hpc2023_ubuntu_prc3.3.sif`, METIS_LIB=SIF 내장 `/usr/local/lib`), `Source/GMG/poly_smooth.f90` (아래 r1)
+- 실행: `in_contain.sh mpiifort --version` → 2021.10.0 (구 SIF 와 동일) / `build.sh` → cupid.x 에러 0 / `run_tests.sh`
+- 결과:
+  - 구 환경과의 차이: 계정 root→sjdo, `/root/00_apptainer` 접근 불가, SIF 파일 교체(hpc23→hpc2023_ubuntu_prc3.3, ifort 버전 동일), METIS 는 SIF 내장 libmetis.so 로 대체(METIS_PartGraphKway 확인), CPU 12→20코어(AVX2까지 동일), git 제외 산출물(골든 바이너리·빌드물) 유실
+  - **r1 (FAIL→원인 규명)**: standalone fresh 빌드가 `poly_smooth.f90` 에서 컴파일 에러 — `allreduce_r(a,b,n)` (3인자 배열) 를 2인자 스칼라로 호출하는 원본 잠재 버그 4건 (`np>1` 분기 한정 = np=1 하네스에선 죽은 코드). `-warn interface` 검사가 standalone 통합 build/ 에서만 발화 (프로덕션은 디렉토리별 컴파일이라 미발화, 구 머신에선 증분 빌드로 poly_smooth 재컴파일이 없어 미발화). 수정: 4개 호출부를 스칼라 전용 래퍼 `allreduce_r_s` (동일 파일군 내 기존 루틴, 솔버 본체와 동일 관용구) 로 교체
+  - 합성 3종: its 4/4/5 (ref 동일), res_gate 수치 C007 과 유효숫자 일치 — 머신 교체 후에도 재현
+
+| 문제 | rank | its (ref) | res_gate | 판정 |
+|------|------|-----------|----------|------|
+| iso24 | 1 | 4 (4) | 3.9707E-02 | PASS |
+| aniso24 | 1 | 4 (4) | 1.2861E-03 | PASS |
+| iso48 | 1 | 5 (5) | 1.6315E-03 | PASS |
+
+- 판정: **PASS** — L1 green (프로덕션+standalone 빌드 에러 0), L2 green (합성 its ±0)
+- 다음: C014 골든 재채취 (바이너리 유실). poly_smooth 의 np>1 경로는 C010 MPI 하네스에서 실증 필요 (프로덕션 np=4 가 이 버그로 어떻게 동작했는지 확인 대상)
+
+---
+
+## C014 | 2026-08-11 | 골든 재채취 — 머신 간 bitwise 재현 확인 + 재베이스라인
+
+- 목표: 유실된 골든 바이너리를 meta.md 절차로 재채취하고 6/6 게이트를 green 으로 복원
+- 변경: `golden/iSMR436k_np1/` (덤프 13개 + baseline 6개 재설치 — git 제외), `checksums.md5`·`fort501_production.txt`·`meta.md` 갱신
+- 실행: `CUPID_NP=1 CUPID_PMG_DUMP=1,10,30 run.sh` ×2회 (결정성 검증) → replay ×3 → `run_tests.sh`
+- 결과:
+  - **C009 체크섬 대조**: setup+s1 4파일 md5 **일치** (다른 CPU·계정·재빌드 바이너리에서 bitwise 재현 — `-fp-model strict`+AVX2 고정의 효과 실증). s10/s30 8파일은 불일치
+  - **fort.501 대조**: 76솔브 its 전부 동일, 자기보고 잔차만 step 2 부터 최하위 비트 드리프트
+  - **결정성**: 신규 환경 2회 독립 실행 13/13 파일 bitwise 동일 → run-to-run 결정적. 추정: 드리프트는 SIF 교체에 따른 런타임 라이브러리(MKL/libimf) 미세 차이가 비-GMG 물리 구간(스텝 1 솔브 이후)에서 유입 — GMG 산술은 C012-1 bitwise 게이트로 불변 입증된 것과 정합
+  - 재생 하네스 its: s1(2,2) s10(2,2) s30(3,3) — C009 기준과 동일. baseline .u 6개 재설치
+
+| 문제 | rank | its (ref) | 충실도 | 판정 |
+|------|------|-----------|--------|------|
+| gold_s1 | 1 | 2,2 (2,2) | 5.3e-15 | PASS |
+| gold_s10 | 1 | 2,2 (2,2) | 9.6e-11 | PASS |
+| gold_s30 | 1 | 3,3 (3,3) | 2.3e-12 | PASS |
+
+- 판정: **PASS** — run_tests 6/6 (합성 3 + 골든 3, bitwise 게이트 포함) exit 0. 골든 재베이스라인 사유: 환경 이주 (its 불변, 궤적 비트 드리프트만)
+- 다음: C015 베이스라인 태그 + perf_log.md 기준표 → C010 착수
