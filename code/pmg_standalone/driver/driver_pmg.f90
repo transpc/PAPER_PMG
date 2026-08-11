@@ -27,7 +27,7 @@
       USE Zbicg,        ONLY: eps_bicg
       USE Zcoord1,      ONLY: xloc_tmp
       USE Zmpi,         ONLY: celem
-      USE md_geometry,  ONLY: nelem_mg, num_neigh_mg, neigh_mg, coord
+      USE md_geometry,  ONLY: nelem_mg, num_neigh_mg, neigh_mg, coord, nnode
       USE MD_parameter, ONLY: nf_max
       USE MD_MPI,       ONLY: nintf
       USE MD_matrix,    ONLY: nnz, ia, ja, au, u, b
@@ -50,7 +50,6 @@
       CALL MPI_INIT(ierr)
       CALL MPI_COMM_RANK(MPI_COMM_WORLD, myrank_z, ierr)
       CALL MPI_COMM_SIZE(MPI_COMM_WORLD, np_z, ierr)
-      IF (np_z .NE. 1) STOP 'driver_pmg: serial only (np=1)'
 !
       ndim_z   = 3
       ns       = 1
@@ -67,6 +66,7 @@
       IF (replay) THEN
 !.....재생: 셋업 배열을 골든 덤프에서 로드
          IF (nargs .LT. 3) STOP 'usage: driver_pmg replay <golden_dir> <step>'
+         IF (np_z .NE. 1) STOP 'replay: np=1 전용 (골든이 np1 채취)'
          CALL GET_COMMAND_ARGUMENT(2, gdir)
          CALL GET_COMMAND_ARGUMENT(3, arg); READ (arg, *) istep
 !
@@ -97,10 +97,12 @@
             CALL GET_COMMAND_ARGUMENT(4, arg); READ (arg, *) aspect
          END IF
          ncell = nx*ny*nz
-         WRITE (*, '(A,3I5,A,F8.2,A,I9)') ' C007 grid:', nx, ny, nz,     &
-                '  aspect=', aspect, '  ncell=', ncell
+         IF (myrank_z .EQ. 0)                                            &
+            WRITE (*, '(A,3I5,A,F8.2,A,I9,A,I4)') ' C007 grid:', nx, ny, &
+                nz, '  aspect=', aspect, '  ncell=', ncell, '  np=', np_z
          nelem_mg = ncell
          nf_max   = 6
+!........np>1: k-슬랩 기하 분할 (celem = 셀→도메인 1..np, C010-2)
          ALLOCATE (celem(ncell));  celem = 1
          ALLOCATE (xloc_tmp(ncell, 3))
          ALLOCATE (num_neigh_mg(ncell), neigh_mg(nf_max, ncell))
@@ -110,6 +112,7 @@
          DO j = 1, ny
          DO i = 1, nx
             c = i + (j-1)*nx + (k-1)*nx*ny
+            celem(c) = 1 + ((k-1)*np_z)/nz
             xloc_tmp(c, 1) = (DBLE(i) - 0.5d0)
             xloc_tmp(c, 2) = (DBLE(j) - 0.5d0)
             xloc_tmp(c, 3) = (DBLE(k) - 0.5d0)*aspect
@@ -126,21 +129,27 @@
          END DO
       END IF
 !
-!.....프로덕션 초기화 체인 (read_grid.f90 순서 그대로)
+!.....프로덕션 초기화 체인 (read_grid.f90 순서 그대로 — subdomain 은 rank 0 전용)
       CALL read_input_mg
-      CALL subdomain_infor_MG
+      IF (myrank_z .EQ. 0) CALL subdomain_infor_MG
+!.....rank 0 의 MG_tmp 파일 fan-out 완료 후 판독 (프로덕션은 사이 collective 들이 동기화 역할)
+      CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
       CALL read_mesh_MPI
 !.....GMG 로컬 순서의 좌표 스냅샷 — Prep_fine_P 가 coord 를 해제함 (3_Prep_fine_P.f90:130)
+!     np>1 에선 nnode = 로컬(내부+고스트) 셀 수 (np=1 은 nnode=ncell)
       IF (.NOT. replay) THEN
-         ALLOCATE (mycoord(3, ncell))
-         mycoord(:, 1:ncell) = coord(:, 1:ncell)
+         ALLOCATE (mycoord(3, nnode))
+         mycoord(:, 1:nnode) = coord(:, 1:nnode)
       END IF
       CALL Prep_fine_P
       CALL Prep_MG_GarL
 !
-      WRITE (*, '(A,I9,A,I10)') ' setup done: nintf=', nintf,            &
-             '  nnz=', nnz
-      IF (nintf .NE. ncell) STOP 'driver_pmg: nintf /= ncell (mapping?)'
+      CALL MPI_ALLREDUCE(nintf, i, 1, MPI_INTEGER, MPI_SUM,              &
+                         MPI_COMM_WORLD, ierr)
+      IF (myrank_z .EQ. 0)                                               &
+         WRITE (*, '(A,I9,A,I10,A,I9)') ' setup done: sum(nintf)=', i,   &
+                '  nnz_loc=', nnz, '  nintf_loc=', nintf
+      IF (i .NE. ncell) STOP 'driver_pmg: sum(nintf) /= ncell (mapping?)'
 !
       nfail = 0
       IF (replay) THEN
@@ -182,9 +191,10 @@
 !=====================================================================
          vol = aspect                          ! dx=dy=1, dz=aspect
          diag_const = 2.d0*aspect + 2.d0*aspect + 2.d0/aspect
-         ALLOCATE (diag_my(ncell), au_my(nnz), src(ncell), uex(ncell))
+!........로컬 규격: 행 1..nintf 내부, nintf+1..nnode 고스트 (np=1: nintf=nnode=ncell)
+         ALLOCATE (diag_my(nintf), au_my(nnz), src(nintf), uex(nnode))
          diag_my = diag_const
-         DO irow = 1, ncell
+         DO irow = 1, nnode
             DO kk = ia(irow), ia(irow+1) - 1
                jcol = ja(kk)
                IF (jcol .EQ. irow) THEN
@@ -196,10 +206,15 @@
                END IF
             END DO
          END DO
-         DO irow = 1, ncell
-            uex(irow) = 1.d0 + SIN(0.5d0*DBLE(irow))
+!........uex: 좌표에서 전역 셀 id 를 복원해 np 무관 동일 제작해 (np=1 과 bitwise 동일 값)
+         DO c = 1, nnode
+            i = NINT(mycoord(1, c) + 0.5d0)
+            j = NINT(mycoord(2, c) + 0.5d0)
+            k = NINT(mycoord(3, c)/aspect + 0.5d0)
+            irow = i + (j-1)*nx + (k-1)*nx*ny
+            uex(c) = 1.d0 + SIN(0.5d0*DBLE(irow))
          END DO
-         DO irow = 1, ncell
+         DO irow = 1, nintf
             src(irow) = 0.d0
             DO kk = ia(irow), ia(irow+1) - 1
                src(irow) = src(irow) + au_my(kk)*uex(ja(kk))
@@ -208,18 +223,21 @@
 !
          u = 0.d0
          CALL assemble_FVM(1, nnz, src, au_my, diag_my)
-         r0n = res_norm(ncell, nnz, src, au_my)
+         r0n = res_norm(nintf, nnz, src, au_my)
          CALL SOLVE_GMG(1)
 !
-         uscale = 1.d0 + MAXVAL(ABS(uex))
-         CALL verify('syn', ncell, nnz, src, au_my, uex, r0n, uscale, nfail)
+         uscale = MAXVAL(ABS(uex(1:nintf)))
+         CALL MPI_ALLREDUCE(uscale, dist2, 1, MPI_DOUBLE_PRECISION,      &
+                            MPI_MAX, MPI_COMM_WORLD, ierr)
+         uscale = 1.d0 + dist2
+         CALL verify('syn', nintf, nnz, src, au_my, uex, r0n, uscale, nfail)
       END IF
 !
       IF (nfail .EQ. 0) THEN
-         WRITE (*, '(A)') ' VERDICT PASS'
+         IF (myrank_z .EQ. 0) WRITE (*, '(A)') ' VERDICT PASS'
          CALL MPI_FINALIZE(ierr)
       ELSE
-         WRITE (*, '(A)') ' VERDICT FAIL'
+         IF (myrank_z .EQ. 0) WRITE (*, '(A)') ' VERDICT FAIL'
          CALL MPI_FINALIZE(ierr)
          CALL EXIT(1)
       END IF
@@ -279,11 +297,11 @@
 !
 !-----------------------------------------------------------------------
       REAL(8) FUNCTION res_norm(n, nnzv, rhs, auv)
-!     현재 u 에 대한 ‖rhs − A·u‖ (full-row)
+!     현재 u 에 대한 ‖rhs − A·u‖ (full-row, 내부 행 한정 + 전역 합)
       INTEGER, INTENT(IN) :: n, nnzv
       REAL(8), INTENT(IN) :: rhs(n), auv(nnzv)
-      INTEGER :: irow, kk
-      REAL(8) :: r, rn
+      INTEGER :: irow, kk, ierr
+      REAL(8) :: r, rn, rng
       rn = 0.d0
       DO irow = 1, n
          r = rhs(irow)
@@ -292,7 +310,9 @@
          END DO
          rn = rn + r*r
       END DO
-      res_norm = SQRT(rn)
+      CALL MPI_ALLREDUCE(rn, rng, 1, MPI_DOUBLE_PRECISION, MPI_SUM,      &
+                         MPI_COMM_WORLD, ierr)
+      res_norm = SQRT(rng)
       END FUNCTION res_norm
 !
 !-----------------------------------------------------------------------
@@ -309,8 +329,8 @@
       INTEGER, INTENT(IN)    :: n, nnzv
       REAL(8), INTENT(IN)    :: rhs(n), auv(nnzv), uref(n), r0n, uscale
       INTEGER, INTENT(INOUT) :: nfail
-      INTEGER :: irow, kk, nbit
-      REAL(8) :: r, rn, en, un, maxd, maxu, resg, fidel
+      INTEGER :: irow, kk, nbit, ierr
+      REAL(8) :: r, rn, en, un, maxd, maxu, resg, fidel, gsum(3), gmax
       rn = 0.d0; en = 0.d0; un = 0.d0
       maxd = 0.d0; maxu = 0.d0
       nbit = 0
@@ -326,10 +346,20 @@
          maxu = MAX(maxu, ABS(uref(irow)))
          IF (u(irow) .NE. uref(irow)) nbit = nbit + 1
       END DO
+!.....전역 집계 (np=1 은 항등)
+      gsum(1) = rn; gsum(2) = en; gsum(3) = un
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE, gsum, 3, MPI_DOUBLE_PRECISION,    &
+                         MPI_SUM, MPI_COMM_WORLD, ierr)
+      rn = gsum(1); en = gsum(2); un = gsum(3)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE, maxd, 1, MPI_DOUBLE_PRECISION,    &
+                         MPI_MAX, MPI_COMM_WORLD, ierr)
+      CALL MPI_ALLREDUCE(MPI_IN_PLACE, nbit, 1, MPI_INTEGER,             &
+                         MPI_SUM, MPI_COMM_WORLD, ierr)
       resg  = SQRT(rn)/(10.d0*eps_bicg*r0n + 1.d-300)
       fidel = maxd/uscale
-      WRITE (*, '(3A,ES12.4,A,ES12.4,A,ES11.3,A,I9)') ' RESULT[', tag,   &
-             '] res_gate=', resg, '  fidelity=', fidel,                  &
+      IF (myrank_z .EQ. 0)                                               &
+         WRITE (*, '(3A,ES12.4,A,ES12.4,A,ES11.3,A,I9)') ' RESULT[',     &
+             tag, '] res_gate=', resg, '  fidelity=', fidel,             &
              '  max|d|=', maxd, '  nbit_diff=', nbit
       IF (TRIM(tag) .EQ. 'syn') THEN
 !........합성: 독립 잔차가 곧 판정 (제작해 문제는 참 잔차 소거가 성립해야 함)
@@ -338,7 +368,8 @@
 !........재생: res_gate 는 보고 전용 — s30 에서 솔버 재귀 잔차와 참 잔차의
 !........~1.6e4 배 괴리를 확인 (프로덕션 고유 특성, LOG C009-r2). 판정은
 !........충실도(+러너의 its·베이스라인 bitwise)로 수행.
-         IF (resg .GT. 1.d0) WRITE (*, '(3A)') ' WARN[', tag,            &
+         IF (resg .GT. 1.d0 .AND. myrank_z .EQ. 0)                       &
+            WRITE (*, '(3A)') ' WARN[', tag,                             &
             '] true residual exceeds solver criterion (재귀 잔차 드리프트)'
          IF (fidel .GT. 1.d-9) nfail = nfail + 1
       END IF

@@ -35,6 +35,27 @@ for c in "${CASES[@]}"; do
   printf "%-10s %-9s %-5s %-12s %s\n" "$name" "$((nx*ny*nz))" "${its:-?}" "${res:-?}" "$verdict"
 done
 
+# ---- MPI 합성 (C010-2) — np 스케일 회귀. np≥6 수렴 붕괴는 미해결 (LOG C010-2) ----
+# name np ref_its   (ref: C010-2 채취, iso24 슬랩 분할)
+MCASES=(
+  "iso24_np2 2 4"
+  "iso24_np4 4 4"
+)
+for c in "${MCASES[@]}"; do
+  set -- $c; name=$1; n=$2; ref=$3
+  out=$("$IC" bash -c "ulimit -s unlimited && cd '$HERE/tests' && rm -rf MG_tmp fort.* && I_MPI_FABRICS=shm mpirun -np $n ../build/driver_pmg 24 24 24 1.0" 2>&1)
+  rc=$?
+  its=$(awk '{print $1; exit}' "$HERE/tests/fort.501" 2>/dev/null)
+  res=$(echo "$out" | grep -o "res_gate= *[^ ]*" | head -1 | awk -F= '{print $2}' | tr -d ' ')
+  verdict=FAIL
+  echo "$out" | grep -q "VERDICT PASS" && [ "$rc" -eq 0 ] && verdict=PASS
+  if [ "$verdict" = PASS ] && [ "${its:-x}" != "$ref" ]; then
+    verdict="WARN(its=${its:-?},ref=$ref)"
+  fi
+  [ "$verdict" = FAIL ] && fail=1
+  printf "%-10s %-9s %-5s %-12s %s\n" "$name" "13824" "${its:-?}" "${res:-?}" "$verdict"
+done
+
 # ---- 골든 재생 회귀 (C009) — 바이너리가 있을 때만 (fresh clone 은 SKIP) ----
 GOLD="$HERE/golden/iSMR436k_np1"
 # name step ref_its_k1 ref_its_k2   (하네스 기준, meta.md 참조)

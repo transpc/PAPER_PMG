@@ -312,3 +312,25 @@
 - 관측: GMG 의 `communicate` 호출은 `06_solver_pcg_ilu.f90` (coarsest 경로) 7건뿐. 주 솔버 `6_solver_pbcg_mg` 는 자체 `communicate_s`, 스무더 계층은 `send_receive*` 사용 — np>1 확장 시 세 경로 모두 실물이 필요하며 이제 클로저에 전부 포함됨
 - 판정: **PASS** — L1/L2/L3(bitwise) green
 - 다음: C010-2 — 드라이버 MPI 모드 (합성 Poisson np=2 분할 실행, mpirun 하네스)
+
+---
+
+## C010-2 | 2026-08-11 | 드라이버 MPI 확장 — np 스케일 가동 + 수렴 붕괴 재현 (np≥6)
+
+- 목표: 합성 Poisson 을 np>1 로 실행 가능하게 하고 (셋업 fan-out 경로 실전 가동), np 스케일 특성을 관측
+- 변경: `driver/driver_pmg.f90` (np 가드 해제, k-슬랩 celem 분할, subdomain_infor_MG rank0 전용 + BARRIER, nnode 로컬 규격 조립, uex 전역 id 복원 방식 — np=1 bitwise 불변 설계, verify/res_norm 전역 리덕션), `run_tests.sh` (iso24_np2/np4 회귀 케이스 추가, ref_its 4/4)
+- 실행: run_tests 8/8 + np 스캔 (24³/48³ × np 2~16)
+- 결과:
+  - np=1 회귀: 6종 전부 PASS, res_gate 수치 불변 + 베이스라인 bitwise green — MPI 확장이 np=1 산술 불변임을 게이트로 입증
+  - **np>1 첫 가동**: MG_tmp 파일 fan-out(6_subdomain_infor_mg→2_read_mesh_MPI, G1 대상 기계장치)이 np=2~16 셋업에서 작동, sum(nintf)=ncell 정합
+
+| 격자 | np=2 | np=4 | np=6 | np=8 | np=12 | np=16 |
+|------|------|------|------|------|-------|-------|
+| 24³ | 4 PASS | 4 PASS | 7 PASS | 773 PASS | **maxit 발산** | - |
+| 48³ | 5 PASS | 5 PASS | **발산** | **발산** | **발산** | **발산** |
+
+  - **np 스케일 수렴 붕괴 재현**: 등방 Poisson 인데 np≥6(48³)/np≥8(24³) 에서 its 급증→발산. 격자가 클수록 더 낮은 np 에서 붕괴 (48³ np6 슬랩 8층 발산 vs 24³ np6 4층 수렴 — 슬랩 두께 단독으로는 설명 안 됨)
+  - 분리 실험: ioplv=0 + nlevel=4 수동으로도 48³ np6 발산 → 자동 레벨 선택(ioplv=1)이 원인 아님. nlevel=2 는 출력 없이 종료 (별도 실패 양상, 미조사)
+  - 추정: 다중 도메인 coarse 계층 구성 혹은 병렬 스무더/코스닝의 np 결합 결함. np=900 "실행 불가"의 소규모 전조일 가능성 — 단, 슬랩 분할은 프로덕션 METIS 분할과 형상이 달라 분할 형상 민감성은 미분리
+- 판정: **PASS** — 사이클 목표(np>1 가동+관측) 달성, run_tests 8/8. np≥6 붕괴는 신규 발견으로 백로그 등재
+- 다음: C010-3 — ① 분할 형상 분리 (3D 블록 분할 옵션) ② 발산 시 레벨별 구조 덤프 (rank 별 coarse 셀 수, 빈 도메인 여부) ③ np=900 셋업 스모크 (붕괴 원인 확정 후)
