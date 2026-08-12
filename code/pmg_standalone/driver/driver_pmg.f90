@@ -8,8 +8,11 @@
 !
 !     사용법:
 !       (1) 합성:  driver_pmg [nx ny nz aspect]        (기본 24 24 24 1.0)
-!       (2) 재생:  driver_pmg replay <golden_dir> <step>
+!       (2) 재생:  driver_pmg replay <golden_dir> <step> [fid_gate]
 !           <golden_dir>/setup_r0.bin, s<step>_k{1,2}_r0_c1.{pre,post} 필요.
+!           [fid_gate]: 충실도 판정 임계 (기본 1e-9). 골든 세트별로 다름 —
+!           프로덕션·하네스 its 차이(예조건자 시드 문맥, LOG C009)의 발현
+!           크기가 케이스마다 달라서 (구입력 ≤1e-10 vs ECT1 ≤2.4e-7, C017).
 !           k1(주 압력 솔브) 재생 → u 상태 유지 → k2(비직교 보정) 재생 —
 !           프로덕션과 동일 순서 (k2 는 k1 해를 초기추정으로 사용).
 !       공통: 실행 디렉토리에 mg.in 필요 (재생은 케이스 mg.in 과 동일해야 함).
@@ -40,7 +43,7 @@
       INTEGER :: nargs, istep, iu, iver, idum(5), nnz_g, nfail
       INTEGER :: ipart, px, py, pz, ba, bb, bc
       REAL(8) :: aspect, dist2, vol, diag_const, d(3)
-      REAL(8) :: rel_res, rel_err, r0n, uscale
+      REAL(8) :: rel_res, rel_err, r0n, uscale, fid_gate
       LOGICAL :: replay
       CHARACTER(32)  :: arg
       CHARACTER(256) :: gdir, fn
@@ -56,6 +59,7 @@
       ndim_z   = 3
       ns       = 1
       eps_bicg = 1.d-8          ! = somaFlow.in 의 eps_bicg (재생 충실도 전제)
+      fid_gate = 1.d-9          ! 재생 충실도 판정 기본값 (replay 4번째 인자로 세트별 지정)
 !
 !.....모드 판정 + 입력 구성
       nargs = COMMAND_ARGUMENT_COUNT()
@@ -71,6 +75,9 @@
          IF (np_z .NE. 1) STOP 'replay: np=1 전용 (골든이 np1 채취)'
          CALL GET_COMMAND_ARGUMENT(2, gdir)
          CALL GET_COMMAND_ARGUMENT(3, arg); READ (arg, *) istep
+         IF (nargs .GE. 4) THEN
+            CALL GET_COMMAND_ARGUMENT(4, arg); READ (arg, *) fid_gate
+         END IF
 !
          WRITE (fn, '(A,A)') TRIM(gdir), '/setup_r0.bin'
          OPEN (NEWUNIT=iu, FILE=fn, FORM='unformatted', ACCESS='stream',  &
@@ -399,7 +406,7 @@
          IF (resg .GT. 1.d0 .AND. myrank_z .EQ. 0)                       &
             WRITE (*, '(3A)') ' WARN[', tag,                             &
             '] true residual exceeds solver criterion (재귀 잔차 드리프트)'
-         IF (fidel .GT. 1.d-9) nfail = nfail + 1
+         IF (fidel .GT. fid_gate) nfail = nfail + 1
       END IF
       END SUBROUTINE verify
 !

@@ -56,21 +56,23 @@ for c in "${MCASES[@]}"; do
   printf "%-10s %-9s %-5s %-12s %s\n" "$name" "13824" "${its:-?}" "${res:-?}" "$verdict"
 done
 
-# ---- 골든 재생 회귀 (C009) — 바이너리가 있을 때만 (fresh clone 은 SKIP) ----
-GOLD="$HERE/golden/iSMR436k_np1"
-# name step ref_its_k1 ref_its_k2   (하네스 기준, meta.md 참조)
-GCASES=(
-  "gold_s1   1  2 2"
-  "gold_s10 10  2 2"
-  "gold_s30 30  3 3"
-)
-if [ -f "$GOLD/setup_r0.bin" ]; then
-  for c in "${GCASES[@]}"; do
-    set -- $c; name=$1; s=$2; r1=$3; r2=$4
+# ---- 골든 재생 회귀 (C009, ECT1 추가 C017) — 바이너리가 있을 때만 (fresh clone 은 SKIP) ----
+# 세트별 fid_gate: 프로덕션·하네스 its 차이(예조건자 시드 문맥, LOG C009)의 발현 크기가
+# 케이스마다 달라서 — 구입력 관측 ≤1e-10 → 1e-9 유지, ECT1 관측 ≤2.4e-7 → 1e-6 (LOG C017)
+run_golden() {  # $1=디렉토리명 $2=접두어 $3=fid_gate, 이후 인자 = "step r1 r2" 목록
+  local dir="$1" pfx="$2" fgate="$3"; shift 3
+  local GOLD="$HERE/golden/$dir"
+  if [ ! -f "$GOLD/setup_r0.bin" ]; then
+    printf "%-10s %-9s %-5s %-12s %s\n" "$pfx" "-" "-" "-" "SKIP(채취 필요 — golden/$dir/meta.md)"
+    return
+  fi
+  local c s r1 r2 name out rc its verdict k fid
+  for c in "$@"; do
+    set -- $c; s=$1; r1=$2; r2=$3; name="${pfx}_s${s}"
     if [ ! -f "$GOLD/s${s}_k1_r0_c1.pre" ]; then
       printf "%-10s %-9s %-5s %-12s %s\n" "$name" "-" "-" "-" "SKIP(덤프 없음)"; continue
     fi
-    out=$("$IC" bash -c "ulimit -s unlimited && cd '$HERE/tests' && rm -rf MG_tmp fort.501 && ../build/driver_pmg replay ../golden/iSMR436k_np1 $s" 2>&1)
+    out=$("$IC" bash -c "ulimit -s unlimited && cd '$HERE/tests' && rm -rf MG_tmp fort.501 && ../build/driver_pmg replay ../golden/$dir $s $fgate" 2>&1)
     rc=$?
     its=$(awk '{printf "%s ", $1}' "$HERE/tests/fort.501" 2>/dev/null | tr -d ' \n')
     verdict=FAIL
@@ -89,7 +91,12 @@ if [ -f "$GOLD/setup_r0.bin" ]; then
     fid=$(echo "$out" | grep -o "fidelity= *[^ ]*" | tail -1 | awk -F= '{print $2}' | tr -d ' ')
     printf "%-10s %-9s %-5s %-12s %s\n" "$name" "436136" "${its:-?}" "fid=${fid:-?}" "$verdict"
   done
-else
-  printf "%-10s %-9s %-5s %-12s %s\n" "golden" "-" "-" "-" "SKIP(채취 필요 — golden/iSMR436k_np1/meta.md)"
-fi
+}
+
+# 구입력(d145c81) 골든 — 하네스 ref its: meta.md (C009/C014)
+run_golden iSMR436k_np1 gold 1e-9  "1 2 2"  "10 2 2"  "30 3 3"
+# ECT1 신입력(29ee238) 골든 — 하네스 ref its: meta.md (C017)
+# s150 = dt 포화(0.05s)·정착 상태의 어려운 행렬 (its 9~10) — 초기 과도(s1~30)보다 감지력 높음
+run_golden ECT1_436k_np1 ect1 1e-6  "1 1 1"  "10 1 1"  "30 3 3"  "150 9 10"
+
 exit $fail
