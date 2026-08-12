@@ -3,6 +3,10 @@
 - 채취일: 2026-08-11 (C014 재채취 — 환경 이주로 원본 유실, 아래 이력), 소스: C012-1(71e20d8) + poly_smooth 수정
 - 환경: sjdo / hpc2023_ubuntu_prc3.3.sif (oneAPI 2023.2.1, ifort 2021.10.0) / SIF 내장 METIS
 - 케이스: 2_iSMR_ECT_res1 (rv_model=0 유지 — 사용자 결정), np=1, eps_bicg=1e-8
+- **입력 버전 고정 (C016, 2026-08-12)**: 본 골든·프로덕션 기준은 **구 somaFlow.in (blob d145c81)** 로 채취.
+  상류 d5e2177 이 입력을 ECT1 실증 구성(blob 29ee238)으로 교체하여 현 워크트리 입력과 다름 —
+  **재채취 시 반드시 구입력 복원**: `git show d5e2177^:code/2_iSMR_ECT_res1/somaFlow.in > somaFlow.in`
+  (케이스 디렉토리의 fort.501.d145c81.bak 이 구입력 프로덕션 기록 백업). 신입력 스모크 기준은 LOG C016.
 - 플래그: makefile.in.apptainer (AVX2, -fp-model strict, ifort 2021.10.0)
 - 재채취 이력 (C014, 2026-08-11): C009 대비 setup·s1 은 md5 **일치**, s10/s30 은 잔차 최하위
   비트 드리프트 (its 는 76솔브 전부 동일). 신규 환경에서 run-to-run 13/13 bitwise 결정성 확인

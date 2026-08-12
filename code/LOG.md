@@ -365,3 +365,19 @@
   - run_tests 8/8 green. iso24_np4 res_gate 1.51e-2→2.37e-2 변화는 이전 조립이 범위 밖 garbage 를 읽던 것의 교정 (its ±0, np=1 계열은 bitwise 불변)
 - 판정: **PASS** — G1 1차 목표(재현→원인→수정→np=900 green) 달성. 프로덕션 케이스 np=900 최종 검증은 클러스터 확보 시
 - 다음: C010-5 후보 — ① 프로덕션 np=900 실증 (클러스터) ② Chebyshev eig 추정 강건화 (안전 계수/추정 실패 감지 → 논문 고도화 항목) ③ 15셀/rank 극단의 reader 정렬 문제 (우선순위 낮음) ④ np≥1000 파일명 인코딩 (PLAN 기지)
+
+---
+
+## C016 | 2026-08-12 | 상류 somaFlow.in 교체(ECT1) 수신 — 호환성 검증 + 신입력 스모크 재베이스라인
+
+- 목표: 상류 커밋 d5e2177(somaFlow.in 전면 교체, blob d145c81→29ee238)이 기존 회귀 체계에 미치는 영향 확정 — 신입력 스모크로 새 ref_its 채취, max_bicg 10000→1000 축소에 따른 조기정지 여부 판정
+- 변경: 소스·하네스 변경 없음 (입력만 상류에서 교체됨). 입력 요지: 15 MPa 고압 정지 → 101.3 kPa ECT1 실증 구성 (비등 열원 q0_liq=0.918e6/0.448e6, 벽열유속 1.44e6, iturb=2, mdrag=1, iheatpart=4, mHTC/mtopol=2, vfporous=1, dt=1e-7, cfl_ratio=0.05), max_bicg 10000→1000, lev/lev_type/levmpi/levmpi_type·nfluid·&smr_models 삭제
+- 실행: 사전 소스 대조 + ifort namelist 관용성 테스트(컨테이너), `CUPID_NP=4 scripts/run.sh` (step 48 에서 수동 중단, 표본 97솔브 — 구 fort.501 은 fort.501.d145c81.bak 백업)
+- 결과:
+  - **호환성 green**: 전 네임리스트 정상 읽힘·기동 확인 (`Problem: ECT1`, PMG 경로 진입). lev 4종 삭제는 기본값 0(`read_flow.f90:756`)과 동일 = 기능 불변. nfluid 기본값 1 = 구값. 신규 키(imp_boron_trans, eps_imp_boron, max_iter_boron, rv_mcp, rv_valve)는 소스 네임리스트에 존재. `&smr_models` 는 소스가 읽지 않아 삭제 무해. vfporous/i_droplet/i_fs_temp_intpol 은 현 소스 misc_option 에 선언되어 있어 **C005-r3식 입력 수술 불필요**. `iprn=1.d0`(정수 변수에 실수 리터럴)은 ifort 관용 통과 (iostat=0, iprn=1 — 단독 재현 테스트로 확인)
+  - **스모크 (np=4, step 1~48, 97솔브)**: 크래시·발산 없음. PMG its 분포 **1~7 (최빈 2: 31회)**, 전 솔브 수렴 잔차 ≤ 9.7e-9 (eps_bicg=1e-8 충족), 스텝당 k1+k2 2솔브 패턴 유지
+  - **max_bicg=1000 조기정지 없음** — 관측 최대 its 7, 여유 ~143배
+  - 구입력 대비: its 상한 3→7 (물리 모델 대거 활성화와 정합). 구입력의 step 38 발산은 신입력에서 미재현 (48스텝 정상 진행, DP_MAX ~9.2e3 상승 추세는 초기 과도 관찰만 — 완주 여부는 미확인, 우리가 중단)
+  - 골든 재생 회귀(run_tests.sh)는 디스크 덤프 재생이라 **영향 없음**. 단 골든 재채취·프로덕션 대비 절차는 구입력에 결박 → meta.md 에 입력 버전 고정(provenance) 명시
+- 판정: **PASS** — L1 green (기동·48스텝 무크래시) + 신입력 ref_its 채취 완료. 유의점 2건(max_bicg 조기정지 / 구 스모크 기준 무효화) 모두 판정·문서화
+- 다음: ① 신입력 완주 확인 (t_end 20s — 장시간, 필요 시 별도 사이클) ② 논문 케이스 구성 확정 후 신입력 기준 골든 재채취 여부 결정 ③ C010-5 잔여 (프로덕션 np=900 실증)
