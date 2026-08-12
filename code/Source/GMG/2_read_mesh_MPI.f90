@@ -33,7 +33,7 @@ IMPLICIT NONE
       INCLUDE 'mpif.h'
 !DEC$ENDIF
 
-character::fn1*1,fn2*1,fn3*1,fout*30
+character(len=64)::fout
 integer:: ie,ip,i,j,k,nnd
 integer::alstatus,i1,i2,i3,i4,ierr
 real*8 tmp(10*mxnbne)
@@ -41,16 +41,9 @@ INTEGER(4)::ilv,ntmpc,ntmp,ntmpf,ncolf1,ncolc1,ncolc2,nnode0,nnzt,nnzt1
 INTEGER(4), DIMENSION(:), ALLOCATABLE::id
 
 !%read grid data
-!fn1=char((myrank+1)/10+48)
-!fn2=char(mod(myrank+1,10)+48)
-!fout='part'//fn1//fn2//'.out'
-
-fn1=char((myrank+1)/100+48)
-i = MOD(myrank+1,100)
-
-fn2=char((i)/10+48)
-fn3=char(mod(i,10)+48)
-fout='MG_tmp/part'//fn1//fn2//fn3//'.out'
+! I0.3: 3자리 zero-padding, np>999 이면 자릿수 자동 확장 — 쓰기측
+! 6_subdomain_infor_mg.f90 의 파일명 생성과 반드시 동일 포맷 유지
+WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', myrank+1, '.out'
 
 ! update optimized nlevel_N
 
@@ -366,8 +359,7 @@ isintfcP = 0
 irintfcP = 0
 ! - - - - - - - - - - - - - - 
 ! - - - - - - - - - - - - - - 
-!fout='part_MG'//fn1//fn2//'.out'
-fout='MG_tmp/part_MG'//fn1//fn2//fn3//'.out'
+WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part_MG', myrank+1, '.out'
 OPEN(10+myrank,file=fout,status='unknown')
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 DO ilv = 2,nlevel

@@ -22,7 +22,7 @@ INTEGER(4):: i,j,k,ie,i1,i2,i3,i4,i5,i6,nd,nnd,j1,j2
 INTEGER(4):: prc,np,ilv
 INTEGER(4):: nintr,nintf,nneib,nelemt
 INTEGER(4):: alstatus
-CHARACTER fn1*1,fn2*1,fn3*1,fout*30
+CHARACTER(len=64) :: fout
 
 INTEGER(4),DIMENSION(:),ALLOCATABLE::lnum,nnbdom,cinter,cintf,cext,sort,nnodegl_mg
 INTEGER(4),DIMENSION(:,:),ALLOCATABLE::iperm,jperm,nbdom
@@ -123,11 +123,8 @@ isend_m = 1
 irecv_m = 1
 !/
 DO prc=1,np
-   fn1=CHAR((prc)/100+48)
-   i = MOD(prc,100)
-   fn2=CHAR((i)/10+48)
-   fn3=CHAR(MOD(i,10)+48)
-   fout='MG_tmp/part'//fn1//fn2//fn3//'.out'
+   ! I0.3 포맷 — 읽기측 2_read_mesh_MPI.f90 과 동일 유지 (np>999 자동 확장)
+   WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', prc, '.out'
    OPEN(50+prc,file=fout,status='unknown')
    
    nnodep=cinter(prc)+cintf(prc)+cext(prc)   !total number of nodes
@@ -228,11 +225,7 @@ ENDDO
 nelem0 = nelem
 
 DO prc=1,np
-   fn1=CHAR((prc)/100+48)
-   i = MOD(prc,100)
-   fn2=CHAR((i)/10+48)
-   fn3=CHAR(MOD(i,10)+48)
-   fout='MG_tmp/part_MG'//fn1//fn2//fn3//'.out'
+   WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part_MG', prc, '.out'
    OPEN(50+prc,file=fout,status='unknown')
 ENDDO
 !/ 
