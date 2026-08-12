@@ -37,6 +37,7 @@
 !
       INTEGER :: ierr, nx, ny, nz, ncell, i, j, k, c, kk, irow, jcol
       INTEGER :: nargs, istep, iu, iver, idum(5), nnz_g, nfail
+      INTEGER :: ipart, px, py, pz, ba, bb, bc
       REAL(8) :: aspect, dist2, vol, diag_const, d(3)
       REAL(8) :: rel_res, rel_err, r0n, uscale
       LOGICAL :: replay
@@ -96,6 +97,26 @@
          IF (nargs .GE. 4) THEN
             CALL GET_COMMAND_ARGUMENT(4, arg); READ (arg, *) aspect
          END IF
+!........분할 형상 (C010-3): 0=k-슬랩(기본), 1=3D 블록 (np 를 최대한 정육면체로 인수분해)
+         ipart = 0
+         IF (nargs .GE. 5) THEN
+            CALL GET_COMMAND_ARGUMENT(5, arg); READ (arg, *) ipart
+         END IF
+         px = 1; py = 1; pz = np_z
+         IF (ipart .EQ. 1) THEN
+            kk = HUGE(kk)
+            DO ba = 1, np_z
+               IF (MOD(np_z, ba) .NE. 0) CYCLE
+               DO bb = ba, np_z/ba
+                  IF (MOD(np_z/ba, bb) .NE. 0) CYCLE
+                  bc = np_z/(ba*bb)
+                  IF (bc .LT. bb) CYCLE
+                  IF (bc - ba .LT. kk) THEN
+                     kk = bc - ba; px = ba; py = bb; pz = bc
+                  END IF
+               END DO
+            END DO
+         END IF
          ncell = nx*ny*nz
          IF (myrank_z .EQ. 0)                                            &
             WRITE (*, '(A,3I5,A,F8.2,A,I9,A,I4)') ' C007 grid:', nx, ny, &
@@ -112,7 +133,12 @@
          DO j = 1, ny
          DO i = 1, nx
             c = i + (j-1)*nx + (k-1)*nx*ny
-            celem(c) = 1 + ((k-1)*np_z)/nz
+            IF (ipart .EQ. 1) THEN
+               ba = ((i-1)*px)/nx; bb = ((j-1)*py)/ny; bc = ((k-1)*pz)/nz
+               celem(c) = 1 + ba + bb*px + bc*px*py
+            ELSE
+               celem(c) = 1 + ((k-1)*np_z)/nz
+            END IF
             xloc_tmp(c, 1) = (DBLE(i) - 0.5d0)
             xloc_tmp(c, 2) = (DBLE(j) - 0.5d0)
             xloc_tmp(c, 3) = (DBLE(k) - 0.5d0)*aspect

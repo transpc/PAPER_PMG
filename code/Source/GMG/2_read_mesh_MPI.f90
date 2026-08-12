@@ -309,8 +309,13 @@ ALLOCATE(coord1(ndim,i))
 !ALLOCATE(coord1(ndim,nnode))
 ALLOCATE(rintf1(nnrecv_m),sintf1(nnsend_m))
 
-ALLOCATE(iai1(nnode+1),jai1(nnzi),Xintp1(nnzi))
-ALLOCATE(iar1(nnode+1),jar1(nnzr),Xrest1(nnzr))
+! iai1/iar1 은 레벨 루프의 재사용 버퍼 — 행 수가 레벨별 nnode1(=ialv 차분)이므로
+! 최대 레벨 폭으로 할당해야 함. nnode(fine)로 잡으면 극소 도메인(대규모 np)에서
+! coarse 레벨 폭 > nnode 가 되어 오버런 → 힙 오염 (np=900 비결정 크래시, LOG C010-3)
+i = MAXVAL(ialv(2:nlevel+1)-ialv(1:nlevel))
+IF(i.LT.nnode) i = nnode
+ALLOCATE(iai1(i+1),jai1(nnzi),Xintp1(nnzi))
+ALLOCATE(iar1(i+1),jar1(nnzr),Xrest1(nnzr))
 !/
 !  IF(minval([nnode, nnzc0]) == 0) THEN
 !      write(myrank+1000,*)'error for nnode, zero point',myrank,nnode
