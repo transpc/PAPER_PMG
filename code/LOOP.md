@@ -131,7 +131,7 @@ CSR 덤프 `(A, b)` 만 있으면 어떤 변경 후에도 `‖b − A·u‖ / �
 | C007 | 합성 Poisson 생성기 + `driver_pmg.f90` → 첫 수렴, **ref_its 초기 채취** | §4-3 | C006 | ✔ 3종 PASS (its 4/4/5), `run_tests.sh` 가동 [LOG C007](LOG.md) |
 | C008 | 덤프 훅 `dump_pmg.f90` (환경변수 게이트) + 본체 재빌드 green | §4-2 | C002 | ✔ setup+pre/post 캡처, 바이트 검증 완료 (r1: 셋업 덤프를 셋업 시점으로 이동) [LOG C008](LOG.md) |
 | C009 | 골든 덤프 채취 (rv_model=0 스모크 구간) + **ref 기준 확정** + `run_tests.sh` 완성 | §4-2, §4-4 | C005, C007, C008 | ✔ np=1 s1/s10/s30 — 3중 게이트(충실도·its·bitwise) green. np=2/4 채취는 MPI 하네스 확장(C010 준비)으로 이관 [LOG C009](LOG.md) |
-| C010 | **G1**: np=900 실행 가능하게 (파일 방식 유지 최소 수정) — 1차 목표는 **실패 재현·원인 확정** (후보 목록: PLAN §5-1 + 아래 검증 메모) | PLAN §5-1 | C007 | ▶ -1: communicate 실물 교체 [LOG C010-1](LOG.md) / -2: 합성 np>1 가동 + **np≥6 수렴 붕괴 재현** [LOG C010-2](LOG.md). 다음 -3: 분할 형상 분리·레벨 구조 덤프·원인 확정 |
+| C010 | **G1**: np=900 실행 가능하게 (파일 방식 유지 최소 수정) — 1차 목표는 **실패 재현·원인 확정** (후보 목록: PLAN §5-1 + 아래 검증 메모) | PLAN §5-1 | C007 | ▶ **합성 기준 달성**: -1 communicate 실물 / -2 np>1 가동 / -3 iar1 오버런(힙 오염) 수정 / -4 **np=900 its=7 green** + 발산 원인 Chebyshev eig 추정으로 확정 [LOG C010-1~4](LOG.md). 잔여: 프로덕션 케이스 np=900 실증(클러스터), eig 추정 강건화 |
 | C011 | **G2**: 파일 경유 분배(`MG_tmp/part###.out`)를 MPI 통신으로 대체 — 과도기 파일/통신 이중 모드로 bitwise 일치 확인 후 파일 경로 삭제 | PLAN §5-2 | C010 | ☐ |
 | C012 | **G3**: 코드 간소화·가독성 (동작 불변 리팩터링) — its ±0 / bitwise 기준 | PLAN §5-3 | C007 | ▶ 1차 완료: 핵심 3파일 미사용 43건 + 죽은 파일 314줄 제거, 6/6+bitwise green [LOG C012-1](LOG.md). 후속: blaslapack IMPLICIT NONE, 잔여 파일 정리 |
 | C013 | 환경 이주 (root→sjdo) — env.sh 경로, poly_smooth 잠재 버그 수정 | — | — | ✔ [LOG C013](LOG.md) |
