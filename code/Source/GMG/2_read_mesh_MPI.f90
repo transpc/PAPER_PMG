@@ -34,7 +34,7 @@ IMPLICIT NONE
 !DEC$ENDIF
 
 character(len=64)::fout
-integer:: ie,ip,i,j,k,nnd
+integer:: ie,ip,i,j,k,nnd,iu
 integer::alstatus,i1,i2,i3,i4,ierr
 real*8 tmp(10*mxnbne)
 INTEGER(4)::ilv,ntmpc,ntmp,ntmpf,ncolf1,ncolc1,ncolc2,nnode0,nnzt,nnzt1
@@ -79,10 +79,15 @@ WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', myrank+1, '.out'
 !/
 ! 1: for the finest level: - - - - - - - - - - - - - - - 
 
-open(10+myrank,file=fout,status='unknown')
-read(10+myrank,*)nelem,nintr,nintf,nnode,nnbd,nnodegl
+! NEWUNIT: 런타임이 미사용 unit 을 배정 — 고정 unit(999 등)과의 충돌 원천 차단
+open(newunit=iu,file=fout,status='old',action='read',iostat=alstatus)
+IF(alstatus/=0) THEN
+WRITE(*,*)'read_mesh_MPI: cannot open ',TRIM(fout),' rank',myrank
+STOP
+ENDIF
+read(iu,*)nelem,nintr,nintf,nnode,nnbd,nnodegl
 ! NEW
-read(10+myrank,*)nnbdA,nnbdR
+read(iu,*)nnbdA,nnbdR
 !----------------------------------------------------
 IF(nelem.NE.nnode) THEN
     WRITE(999,*)'nelem=/nnode'!
@@ -96,7 +101,7 @@ nelemgl = nnodegl
 ALLOCATE(num_neigh(nelem),e_neigh(nf_max,nelem),stat=alstatus)
 IF (alstatus/=0) STOP 'not enough inod memory'
 DO ie=1,nelem
-   READ(10+myrank,*) j,e_neigh(1:j,ie)
+   READ(iu,*) j,e_neigh(1:j,ie)
    num_neigh(ie) = j
 ENDDO
 !
@@ -105,7 +110,7 @@ ENDDO
 ALLOCATE(coord(ndim,nnodegl),stat=alstatus)
 IF(alstatus/=0) STOP 'not enough connect memory'
 DO ip=1,nnodegl
-   READ(10+myrank,*) coord(1:ndim,ip)
+   READ(iu,*) coord(1:ndim,ip)
 ENDDO
 !--------------------------------------------
 !%read neighboring data
@@ -117,9 +122,9 @@ rpt = 0
 spt = 0
 
 IF(nnbd.NE.0) THEN
-READ(10+myrank,*) nbdom(1:nnbd)
-READ(10+myrank,*) rpt(1:nnbd+1)
-READ(10+myrank,*) spt(1:nnbd+1)
+READ(iu,*) nbdom(1:nnbd)
+READ(iu,*) rpt(1:nnbd+1)
+READ(iu,*) spt(1:nnbd+1)
 ENDIF
 !
 i = MAX(1,nnode-nintf)
@@ -133,8 +138,8 @@ sintf = 0
 !
 IF(nnbd.NE.0) THEN
     
-READ(10+myrank,*) rintf(1:(nnode-nintf))
-READ(10+myrank,*) sintf(1:(spt(nnbd+1)-1))
+READ(iu,*) rintf(1:(nnode-nintf))
+READ(iu,*) sintf(1:(spt(nnbd+1)-1))
 ENDIF
 ! - - - - - - - - - NEW for A  - - - - - - - - - 
 i = MAX(nnbdA,1)
@@ -145,9 +150,9 @@ nbdomA = 0
 rptA = 0
 sptA = 0
 IF(nnbdA.NE.0) THEN
-READ(10+myrank,*) nbdomA(1:nnbdA)
-READ(10+myrank,*) rptA(1:nnbdA+1)
-READ(10+myrank,*) sptA(1:nnbdA+1)
+READ(iu,*) nbdomA(1:nnbdA)
+READ(iu,*) rptA(1:nnbdA+1)
+READ(iu,*) sptA(1:nnbdA+1)
 ENDIF
 !
 i = MAX(1,rptA(nnbdA+1)-1)
@@ -161,8 +166,8 @@ sintfA = 0
 !
 IF(nnbdA.NE.0) THEN
 
-READ(10+myrank,*) rintfA(1:(rptA(nnbdA+1)-1))
-READ(10+myrank,*) sintfA(1:(sptA(nnbdA+1)-1))
+READ(iu,*) rintfA(1:(rptA(nnbdA+1)-1))
+READ(iu,*) sintfA(1:(sptA(nnbdA+1)-1))
 
 ENDIF
 ! - - - - - - - - - NEW for R  - - - - - - - - - 
@@ -174,9 +179,9 @@ nbdomR = 0
 rptR = 0
 sptR = 0
 IF(nnbdR.NE.0) THEN
-READ(10+myrank,*) nbdomR(1:nnbdR)
-READ(10+myrank,*) rptR(1:nnbdR+1)
-READ(10+myrank,*) sptR(1:nnbdR+1)
+READ(iu,*) nbdomR(1:nnbdR)
+READ(iu,*) rptR(1:nnbdR+1)
+READ(iu,*) sptR(1:nnbdR+1)
 ENDIF
 !
 i = MAX(1,rptR(nnbdR+1)-1)
@@ -190,12 +195,12 @@ sintfR = 0
 !
 IF(nnbdR.NE.0) THEN
 
-READ(10+myrank,*) rintfR(1:(rptR(nnbdR+1)-1))
-READ(10+myrank,*) sintfR(1:(sptR(nnbdR+1)-1))
+READ(iu,*) rintfR(1:(rptR(nnbdR+1)-1))
+READ(iu,*) sintfR(1:(sptR(nnbdR+1)-1))
 
 ENDIF
 ! 
-CLOSE(10+myrank)
+CLOSE(iu)
 
 !/ delete the tmp. file
 !call system('del fout')
@@ -203,13 +208,17 @@ CLOSE(10+myrank)
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 ! 2: for the coarse levels: - - - - - - - - - - - - - - - 
-OPEN(10,file='MG_tmp/PMG_infor',status='unknown')
+OPEN(newunit=iu,file='MG_tmp/PMG_infor',status='old',action='read',iostat=alstatus)
+IF(alstatus/=0) THEN
+WRITE(*,*)'read_mesh_MPI: cannot open MG_tmp/PMG_infor rank',myrank
+STOP
+ENDIF
 
 ntmp = nlevel*2+2
 ntmp = ntmp*myrank
 
 DO i = 1,ntmp
-READ(10,*) j
+READ(iu,*) j
 ENDDO
 
 ! from MPI-MG
@@ -223,7 +232,7 @@ irptc = 0
 inmax = 0
 !
 DO ilv=1,nlevel
-READ(10,*) iintf(ilv),inodegl(ilv),inbdc(ilv),inmax(ilv)    ! reading *
+READ(iu,*) iintf(ilv),inodegl(ilv),inbdc(ilv),inmax(ilv)    ! reading *
 ENDDO
 
 !IF(nnbd.EQ.0) THEN
@@ -251,7 +260,7 @@ ENDDO
 ALLOCATE(ialv(nlevel+1))
 
 DO ilv = 1,nlevel+1
-    READ(10,*) ialv(ilv)                               ! reading *
+    READ(iu,*) ialv(ilv)                               ! reading *
 ENDDO
 
 ncolf = ialv(nlevel+1)-1
@@ -260,9 +269,9 @@ ntmp = SUM(inodegl(2:nlevel))
 ALLOCATE(coordc(ndim,ntmp))
 
 ! From MG_matrix
-READ(10,*) nnzc0,nnzi,nnzr                          ! reading *
+READ(iu,*) nnzc0,nnzi,nnzr                          ! reading *
     
-CLOSE(10)
+CLOSE(iu)
 
 DO ilv=2,nlevel
     j = ialv(ilv+1)-ialv(ilv)-iintf(ilv)
@@ -360,11 +369,15 @@ irintfcP = 0
 ! - - - - - - - - - - - - - - 
 ! - - - - - - - - - - - - - - 
 WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part_MG', myrank+1, '.out'
-OPEN(10+myrank,file=fout,status='unknown')
+OPEN(newunit=iu,file=fout,status='old',action='read',iostat=alstatus)
+IF(alstatus/=0) THEN
+WRITE(*,*)'read_mesh_MPI: cannot open ',TRIM(fout),' rank',myrank
+STOP
+ENDIF
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 DO ilv = 2,nlevel
     
-READ(10+myrank,*)                                            ! reading
+READ(iu,*)                                            ! reading
 nintf1 = iintf(ilv)
 nnode1 = ialv(ilv+1)-ialv(ilv)
 nnbd1 = inbdc(ilv)
@@ -374,30 +387,30 @@ nnode0 = ialv(ilv)-ialv(ilv-1)
 
 ! 1:reading local
 
-READ(10+myrank,*) i1,i2,i3,i4
+READ(iu,*) i1,i2,i3,i4
 IF((i1.NE.nintf1).OR.(i2.NE.nnode1).OR.(i3.NE.nnbd1).OR.(i4.NE.nnode1gl)) THEN
 WRITE(*,*)'error nintf1'
 STOP
 ENDIF
 ! NEW for A and R, P - - - - - - 
 IF(ilv.NE.nlevel) THEN
-READ(10+myrank,*) inbdcA(ilv),inbdcR(ilv),inbdcP(ilv)
+READ(iu,*) inbdcA(ilv),inbdcR(ilv),inbdcP(ilv)
 ELSE 
-READ(10+myrank,*) inbdcA(ilv),inbdcP(ilv)
+READ(iu,*) inbdcA(ilv),inbdcP(ilv)
 ENDIF
 ! - - - - - - - - - - - - - - -   
 DO i=1,nnode1gl
-   READ(10+myrank,*) coord1(1:ndim,i)                        ! reading
+   READ(iu,*) coord1(1:ndim,i)                        ! reading
 ENDDO
 
 IF(nnbd1.NE.0) THEN
     
-READ(10+myrank,*) nbdom1(1:nnbd1)                            ! reading 
-READ(10+myrank,*) rpt1(1:nnbd1+1)
-READ(10+myrank,*) spt1(1:nnbd1+1)
+READ(iu,*) nbdom1(1:nnbd1)                            ! reading 
+READ(iu,*) rpt1(1:nnbd1+1)
+READ(iu,*) spt1(1:nnbd1+1)
 
-READ(10+myrank,*) rintf1(1:(nnode1-nintf1))                  ! reading
-READ(10+myrank,*) sintf1(1:(spt1(nnbd1+1)-1))
+READ(iu,*) rintf1(1:(nnode1-nintf1))                  ! reading
+READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
 
 IF((nnode1-nintf1).NE.(rpt1(nnbd1+1)-1)) THEN
 WRITE(*,*)'error/nnode1-nintf1.NE.rpt1(nnbd1+1)-1'
@@ -425,12 +438,12 @@ ENDIF
  nnbd1 =  inbdcA(ilv)
 IF(nnbd1.NE.0) THEN
 
-READ(10+myrank,*) nbdom1(1:nnbd1)                            ! reading 
-READ(10+myrank,*) rpt1(1:nnbd1+1)
-READ(10+myrank,*) spt1(1:nnbd1+1)
+READ(iu,*) nbdom1(1:nnbd1)                            ! reading 
+READ(iu,*) rpt1(1:nnbd1+1)
+READ(iu,*) spt1(1:nnbd1+1)
 
-READ(10+myrank,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
-READ(10+myrank,*) sintf1(1:(spt1(nnbd1+1)-1))
+READ(iu,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
+READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
 
 ENDIF
 
@@ -450,12 +463,12 @@ IF(ilv.NE.nlevel) THEN
  nnbd1 =  inbdcR(ilv)
 IF(nnbd1.NE.0) THEN
 
-READ(10+myrank,*) nbdom1(1:nnbd1)                            ! reading 
-READ(10+myrank,*) rpt1(1:nnbd1+1)
-READ(10+myrank,*) spt1(1:nnbd1+1)
+READ(iu,*) nbdom1(1:nnbd1)                            ! reading 
+READ(iu,*) rpt1(1:nnbd1+1)
+READ(iu,*) spt1(1:nnbd1+1)
 
-READ(10+myrank,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
-READ(10+myrank,*) sintf1(1:(spt1(nnbd1+1)-1))
+READ(iu,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
+READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
 
 ENDIF
 
@@ -476,12 +489,12 @@ ENDIF
  nnbd1 =  inbdcP(ilv)
 IF(nnbd1.NE.0) THEN
 
-READ(10+myrank,*) nbdom1(1:nnbd1)                            ! reading 
-READ(10+myrank,*) rpt1(1:nnbd1+1)
-READ(10+myrank,*) spt1(1:nnbd1+1)
+READ(iu,*) nbdom1(1:nnbd1)                            ! reading 
+READ(iu,*) rpt1(1:nnbd1+1)
+READ(iu,*) spt1(1:nnbd1+1)
 
-READ(10+myrank,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
-READ(10+myrank,*) sintf1(1:(spt1(nnbd1+1)-1))
+READ(iu,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
+READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
 
 ENDIF
 
@@ -499,12 +512,12 @@ ENDIF
 ! FOR P,R & AC
 ! - - - - 
 ! 1: reading local:
-read(10+myrank,*)                                        ! reading
+read(iu,*)                                        ! reading
 
 iai1(1) = 1
 Do i=1,nnode0
-read(10+myrank,*) nnd,id(1:nnd)
-read(10+myrank,*) tmp(1:nnd)
+read(iu,*) nnd,id(1:nnd)
+read(iu,*) tmp(1:nnd)
  k=iai1(i)
  do j=1,nnd
  jai1(k)=id(j)
@@ -515,11 +528,11 @@ read(10+myrank,*) tmp(1:nnd)
 enddo
 
 ! R
-READ(10+myrank,*)                                        ! reading
+READ(iu,*)                                        ! reading
 iar1(1) = 1
 DO i=1,nnode1
-READ(10+myrank,*) nnd,id(1:nnd)
-READ(10+myrank,*) tmp(1:nnd)
+READ(iu,*) nnd,id(1:nnd)
+READ(iu,*) tmp(1:nnd)
  k=iar1(i)
  DO j=1,nnd
  jar1(k)=id(j)
@@ -530,10 +543,10 @@ READ(10+myrank,*) tmp(1:nnd)
 ENDDO
 
 ! AC
-READ(10+myrank,*)                                       ! reading
+READ(iu,*)                                       ! reading
 ia1(1) = 1
 DO i=1,nnode1
-READ(10+myrank,*) nnd,id(1:nnd)
+READ(iu,*) nnd,id(1:nnd)
 k=ia1(i)
  DO j=1,nnd
  ja1(k)=id(j)
@@ -590,8 +603,8 @@ DEALLOCATE(iar1,jar1,Xrest1)
 ! 3:coarsest-global = = = = = = = = = = = = = = = = = = = = = = = 
 
   IF(n_GC.EQ.1) THEN
-  READ(10+myrank,*)                                         ! reading
-  READ(10+myrank,*) nnodeC,nnodeG,nnzG
+  READ(iu,*)                                         ! reading
+  READ(iu,*) nnodeC,nnodeG,nnzG
   
 !/
 !  IF(minval([nnodeC, nnodeG, nnzG]) == 0) THEN
@@ -618,7 +631,7 @@ DEALLOCATE(iar1,jar1,Xrest1)
 !imapG
   IF(nnodeC .GT. 0) THEN
   DO i=1,nnodeC  
-   READ(10+myrank,*) imapG(i)
+   READ(iu,*) imapG(i)
   ENDDO
   ENDIF
   
@@ -627,7 +640,7 @@ DEALLOCATE(iar1,jar1,Xrest1)
 
  iaG(1) = 1
  DO i=1,nnodeG
-   READ(10+myrank,*) nnd,id(1:nnd),coordG(1:ndim,i)
+   READ(iu,*) nnd,id(1:nnd),coordG(1:ndim,i)
    k=iaG(i)
    DO j=1,nnd
     jaG(k)=id(j)
@@ -646,7 +659,7 @@ DEALLOCATE(iar1,jar1,Xrest1)
 
   ENDIF
   
-CLOSE(10+myrank)
+CLOSE(iu)
 !/
      nnods = ialv(nlevel+1)-ialv(nlevel)
      ncolf = ialv(nlevel+1)-ialv(1)
