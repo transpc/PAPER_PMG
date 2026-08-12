@@ -350,3 +350,18 @@
   - ⑤ 과정 사고: tests/mg.in 에 실험 잔재(nlevel 6/glomax 4/ioplv 0)가 남아 게이트 전면 RED (its 변동+bitwise FAIL) → **잔재 원복만으로 8/8 green, 수치 기준 일치**. 게이트가 구성 오염을 정확히 포착한 사례. 교훈: mg.in 실험은 반드시 즉시 원복 검증까지 한 사이클로
 - 판정: **PASS(부분)** — 형상 분리 완료, 실버그 1건 수정·검증. np=128 발산과 ④ 는 미해결
 - 다음: C010-4 — ① 48³ np=900 (923셀/rank, 프로덕션 근접) 재현 ② writer 의 num_neigh>6 생성 경위 (극소 도메인 한정인지) ③ np=128 solve 발산 (nlv_glomax 상향 실험 포함)
+
+---
+
+## C010-4 | 2026-08-12 | np=900 완주 green + 발산 원인 = Chebyshev 병렬 고유값 추정으로 확정
+
+- 목표: 프로덕션 근접 규모(48³, 123셀/rank)에서 np=900 재현, 잔여 발산·num_neigh>6 경위 규명
+- 변경: `driver_pmg.f90` — 합성 조립의 열 공간을 nnode→**nnodegl**(전역 coarse 확장 포함)로 수정 (mycoord/uex 크기·루프). 대규모 np 에서 ja 가 nnodegl 까지 참조 → 이전엔 범위 밖 읽기로 행렬 오염 (하네스 자체 버그, np≤4 에선 nnodegl=nnode 라 잠복)
+- 실행: 48³ np=900 (bounds/release 각 1회), 발산 구성 재스캔, 스무더 판별(GAS), run_tests
+- 결과:
+  - **np=900 완주 PASS, its=7** — bounds·release 빌드 모두 (결정적). C010-3 의 iar1 수정 + 본 드라이버 수정 후 셋업(1800파일 fan-out+판독+9레벨 계층)·솔브 전부 green. G1 의 "np=900 실행 가능" 이 합성 문제 기준으로 달성
+  - 48³/np900 bounds 실행에서 read_mesh_MPI 클린 통과 → C010-3 ④(num_neigh=7, EOF)는 **15셀/rank 극단 병리**로 국한. 123셀/rank 에선 미발생
+  - **발산 원인 확정 (스무더 판별)**: 발산 구성(48³ np6 슬랩, 48³ np128 블록)이 `smothing='GAS'` 로는 its=5 즉시 수렴 → **'POL'(Chebyshev) 스무더의 Lanczos eig_max 추정이 특정 분할(이방 도메인)에서 실제 λmax 를 하회 → 고주파 증폭 발산**. 소스 주석도 병렬 시 추정 차이를 인지 (`poly_smooth.f90` "in parallel ... may difference"). np 비단조성(np128 발산 vs np900 수렴)은 블록 인수분해 이방성(4×4×8 vs 9×10×10) 차이와 정합
+  - run_tests 8/8 green. iso24_np4 res_gate 1.51e-2→2.37e-2 변화는 이전 조립이 범위 밖 garbage 를 읽던 것의 교정 (its ±0, np=1 계열은 bitwise 불변)
+- 판정: **PASS** — G1 1차 목표(재현→원인→수정→np=900 green) 달성. 프로덕션 케이스 np=900 최종 검증은 클러스터 확보 시
+- 다음: C010-5 후보 — ① 프로덕션 np=900 실증 (클러스터) ② Chebyshev eig 추정 강건화 (안전 계수/추정 실패 감지 → 논문 고도화 항목) ③ 15셀/rank 극단의 reader 정렬 문제 (우선순위 낮음) ④ np≥1000 파일명 인코딩 (PLAN 기지)

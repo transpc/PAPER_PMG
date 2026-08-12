@@ -27,7 +27,8 @@
       USE Zbicg,        ONLY: eps_bicg
       USE Zcoord1,      ONLY: xloc_tmp
       USE Zmpi,         ONLY: celem
-      USE md_geometry,  ONLY: nelem_mg, num_neigh_mg, neigh_mg, coord, nnode
+      USE md_geometry,  ONLY: nelem_mg, num_neigh_mg, neigh_mg, coord,   &
+                              nnode, nnodegl
       USE MD_parameter, ONLY: nf_max
       USE MD_MPI,       ONLY: nintf
       USE MD_matrix,    ONLY: nnz, ia, ja, au, u, b
@@ -164,8 +165,9 @@
 !.....GMG 로컬 순서의 좌표 스냅샷 — Prep_fine_P 가 coord 를 해제함 (3_Prep_fine_P.f90:130)
 !     np>1 에선 nnode = 로컬(내부+고스트) 셀 수 (np=1 은 nnode=ncell)
       IF (.NOT. replay) THEN
-         ALLOCATE (mycoord(3, nnode))
-         mycoord(:, 1:nnode) = coord(:, 1:nnode)
+!        열 공간은 nnodegl (전역 coarse 확장 포함, 대규모 np 에서 nnodegl > nnode — LOG C010-4)
+         ALLOCATE (mycoord(3, nnodegl))
+         mycoord(:, 1:nnodegl) = coord(:, 1:nnodegl)
       END IF
       CALL Prep_fine_P
       CALL Prep_MG_GarL
@@ -218,7 +220,7 @@
          vol = aspect                          ! dx=dy=1, dz=aspect
          diag_const = 2.d0*aspect + 2.d0*aspect + 2.d0/aspect
 !........로컬 규격: 행 1..nintf 내부, nintf+1..nnode 고스트 (np=1: nintf=nnode=ncell)
-         ALLOCATE (diag_my(nintf), au_my(nnz), src(nintf), uex(nnode))
+         ALLOCATE (diag_my(nintf), au_my(nnz), src(nintf), uex(nnodegl))
          diag_my = diag_const
          DO irow = 1, nnode
             DO kk = ia(irow), ia(irow+1) - 1
@@ -233,7 +235,7 @@
             END DO
          END DO
 !........uex: 좌표에서 전역 셀 id 를 복원해 np 무관 동일 제작해 (np=1 과 bitwise 동일 값)
-         DO c = 1, nnode
+         DO c = 1, nnodegl
             i = NINT(mycoord(1, c) + 0.5d0)
             j = NINT(mycoord(2, c) + 0.5d0)
             k = NINT(mycoord(3, c)/aspect + 0.5d0)
