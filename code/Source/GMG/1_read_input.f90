@@ -38,7 +38,7 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - !
 
 !
-         INTEGER i, ncycle_pre
+         INTEGER i, ncycle_pre, iu, ios
          CHARACTER :: smothing*3
          REAL(8) ::  crit_pre
 
@@ -61,20 +61,24 @@
          crit = eps_mg
          ndom = np_mg
 !
-         OPEN (1111, file='mg.in', status='unknown')
+         OPEN (newunit=iu, file='mg.in', status='old', action='read', iostat=ios)
+         IF (ios /= 0) THEN
+            WRITE (*, *) 'read_input_mg: cannot open mg.in, rank', myrank
+            STOP
+         ENDIF
 !
-         READ (1111, nml=MG_method)
-         READ (1111, nml=MG_level)
-         READ (1111, nml=MG_coarsening)
-         READ (1111, nml=MG_smoothing)
-         READ (1111, nml=MG_interpolation)
-         READ (1111, nml=MG_coarsest)
-         READ (1111, nml=MG_MPI)
-         READ (1111, nml=MG_OpenMP)
-         READ (1111, nml=MG_Precond)
-         READ (1111, nml=MG_more_option)
+         READ (iu, nml=MG_method)
+         READ (iu, nml=MG_level)
+         READ (iu, nml=MG_coarsening)
+         READ (iu, nml=MG_smoothing)
+         READ (iu, nml=MG_interpolation)
+         READ (iu, nml=MG_coarsest)
+         READ (iu, nml=MG_MPI)
+         READ (iu, nml=MG_OpenMP)
+         READ (iu, nml=MG_Precond)
+         READ (iu, nml=MG_more_option)
 
-         CLOSE (1111)
+         CLOSE (iu)
 
 !
 

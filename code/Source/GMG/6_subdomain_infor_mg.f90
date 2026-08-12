@@ -20,6 +20,8 @@ SUBROUTINE subdomain_infor_mg
 
 INTEGER(4):: i,j,k,ie,i1,i2,i3,i4,i5,i6,nd,nnd,j1,j2
 INTEGER(4):: prc,np,ilv
+INTEGER(4):: iu                  ! NEWUNIT 용 (PMG_infor)
+INTEGER(4):: iu_prc(ndom)        ! NEWUNIT 용 — coarse 구간은 np 개 파일을 동시에 열어둠
 INTEGER(4):: nintr,nintf,nneib,nelemt
 INTEGER(4):: alstatus
 CHARACTER(len=64) :: fout
@@ -125,7 +127,7 @@ irecv_m = 1
 DO prc=1,np
    ! I0.3 포맷 — 읽기측 2_read_mesh_MPI.f90 과 동일 유지 (np>999 자동 확장)
    WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', prc, '.out'
-   OPEN(50+prc,file=fout,status='unknown')
+   OPEN(newunit=iu_prc(prc),file=fout,status='replace')
    
    nnodep=cinter(prc)+cintf(prc)+cext(prc)   !total number of nodes
    nelemp=lnum(prc)                          !number of elements   
@@ -134,28 +136,28 @@ DO prc=1,np
    nneib=nnbdom(prc)                         !number of neighboring domains
    nnd = nnodegl_mg(prc)
    
-   WRITE(50+prc,*) nelemp,nintr,nintf,nnodep,nneib,nnd
+   WRITE(iu_prc(prc),*) nelemp,nintr,nintf,nnodep,nneib,nnd
    
-   WRITE(50+prc,*) nnbdomA(prc),   nnbdomR(prc)         ! NEW
+   WRITE(iu_prc(prc),*) nnbdomA(prc),   nnbdomR(prc)         ! NEW
    
    DO i=1,nnodep                
       ie=jperm(prc,i)
       j = num_neigh_mg(ie)
-!     WRITE(50+prc,*) j, iperm(prc,neigh_mg(1:j,ie))
-      WRITE(50+prc,*) j, (iperm(prc,neigh_mg(k,ie)),k=1,j)
+!     WRITE(iu_prc(prc),*) j, iperm(prc,neigh_mg(1:j,ie))
+      WRITE(iu_prc(prc),*) j, (iperm(prc,neigh_mg(k,ie)),k=1,j)
    ENDDO
 
    DO i=1,nnd
-!     WRITE(50+prc,*) xloc_tmp(jperm(prc,i),1:ndim)
-      WRITE(50+prc,*) (xloc_tmp(jperm(prc,i),j),j=1,ndim)
+!     WRITE(iu_prc(prc),*) xloc_tmp(jperm(prc,i),1:ndim)
+      WRITE(iu_prc(prc),*) (xloc_tmp(jperm(prc,i),j),j=1,ndim)
    ENDDO
 ! 
   IF(nnbdom(prc).NE.0) THEN 
-   WRITE(50+prc,*)(nbdom(prc,i),i=1,nnbdom(prc))
-   WRITE(50+prc,*)(ri(prc,i),i=1,nnbdom(prc)+1)
-   WRITE(50+prc,*)(si(prc,i),i=1,nnbdom(prc)+1)
-   WRITE(50+prc,*)(iperm(prc,rint(prc,i)),i=1,ri(prc,nnbdom(prc)+1)-1)
-   WRITE(50+prc,*)(iperm(prc,sint(prc,i)),i=1,si(prc,nnbdom(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(nbdom(prc,i),i=1,nnbdom(prc))
+   WRITE(iu_prc(prc),*)(ri(prc,i),i=1,nnbdom(prc)+1)
+   WRITE(iu_prc(prc),*)(si(prc,i),i=1,nnbdom(prc)+1)
+   WRITE(iu_prc(prc),*)(iperm(prc,rint(prc,i)),i=1,ri(prc,nnbdom(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(iperm(prc,sint(prc,i)),i=1,si(prc,nnbdom(prc)+1)-1)
 !/
    isend_m(prc) = max(isend_m(prc),si(prc,nnbdom(prc)+1)-1)
    irecv_m(prc) = max(irecv_m(prc),ri(prc,nnbdom(prc)+1)-1)
@@ -165,24 +167,24 @@ DO prc=1,np
 !
 ! NEW for SR-for A
   IF(nnbdomA(prc).NE.0) THEN 
-   WRITE(50+prc,*)(inbdomA(prc,i),i=1,nnbdomA(prc))
-   WRITE(50+prc,*)(riA(prc,i),i=1,nnbdomA(prc)+1)
-   WRITE(50+prc,*)(siA(prc,i),i=1,nnbdomA(prc)+1)
-   WRITE(50+prc,*)(iperm(prc,rintA(prc,i)),i=1,riA(prc,nnbdomA(prc)+1)-1)
-   WRITE(50+prc,*)(iperm(prc,sintA(prc,i)),i=1,siA(prc,nnbdomA(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(inbdomA(prc,i),i=1,nnbdomA(prc))
+   WRITE(iu_prc(prc),*)(riA(prc,i),i=1,nnbdomA(prc)+1)
+   WRITE(iu_prc(prc),*)(siA(prc,i),i=1,nnbdomA(prc)+1)
+   WRITE(iu_prc(prc),*)(iperm(prc,rintA(prc,i)),i=1,riA(prc,nnbdomA(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(iperm(prc,sintA(prc,i)),i=1,siA(prc,nnbdomA(prc)+1)-1)
   ENDIF
 !
 ! NEW for SR-for R
   IF(nnbdomR(prc).NE.0) THEN 
-   WRITE(50+prc,*)(inbdomR(prc,i),i=1,nnbdomR(prc))
-   WRITE(50+prc,*)(riR(prc,i),i=1,nnbdomR(prc)+1)
-   WRITE(50+prc,*)(siR(prc,i),i=1,nnbdomR(prc)+1)
-   WRITE(50+prc,*)(iperm(prc,rintR(prc,i)),i=1,riR(prc,nnbdomR(prc)+1)-1)
-   WRITE(50+prc,*)(iperm(prc,sintR(prc,i)),i=1,siR(prc,nnbdomR(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(inbdomR(prc,i),i=1,nnbdomR(prc))
+   WRITE(iu_prc(prc),*)(riR(prc,i),i=1,nnbdomR(prc)+1)
+   WRITE(iu_prc(prc),*)(siR(prc,i),i=1,nnbdomR(prc)+1)
+   WRITE(iu_prc(prc),*)(iperm(prc,rintR(prc,i)),i=1,riR(prc,nnbdomR(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(iperm(prc,sintR(prc,i)),i=1,siR(prc,nnbdomR(prc)+1)-1)
   ENDIF
 !
   
-CLOSE(50+prc )
+CLOSE(iu_prc(prc) )
 
 ENDDO
 
@@ -226,7 +228,7 @@ nelem0 = nelem
 
 DO prc=1,np
    WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part_MG', prc, '.out'
-   OPEN(50+prc,file=fout,status='unknown')
+   OPEN(newunit=iu_prc(prc),file=fout,status='replace')
 ENDDO
 !/ 
   mxnbne_mg = 0
@@ -365,7 +367,7 @@ DEALLOCATE(celem0,icoarse1,nnei1,inei1)
 ! wrting out file 
 DO prc=1,np
     
-   WRITE(50+prc,*)'coarse'
+   WRITE(iu_prc(prc),*)'coarse'
    nnodep1=cinter1(prc)+cintf1(prc)+cext1(prc)                              
    nintr1=cinter1(prc)                         
    nintf1=cinter1(prc)+cintf1(prc)              
@@ -377,18 +379,18 @@ DO prc=1,np
    inbdc(ilv,prc) =  nneib1
    ialv_P(ilv+1,prc) = ialv_P(ilv,prc) + nnodep1
 !  
-   WRITE(50+prc,*) nintf1,nnodep1,nneib1,nnd
+   WRITE(iu_prc(prc),*) nintf1,nnodep1,nneib1,nnd
    
 ! NEW 
    IF(ilv.NE.nlevel_N) THEN
-      WRITE(50+prc,*)  nnbdomA(prc),nnbdomR(prc),nnbdomP(prc)
+      WRITE(iu_prc(prc),*)  nnbdomA(prc),nnbdomR(prc),nnbdomP(prc)
    ELSE 
-      WRITE(50+prc,*)  nnbdomA(prc),nnbdomP(prc)  
+      WRITE(iu_prc(prc),*)  nnbdomA(prc),nnbdomP(prc)  
    ENDIF
 !
    DO i=1,nnd
        j=jperm1(prc,i)     ! to global of coarse 1
-       WRITE(50+prc,*) coord1(1:ndim,j)
+       WRITE(iu_prc(prc),*) coord1(1:ndim,j)
    ENDDO
    
 ! test
@@ -400,11 +402,11 @@ DO prc=1,np
 !
 IF(nnbdom1(prc).NE.0) THEN
     
-   WRITE(50+prc,*)(nbdom1(prc,i),i=1,nnbdom1(prc))
-   WRITE(50+prc,*)(ri1(prc,i),i=1,nnbdom1(prc)+1)
-   WRITE(50+prc,*)(si1(prc,i),i=1,nnbdom1(prc)+1)
-   WRITE(50+prc,*)(iperm1(prc,rint1(prc,i)),i=1,ri1(prc,nnbdom1(prc)+1)-1)
-   WRITE(50+prc,*)(iperm1(prc,sint1(prc,i)),i=1,si1(prc,nnbdom1(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(nbdom1(prc,i),i=1,nnbdom1(prc))
+   WRITE(iu_prc(prc),*)(ri1(prc,i),i=1,nnbdom1(prc)+1)
+   WRITE(iu_prc(prc),*)(si1(prc,i),i=1,nnbdom1(prc)+1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,rint1(prc,i)),i=1,ri1(prc,nnbdom1(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,sint1(prc,i)),i=1,si1(prc,nnbdom1(prc)+1)-1)
 !/
    isend_m(prc) = max(isend_m(prc),si1(prc,nnbdom1(prc)+1)-1)
    irecv_m(prc) = max(irecv_m(prc),ri1(prc,nnbdom1(prc)+1)-1)
@@ -414,22 +416,22 @@ ENDIF
 ! NEW for SR for A
 IF(nnbdomA(prc).NE.0) THEN
        
-   WRITE(50+prc,*)(inbdomA(prc,i),i=1,nnbdomA(prc))
-   WRITE(50+prc,*)(riA(prc,i),i=1,nnbdomA(prc)+1)
-   WRITE(50+prc,*)(siA(prc,i),i=1,nnbdomA(prc)+1)
-   WRITE(50+prc,*)(iperm1(prc,rintA(prc,i)),i=1,riA(prc,nnbdomA(prc)+1)-1)
-   WRITE(50+prc,*)(iperm1(prc,sintA(prc,i)),i=1,siA(prc,nnbdomA(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(inbdomA(prc,i),i=1,nnbdomA(prc))
+   WRITE(iu_prc(prc),*)(riA(prc,i),i=1,nnbdomA(prc)+1)
+   WRITE(iu_prc(prc),*)(siA(prc,i),i=1,nnbdomA(prc)+1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,rintA(prc,i)),i=1,riA(prc,nnbdomA(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,sintA(prc,i)),i=1,siA(prc,nnbdomA(prc)+1)-1)
 ENDIF	
 	
 ! NEW for SR for R
 IF(ilv.NE.nlevel_N) THEN
 IF(nnbdomR(prc).NE.0) THEN
        
-   WRITE(50+prc,*)(inbdomR(prc,i),i=1,nnbdomR(prc))
-   WRITE(50+prc,*)(riR(prc,i),i=1,nnbdomR(prc)+1)
-   WRITE(50+prc,*)(siR(prc,i),i=1,nnbdomR(prc)+1)
-   WRITE(50+prc,*)(iperm1(prc,rintR(prc,i)),i=1,riR(prc,nnbdomR(prc)+1)-1)
-   WRITE(50+prc,*)(iperm1(prc,sintR(prc,i)),i=1,siR(prc,nnbdomR(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(inbdomR(prc,i),i=1,nnbdomR(prc))
+   WRITE(iu_prc(prc),*)(riR(prc,i),i=1,nnbdomR(prc)+1)
+   WRITE(iu_prc(prc),*)(siR(prc,i),i=1,nnbdomR(prc)+1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,rintR(prc,i)),i=1,riR(prc,nnbdomR(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,sintR(prc,i)),i=1,siR(prc,nnbdomR(prc)+1)-1)
 ENDIF
 !
 ENDIF
@@ -437,14 +439,14 @@ ENDIF
 ! NEW for SR for P
 IF(nnbdomP(prc).NE.0) THEN
        
-   WRITE(50+prc,*)(inbdomP(prc,i),i=1,nnbdomP(prc))
-   WRITE(50+prc,*)(riP(prc,i),i=1,nnbdomP(prc)+1)
-   WRITE(50+prc,*)(siP(prc,i),i=1,nnbdomP(prc)+1)
-   WRITE(50+prc,*)(iperm1(prc,rintP(prc,i)),i=1,riP(prc,nnbdomP(prc)+1)-1)
-   WRITE(50+prc,*)(iperm1(prc,sintP(prc,i)),i=1,siP(prc,nnbdomP(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(inbdomP(prc,i),i=1,nnbdomP(prc))
+   WRITE(iu_prc(prc),*)(riP(prc,i),i=1,nnbdomP(prc)+1)
+   WRITE(iu_prc(prc),*)(siP(prc,i),i=1,nnbdomP(prc)+1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,rintP(prc,i)),i=1,riP(prc,nnbdomP(prc)+1)-1)
+   WRITE(iu_prc(prc),*)(iperm1(prc,sintP(prc,i)),i=1,siP(prc,nnbdomP(prc)+1)-1)
 ENDIF
 
-   WRITE(50+prc,*)'P-1'
+   WRITE(iu_prc(prc),*)'P-1'
    
    nnodep = nnodep0(prc)
    DO i=1,nnodep        
@@ -452,9 +454,9 @@ ENDIF
        i1 = iai1(j)
        i2 = iai1(j+1)-1
        nnd = i2-i1+1
-       WRITE(50+prc,*) nnd,(iperm1(prc,jai1(k)),k=i1,i2)
+       WRITE(iu_prc(prc),*) nnd,(iperm1(prc,jai1(k)),k=i1,i2)
        
-       WRITE(50+prc,*) (Xintp1(k),k=i1,i2)
+       WRITE(iu_prc(prc),*) (Xintp1(k),k=i1,i2)
        
        nnzi(prc) = nnzi(prc) + nnd
        
@@ -463,28 +465,28 @@ ENDIF
    nnodep0(prc) = nnodep1
    
 ! R
-   WRITE(50+prc,*)'R-1'
+   WRITE(iu_prc(prc),*)'R-1'
    DO i=1,nnodep1
        j=jperm1(prc,i)   ! to global
        i1 = iar1(j)
        i2 = iar1(j+1)-1
        nnd = i2-i1+1
-       WRITE(50+prc,*) nnd,(iperm(prc,jar1(k)),k=i1,i2)
+       WRITE(iu_prc(prc),*) nnd,(iperm(prc,jar1(k)),k=i1,i2)
        
-       WRITE(50+prc,*) (Xrest1(k),k=i1,i2)
+       WRITE(iu_prc(prc),*) (Xrest1(k),k=i1,i2)
        
        nnzr(prc) = nnzr(prc) + nnd
        
    ENDDO
       
 ! Ac
-   WRITE(50+prc,*)'Ac-1'
+   WRITE(iu_prc(prc),*)'Ac-1'
    DO i=1,nnodep1
        j=jperm1(prc,i)   ! to global
        i1 = ia1(j)
        i2 = ia1(j+1)-1
        nnd = i2-i1+1
-       WRITE(50+prc,*) nnd,(iperm1(prc,ja1(k)),k=i1,i2)
+       WRITE(iu_prc(prc),*) nnd,(iperm1(prc,ja1(k)),k=i1,i2)
        
        mxnbne_mg = max(nnd,mxnbne_mg)
        
@@ -498,18 +500,18 @@ ENDIF
    
    IF ((ilv_test.EQ.1).OR.(ilv.EQ.nlevel_N)) THEN
 
-     write(50+prc,*)'A_GC'
-     write(50+prc,*) nnodep1,nelem1,nnz1
+     write(iu_prc(prc),*)'A_GC'
+     write(iu_prc(prc),*) nnodep1,nelem1,nnz1
      DO i=1,nnodep1
        j=jperm1(prc,i)   ! to global
-       write(50+prc,*) j
+       write(iu_prc(prc),*) j
      ENDDO
     
      DO i=1,nelem1       
        i1 = ia1(i)
        i2 = ia1(i+1)-1
        nnd = i2-i1+1
-       write(50+prc,*) nnd,(ja1(k),k=i1,i2),coord1(1:ndim,i)
+       write(iu_prc(prc),*) nnd,(ja1(k),k=i1,i2),coord1(1:ndim,i)
        
        mxnbne_mg = max(nnd,mxnbne_mg)
        
@@ -573,23 +575,23 @@ IF(ilv_test.EQ.2) nlevel_N = ilv-1
 DEALLOCATE(ia1,ja1)
     
 DO prc=1,np
-   CLOSE(50+prc)
+   CLOSE(iu_prc(prc))
 ENDDO
 ! 
-   OPEN(50,file='MG_tmp/PMG_infor',status='unknown')    
+   OPEN(newunit=iu,file='MG_tmp/PMG_infor',status='replace')
    DO prc = 1,ndom
       DO ilv=1,nlevel_N
-      WRITE(50,*) iintf(ilv,prc),inodegl(ilv,prc),inbdc(ilv,prc),inmax(ilv)  
+      WRITE(iu,*) iintf(ilv,prc),inodegl(ilv,prc),inbdc(ilv,prc),inmax(ilv)  
       ENDDO    
       
       DO ilv = 1,nlevel_N+1
-      WRITE(50,*) ialv_P(ilv,prc)                               
+      WRITE(iu,*) ialv_P(ilv,prc)                               
       ENDDO
       
-      WRITE(50,*) nnzc0(prc),nnzi(prc),nnzr(prc)
+      WRITE(iu,*) nnzc0(prc),nnzi(prc),nnzr(prc)
       
    ENDDO
-   CLOSE(50)
+   CLOSE(iu)
 
 ! NEW
    IF(ilv_test.EQ.2) THEN
