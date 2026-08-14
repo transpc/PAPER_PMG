@@ -6,7 +6,7 @@
                                 iter_mg, n_GC, isth, AR_hi, crit_1, relax, &
                                 iter_max, nlevel_N, n1_min, n2_min, ioplv, ip_lev, &
                                 isol_mg, id_GS_sym, itergs, icheb, icase_MG, &
-                                crit_bcg_mg, ihybrid, isol_start
+                                crit_bcg_mg, ihybrid, isol_start, isetup_comm
          USE MD_MPI, ONLY: myrank, myrankt
          USE MD_MG_Global_C, ONLY: i_dir, nlv_glo, nlv_glomax, igather
          USE MD_MPI_MG, ONLY: icommu, iGS, nGS, iallocate_c
@@ -49,7 +49,7 @@
          NAMELIST /MG_smoothing/ smothing, itergs, id_GS_sym, relax, icheb
          NAMELIST /MG_interpolation/ teta_p, ip_nmax, ip_inter, ip_lev, alpha
          NAMELIST /MG_coarsest/ n_GC, i_dir, ipar, iGS, nGS, iallocate_c, crit_1
-         NAMELIST /MG_MPI/ icommu, igather
+         NAMELIST /MG_MPI/ icommu, igather, isetup_comm
          NAMELIST /MG_OpenMP/ ihybrid, nthre
          NAMELIST /MG_Precond/ ncycle_pre, crit_pre
          NAMELIST /MG_more_option/ mxnbne
@@ -60,6 +60,7 @@
          ndim = ndim_cupid
          crit = eps_mg
          ndom = np_mg
+         isetup_comm = 0            ! 기본 = 파일 모드 (mg.in 미지정 시 기존 동작)
 !
          OPEN (newunit=iu, file='mg.in', status='old', action='read', iostat=ios)
          IF (ios /= 0) THEN

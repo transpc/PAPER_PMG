@@ -14,7 +14,9 @@ USE MD_MG_matrix, ONLY: nnzi1,iai1,jai1,iar1,jar1,Xintp1,Xrest1,               &
                         nnz1,ia1,ja1,ju1,au1,diagrc,r,rt,rc,rs,e,et,es,        &
                         auc,aus,Xrest,Xintp,iac,jac,juc,ias,jas,jus,           &
                         iai,jai,iar,jar,nnzc0,nnzi,nnzr,nnzs
-USE MD_MG_index, ONLY: mxnbne,nlevel,n_GC,nlevel_N,mxnbne_mg,isend_m,irecv_m
+USE MD_MG_index, ONLY: mxnbne,nlevel,n_GC,nlevel_N,mxnbne_mg,isend_m,irecv_m,   &
+                       isetup_comm,stg_iintf,stg_inodegl,stg_inbdc,             &
+                       stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr
 USE MD_MG_Global_C, ONLY: nlv_glo  ,nnodeG,nnzG,nnodeC,imapG,imapGZ,           &
                           iaG,jaG,juG,eG,eG0,rG,rG0,auG,auG0,                  &
                           coordG
@@ -208,6 +210,31 @@ CLOSE(iu)
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 ! 2: for the coarse levels: - - - - - - - - - - - - - - - 
+IF(isetup_comm.EQ.1) THEN
+! 통신 모드 (LOOP C011-2): rank0 스테이징(= PMG_infor 파일 내용과 1:1, 전부 정수라
+! 라운딩 무관)을 전 rank 로 BCAST 하고 아래에서 자기 열(myrank+1)을 추출.
+! 파일 모드의 O(np) 더미 스킵과 공유 파일 동시 OPEN 이 소거된다.
+   IF(myrank.NE.0) THEN
+      IF(ALLOCATED(stg_iintf)) DEALLOCATE(stg_iintf,stg_inodegl,stg_inbdc,   &
+                                          stg_ialvP,stg_inmax,stg_nnzc0,     &
+                                          stg_nnzi,stg_nnzr)
+      ALLOCATE(stg_iintf(nlevel,ndom),stg_inodegl(nlevel,ndom),              &
+               stg_inbdc(nlevel,ndom),stg_ialvP(nlevel+1,ndom),              &
+               stg_inmax(nlevel),stg_nnzc0(ndom),stg_nnzi(ndom),stg_nnzr(ndom))
+   ENDIF
+!DEC$IF defined (mpi_flag)
+   IF(ndom.GT.1) THEN
+   CALL MPI_BCAST(stg_iintf,  nlevel*ndom,    mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_BCAST(stg_inodegl,nlevel*ndom,    mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_BCAST(stg_inbdc,  nlevel*ndom,    mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_BCAST(stg_ialvP,  (nlevel+1)*ndom,mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_BCAST(stg_inmax,  nlevel,         mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_BCAST(stg_nnzc0,  ndom,           mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_BCAST(stg_nnzi,   ndom,           mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_BCAST(stg_nnzr,   ndom,           mpi_INTEGER,0,mpi_comm_world,ierr)
+   ENDIF
+!DEC$ENDIF
+ELSE
 OPEN(newunit=iu,file='MG_tmp/PMG_infor',status='old',action='read',iostat=alstatus)
 IF(alstatus/=0) THEN
 WRITE(*,*)'read_mesh_MPI: cannot open MG_tmp/PMG_infor rank',myrank
@@ -220,6 +247,7 @@ ntmp = ntmp*myrank
 DO i = 1,ntmp
 READ(iu,*) j
 ENDDO
+ENDIF
 
 ! from MPI-MG
 ALLOCATE(iintf(nlevel),inodegl(nlevel),inbdc(nlevel))
@@ -231,9 +259,18 @@ isptc = 0
 irptc = 0
 inmax = 0
 !
+IF(isetup_comm.EQ.1) THEN
+DO ilv=1,nlevel
+iintf(ilv)   = stg_iintf(ilv,myrank+1)
+inodegl(ilv) = stg_inodegl(ilv,myrank+1)
+inbdc(ilv)   = stg_inbdc(ilv,myrank+1)
+inmax(ilv)   = stg_inmax(ilv)
+ENDDO
+ELSE
 DO ilv=1,nlevel
 READ(iu,*) iintf(ilv),inodegl(ilv),inbdc(ilv),inmax(ilv)    ! reading *
 ENDDO
+ENDIF
 
 !IF(nnbd.EQ.0) THEN
 !  nnsend_m = 0
@@ -259,9 +296,13 @@ ENDDO
 ! from MG_coord
 ALLOCATE(ialv(nlevel+1))
 
+IF(isetup_comm.EQ.1) THEN
+ialv(1:nlevel+1) = stg_ialvP(1:nlevel+1,myrank+1)
+ELSE
 DO ilv = 1,nlevel+1
     READ(iu,*) ialv(ilv)                               ! reading *
 ENDDO
+ENDIF
 
 ncolf = ialv(nlevel+1)-1
 ncolc = ncolf -nnode
@@ -269,9 +310,18 @@ ntmp = SUM(inodegl(2:nlevel))
 ALLOCATE(coordc(ndim,ntmp))
 
 ! From MG_matrix
+IF(isetup_comm.EQ.1) THEN
+nnzc0 = stg_nnzc0(myrank+1)
+nnzi  = stg_nnzi(myrank+1)
+nnzr  = stg_nnzr(myrank+1)
+! 스테이징 사용 완료 — 전 rank 해제 (재진입 대비 가드는 할당측에 있음)
+DEALLOCATE(stg_iintf,stg_inodegl,stg_inbdc,stg_ialvP,stg_inmax,             &
+           stg_nnzc0,stg_nnzi,stg_nnzr)
+ELSE
 READ(iu,*) nnzc0,nnzi,nnzr                          ! reading *
-    
+
 CLOSE(iu)
+ENDIF
 
 DO ilv=2,nlevel
     j = ialv(ilv+1)-ialv(ilv)-iintf(ilv)

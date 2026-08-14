@@ -401,7 +401,7 @@
 
 ---
 
-## C018 | 2026-08-12 | 문서 현행화 (PLAN 잔여 stale 4지점) + perf_log ECT1 행
+## C018 | 2026-08-14 | 문서 현행화 (PLAN 잔여 stale 4지점) + perf_log ECT1 행
 
 - 목표: C016 검토에서 확인된 PLAN.md 의 stale 서술을 현행화하고 C017 잔여(perf 행)를 마감
 - 변경: `PLAN.md` — §1-3 somaFlow.in 표(블로커→이력), §7 두 해소 항목(step 38 발산 구입력 한정 / C005-r3 입력 수술 무효), §4-4 골든 입력 결박·세트별 fid_gate 조항, §8 Phase 4 체크리스트(C010/C015/C016/C017 반영). `perf_log.md` — ect1 재생 4행
@@ -412,7 +412,7 @@
 
 ---
 
-## C011-1 | 2026-08-12 | G2 설계 — 파일 왕복 인벤토리 + ASCII 라운딩 실험 → 이중 모드 전략 확정
+## C011-1 | 2026-08-14 | G2 설계 — 파일 왕복 인벤토리 + ASCII 라운딩 실험 → 이중 모드 전략 확정
 
 - 목표: MG_tmp 파일 경유 분배의 전 데이터 흐름을 인벤토리하고, 통신 대체의 bitwise 게이트 전략을 실험으로 확정
 - 변경: 소스 무변경 (조사·설계 사이클). PLAN §5-2 검증 전략 갱신
@@ -432,3 +432,22 @@
   5. C011-6: 파일 경로·MG_tmp 삭제 (통신 모드 default 승격)
 - 판정: **PASS** — 설계 산출물(로드맵 5단계 + 게이트 전략) 확정, 실험 근거 확보
 - 다음: C011-2 착수 — 선행 확인: PMG_infor 대상 배열(iintf/inodegl/inbdc/inmax/ialv_P/nnz*)의 모듈 상주 여부 (rank0 writer→reader 구간 생존 조건)
+
+---
+
+## C011-2 | 2026-08-14 | G2 증분 ① — isetup_comm 스위치 + PMG_infor 통신화 (BCAST)
+
+- 목표: 이중 모드 스위치를 도입하고 PMG_infor(정수 메타)를 첫 통신화 — 파일 모드 기본 불변 + 통신 모드 bitwise 동일
+- 변경:
+  - `GMG/module/MD_MG_index.f90`: `isetup_comm`(0=파일/1=통신) + 스테이징 배열 8종 (`stg_*` — PMG_infor 내용과 1:1)
+  - `GMG/1_read_input.f90`: `&MG_MPI` 네임리스트에 `isetup_comm` 추가, READ 전 기본값 0 (기존 mg.in 무수정 호환)
+  - `GMG/6_subdomain_infor_mg.f90`(writer): PMG_infor 기록 분기 — 통신 모드는 파일 대신 스테이징 적재 (GOTO 500 재진입 대비 재할당 가드). 선행 확인: 대상 메타는 writer 지역 배열이라 모듈 승격이 필수였음 (inmax 만 MD_MG_coord 상주)
+  - `GMG/2_read_mesh_MPI.f90`(reader): 통신 모드 분기 — 비루트 스테이징 할당 → `MPI_BCAST` 8건(전부 INTEGER, ndom>1 가드) → 자기 열(myrank+1) 추출 → 스테이징 해제. 파일 모드의 O(np) 더미 스킵·공유 파일 동시 OPEN 이 통신 모드에서 소거
+- 실행: `build.sh`(에러 0) + standalone make → ① 파일 모드(기본) run_tests ② tests/mg.in `isetup_comm=1` 임시 설정 후 합성 np=1/2/4 + 골든 재생 4종 ③ mg.in 원복 후 run_tests 재확인
+- 결과:
+  - **파일 모드 12/12 green** (bitwise 게이트 포함) — 이중 모드 도입이 기존 경로 무변경임을 입증
+  - **통신 모드 실증**: 합성 iso24 np=1/2/4 its 4/4/4, res_gate 유효숫자 일치. **MG_tmp 에 PMG_infor 미생성** (part 파일만 존재) = 통신 경로 실행 물증
+  - **통신 모드 bitwise**: ect1_s1/s30/s150 + gold_s30 재생 전부 VERDICT PASS + 베이스라인 **cmp bitwise 동일** — 정수 메타 통신화는 수치 무영향 (설계 예측과 일치)
+  - mg.in 원복 검증: run_tests 12/12 green (C010-3 ⑤ 교훈 절차 준수)
+- 판정: **PASS** — L1(빌드)·L2(its ±0)·L3 상당(bitwise) green, 증분 ① 완료
+- 다음: C011-3 — `part###.out`(finest) 2-phase Scatterv, REAL(8) coord 는 문자열 왕복 shim (C011-1 로드맵)

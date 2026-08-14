@@ -3,7 +3,9 @@ SUBROUTINE subdomain_infor_mg
     USE MD_MG_coord, ONLY: nmax1,nelem1,nelem2,nnei1,inei1,                  &
                            imapc,icoarse,icoarse1,icoarsef,ialv,inmax
     USE MD_MG_index, ONLY: nlevel,n_GC,nlevel_N,ioplv,n2_min, report_text,   &
-                            mxnbne_mg,isend_m,irecv_m             
+                            mxnbne_mg,isend_m,irecv_m,                       &
+                            isetup_comm,stg_iintf,stg_inodegl,stg_inbdc,     &
+                            stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr
     USE MD_parameter, ONLY: nf_max,ndim,ndom,nvpe
     USE MD_MG_matrix, ONLY: nnz1,nnzi1,iai1,jai1,iar1,jar1,                  &
                             iar2,jar2,Xintp1,Xrest1,ia1,ja1,Xrest2,          &
@@ -578,20 +580,39 @@ DO prc=1,np
    CLOSE(iu_prc(prc))
 ENDDO
 ! 
+   IF(isetup_comm.EQ.0) THEN
    OPEN(newunit=iu,file='MG_tmp/PMG_infor',status='replace')
    DO prc = 1,ndom
       DO ilv=1,nlevel_N
-      WRITE(iu,*) iintf(ilv,prc),inodegl(ilv,prc),inbdc(ilv,prc),inmax(ilv)  
-      ENDDO    
-      
-      DO ilv = 1,nlevel_N+1
-      WRITE(iu,*) ialv_P(ilv,prc)                               
+      WRITE(iu,*) iintf(ilv,prc),inodegl(ilv,prc),inbdc(ilv,prc),inmax(ilv)
       ENDDO
-      
+
+      DO ilv = 1,nlevel_N+1
+      WRITE(iu,*) ialv_P(ilv,prc)
+      ENDDO
+
       WRITE(iu,*) nnzc0(prc),nnzi(prc),nnzr(prc)
-      
+
    ENDDO
    CLOSE(iu)
+   ELSE
+!  통신 모드: PMG_infor 내용을 스테이징에 적재 (reader 가 BCAST 로 분배).
+!  ioplv=1 재진입(GOTO 500)으로 2회 실행될 수 있어 재할당 가드 필요
+   IF(ALLOCATED(stg_iintf)) DEALLOCATE(stg_iintf,stg_inodegl,stg_inbdc,     &
+                                       stg_ialvP,stg_inmax,stg_nnzc0,       &
+                                       stg_nnzi,stg_nnzr)
+   ALLOCATE(stg_iintf(nlevel_N,ndom),stg_inodegl(nlevel_N,ndom),            &
+            stg_inbdc(nlevel_N,ndom),stg_ialvP(nlevel_N+1,ndom),            &
+            stg_inmax(nlevel_N),stg_nnzc0(ndom),stg_nnzi(ndom),stg_nnzr(ndom))
+   stg_iintf(1:nlevel_N,:)    = iintf(1:nlevel_N,:)
+   stg_inodegl(1:nlevel_N,:)  = inodegl(1:nlevel_N,:)
+   stg_inbdc(1:nlevel_N,:)    = inbdc(1:nlevel_N,:)
+   stg_ialvP(1:nlevel_N+1,:)  = ialv_P(1:nlevel_N+1,:)
+   stg_inmax(1:nlevel_N)      = inmax(1:nlevel_N)
+   stg_nnzc0 = nnzc0
+   stg_nnzi  = nnzi
+   stg_nnzr  = nnzr
+   ENDIF
 
 ! NEW
    IF(ilv_test.EQ.2) THEN
