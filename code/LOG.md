@@ -409,3 +409,26 @@
 - 결과: ect1_s1/s10/s30/s150 = 11.08/13.89/11.51/16.23 s (구골든 12s 급과 동급 — s150 은 its 9,10 이라 +30% 수준). its 전부 베이스라인과 일치
 - 판정: **PASS** — 문서 사이클 (L1/L2 비해당), 잔여 stale 서술 소거
 - 다음: C011 (G2 — MG_tmp 파일 왕복 → MPI 통신 대체) 착수
+
+---
+
+## C011-1 | 2026-08-12 | G2 설계 — 파일 왕복 인벤토리 + ASCII 라운딩 실험 → 이중 모드 전략 확정
+
+- 목표: MG_tmp 파일 경유 분배의 전 데이터 흐름을 인벤토리하고, 통신 대체의 bitwise 게이트 전략을 실험으로 확정
+- 변경: 소스 무변경 (조사·설계 사이클). PLAN §5-2 검증 전략 갱신
+- 실행: writer/reader 정독 (탐색 에이전트 + 검증), ifort list-directed 왕복 실험 (컨테이너, 10만 표본 3스케일)
+- 결과 (인벤토리 핵심 — 파일:라인 상세는 조사 기록):
+  - 파일 3종: `part###.out`(finest, prc당 1개) / `part_MG###.out`(coarse 전 레벨 + A_GC) / `PMG_infor`(메타 공유 1개). 전부 **list-directed ASCII**, 일회성 fan-out (셋업 후 재사용 없음 — 전 소스 grep 로 확정)
+  - writer(rank0 전용, `read_grid.f90:253`): 전역 배열이 이미 `(np,·)` 선행차원으로 슬라이스됨 → Scatterv 사상 자연스러움. coarse fan-out 은 **np개 파일 동시 OPEN**(`6_subdomain_infor_mg.f90:229-232`) — np=900 이면 fd 900개 (ulimit 1024 근접, G1 잔여 위험). `ioplv=1` 재진입(GOTO 500)으로 fan-out 최대 2회
+  - reader(전 rank, `read_grid.f90:569`): allocate 크기가 파일 헤더 값 의존 → **2-phase(메타→allocate→페이로드) 프로토콜 강제**. PMG_infor 는 rank마다 앞 블록 더미 스킵 — **O(np²) 총 I/O**
+  - 유일한 rank 간 중복 데이터 = `A_GC`(전역 coarsest 행렬, 전 rank 동일) → Bcast 대상. 나머지는 disjoint
+  - writer/reader 사이 명시적 BARRIER 없음 — 사이 collective(`read_grid.f90:346` 등)가 우연히 동기화 (하네스는 명시 BARRIER 로 이미 문서화)
+  - **ASCII 라운딩 실험 (설계 결정 근거)**: REAL(8) 10만 표본(1e-3/1e0/1e6 스케일) list-directed 왕복 → **67,066/100,000 bitwise 불일치** (16자리 출력 vs 왕복 보존에 17자리 필요). 내부 WRITE/READ 문자열 왕복도 정확히 동일 라운딩(67,066 일치) → **in-memory 라운딩 shim 으로 파일 모드와 bitwise 동일한 통신 모드 구성 가능**
+- 확정 전략 (증분 로드맵, 각 단계 bitwise 게이트):
+  1. C011-2: `isetup_comm` 스위치 (mg.in `&MG_MPI`, 기본 0=파일 — 기존 동작 불변) + **PMG_infor 통신화** (정수뿐 → 라운딩 무관, O(np²) 스킵 소거)
+  2. C011-3: `part###.out`(finest) 2-phase Scatterv — REAL(8)(coord)은 문자열 왕복 shim 으로 파일 모드와 bitwise 유지
+  3. C011-4: `part_MG###.out` (레벨 루프 + A_GC 는 Bcast) — Xintp/Xrest/coord1 shim
+  4. C011-5: **shim 제거 (정확값 전달)** — 의도적 수치 개선으로 분리, its ±0 + 골든 재베이스라인 (PLAN §4-4 셋째 행 절차)
+  5. C011-6: 파일 경로·MG_tmp 삭제 (통신 모드 default 승격)
+- 판정: **PASS** — 설계 산출물(로드맵 5단계 + 게이트 전략) 확정, 실험 근거 확보
+- 다음: C011-2 착수 — 선행 확인: PMG_infor 대상 배열(iintf/inodegl/inbdc/inmax/ialv_P/nnz*)의 모듈 상주 여부 (rank0 writer→reader 구간 생존 조건)
