@@ -467,3 +467,21 @@
 - **최종 게이트**: 파일 모드 12/12 green. **파일/통신 × direct/mpirun 4조합 res_gate 완전 일치** (레이아웃 의존 소거 입증), 통신 모드 골든 재생 3종 신 베이스라인 bitwise 일치, 통신 모드에서 part###.out·PMG_infor 미생성 물증, mg.in 원복 검증, 프로덕션 빌드 에러 0
 - 판정: **PASS** — 증분 ② 완료 + 부수 성과(솔버 결정화·실버그 2건). G2 bitwise 안전망이 이후 증분에서도 성립하는 기반 확보
 - 다음: C011-4 — `part_MG###.out`(coarse 레벨 + A_GC Bcast) 통신화. 잔여 유의: 골든 .pre/.post 는 구 바이너리 프로덕션 산출물 (충실도 게이트 green 이므로 유지, 다음 골든 재채취 시 신 바이너리 기준 갱신 권고)
+
+---
+
+## C011-4 | 2026-08-14 | G2 증분 ③ — part_MG(coarse 전 레벨 + A_GC) 통신화, MG_tmp 파일 3종 전부 소거
+
+- 목표: 마지막 파일 `part_MG###.out`(coarse 레벨 루프 전체)을 통신화 — 통신 모드에서 MG_tmp 에 파일이 하나도 생기지 않는 상태
+- 변경:
+  - `MD_MG_index`: prc별 **성장형(배증, MOVE_ALLOC) 스트림** `stg_mg(:)`(파생 타입 ib/rb/ni/nr) + `stg_mg_init/stg_pushi/stg_pushr` — coarse fan-out 은 레벨-major 루프(레벨 상태 의존)라 C011-3식 카운트 선패스가 불가한 데 대한 해법
+  - `6_subdomain_infor_mg`(writer): coarse OPEN·CLOSE 루프 가드, prc 쓰기 루프의 전 WRITE 그룹(헤더·A/R/P 카운트·coord1·SR×4·P/R/Ac CSR·A_GC) 분기 — 마커('coarse','P-1' 등)는 무데이터라 통신 모드에서 생략, REAL(8)(coord1/Xintp1/Xrest1/A_GC coord)은 rt_ascii shim. nnzi/nnzr/nnzc0·mxnbne_mg·isend_m/irecv_m 누적과 iintf/ialv_P 갱신은 공통 경로 유지
+  - `2_read_mesh_MPI`(reader): part_MG OPEN 지점에서 rank0 연접(SUM/prefix) → 카운트 SCATTER → SCATTERV → 레벨 루프의 전 READ 를 커서 unpack 으로 분기 (검증 READ(헤더 4정수 대조)·계약 검사는 동일 유지), A_GC(헤더·imapG·행별 nnd+ja+coord 혼합 레코드) 포함, 종료 시 커서 정합 자기 검증
+- 실행: 프로덕션·standalone 빌드 (에러 0) → 파일 모드 run_tests → 통신 모드 합성 매트릭스(np1 direct/mpirun, np2/np4)·골든 재생 6종·MG_tmp 검사 → mg.in 원복 재확인
+- 결과:
+  - **파일 모드 12/12 green** (bitwise 포함 — 편집이 파일 경로 무변경 입증)
+  - **통신 모드 = 파일 모드 완전 일치**: 합성 4조합 res_gate 동일 (C011-3 결정화 덕에 launch 방식 무관), 골든 재생 6종 (ect1 s1/s10/s30/s150 + gold s1/s30) VERDICT PASS + 베이스라인 **bitwise 전부 일치**
+  - **MG_tmp 완전 비움 확인**: 통신 모드 실행 후 part/part_MG/PMG_infor 전부 미생성 — G2 의 데이터 경로 통신화 완료 (남은 것: mkdir 호출과 파일 코드 자체의 제거)
+  - mg.in 원복 후 12/12 green
+- 판정: **PASS** — L1·L2(its ±0)·L3 상당(bitwise) green. 증분 ③ 완료
+- 다음: C011-5 — rt_ascii shim 제거 (정확값 전달, 의도적 수치 개선 사이클: its 확인 + 골든 재베이스라인) → C011-6 — 파일 경로·mkdir 삭제 + isetup_comm=1 기본 승격 (np=900 프로덕션 실증과 연계)

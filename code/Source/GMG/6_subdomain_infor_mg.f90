@@ -6,7 +6,8 @@ SUBROUTINE subdomain_infor_mg
                             mxnbne_mg,isend_m,irecv_m,                       &
                             isetup_comm,stg_iintf,stg_inodegl,stg_inbdc,     &
                             stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr, &
-                            stg_fibuf,stg_frbuf,stg_ficnt,stg_frcnt,rt_ascii
+                            stg_fibuf,stg_frbuf,stg_ficnt,stg_frcnt,rt_ascii,&
+                            stg_mg,stg_mg_init,stg_pushi,stg_pushr
     USE MD_parameter, ONLY: nf_max,ndim,ndom,nvpe
     USE MD_MG_matrix, ONLY: nnz1,nnzi1,iai1,jai1,iar1,jar1,                  &
                             iar2,jar2,Xintp1,Xrest1,ia1,ja1,Xrest2,          &
@@ -347,10 +348,14 @@ ENDDO
 
 nelem0 = nelem
 
+IF(isetup_comm.EQ.0) THEN
 DO prc=1,np
    WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part_MG', prc, '.out'
    OPEN(newunit=iu_prc(prc),file=fout,status='replace')
 ENDDO
+ELSE
+CALL stg_mg_init(np)          ! C011-4: prc별 성장형 스트림 (재진입 시 리셋)
+ENDIF
 !/ 
   mxnbne_mg = 0
 !/
@@ -487,32 +492,49 @@ DEALLOCATE(celem0,icoarse1,nnei1,inei1)
 
 ! wrting out file 
 DO prc=1,np
-    
-   WRITE(iu_prc(prc),*)'coarse'
-   nnodep1=cinter1(prc)+cintf1(prc)+cext1(prc)                              
-   nintr1=cinter1(prc)                         
-   nintf1=cinter1(prc)+cintf1(prc)              
-   nneib1=nnbdom1(prc)     
+
+   nnodep1=cinter1(prc)+cintf1(prc)+cext1(prc)
+   nintr1=cinter1(prc)
+   nintf1=cinter1(prc)+cintf1(prc)
+   nneib1=nnbdom1(prc)
    nnd = nnodep1gl(prc)
 !
    iintf(ilv,prc) = nintf1
    inodegl(ilv,prc) = nnd
    inbdc(ilv,prc) =  nneib1
    ialv_P(ilv+1,prc) = ialv_P(ilv,prc) + nnodep1
-!  
+!
+  IF(isetup_comm.EQ.0) THEN
+   WRITE(iu_prc(prc),*)'coarse'
    WRITE(iu_prc(prc),*) nintf1,nnodep1,nneib1,nnd
-   
-! NEW 
+
+! NEW
    IF(ilv.NE.nlevel_N) THEN
       WRITE(iu_prc(prc),*)  nnbdomA(prc),nnbdomR(prc),nnbdomP(prc)
-   ELSE 
-      WRITE(iu_prc(prc),*)  nnbdomA(prc),nnbdomP(prc)  
+   ELSE
+      WRITE(iu_prc(prc),*)  nnbdomA(prc),nnbdomP(prc)
    ENDIF
 !
    DO i=1,nnd
        j=jperm1(prc,i)     ! to global of coarse 1
        WRITE(iu_prc(prc),*) coord1(1:ndim,j)
    ENDDO
+  ELSE
+!  통신 모드 pack — 파일 레코드와 동일 순서 (마커 'coarse' 등은 무데이터라 생략)
+   CALL stg_pushi(prc,nintf1)
+   CALL stg_pushi(prc,nnodep1)
+   CALL stg_pushi(prc,nneib1)
+   CALL stg_pushi(prc,nnd)
+   CALL stg_pushi(prc,nnbdomA(prc))
+   IF(ilv.NE.nlevel_N) CALL stg_pushi(prc,nnbdomR(prc))
+   CALL stg_pushi(prc,nnbdomP(prc))
+   DO i=1,nnd
+       j=jperm1(prc,i)     ! to global of coarse 1
+       DO j1=1,ndim
+          CALL stg_pushr(prc,rt_ascii(coord1(j1,j)))
+       ENDDO
+   ENDDO
+  ENDIF
    
 ! test
    IF(si1(prc,nnbdom1(prc)+1)-1.GE.nelemt) THEN
@@ -522,12 +544,29 @@ DO prc=1,np
    ENDIF
 !
 IF(nnbdom1(prc).NE.0) THEN
-    
+  IF(isetup_comm.EQ.0) THEN
    WRITE(iu_prc(prc),*)(nbdom1(prc,i),i=1,nnbdom1(prc))
    WRITE(iu_prc(prc),*)(ri1(prc,i),i=1,nnbdom1(prc)+1)
    WRITE(iu_prc(prc),*)(si1(prc,i),i=1,nnbdom1(prc)+1)
    WRITE(iu_prc(prc),*)(iperm1(prc,rint1(prc,i)),i=1,ri1(prc,nnbdom1(prc)+1)-1)
    WRITE(iu_prc(prc),*)(iperm1(prc,sint1(prc,i)),i=1,si1(prc,nnbdom1(prc)+1)-1)
+  ELSE
+   DO i=1,nnbdom1(prc)
+      CALL stg_pushi(prc,nbdom1(prc,i))
+   ENDDO
+   DO i=1,nnbdom1(prc)+1
+      CALL stg_pushi(prc,ri1(prc,i))
+   ENDDO
+   DO i=1,nnbdom1(prc)+1
+      CALL stg_pushi(prc,si1(prc,i))
+   ENDDO
+   DO i=1,ri1(prc,nnbdom1(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,rint1(prc,i)))
+   ENDDO
+   DO i=1,si1(prc,nnbdom1(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,sint1(prc,i)))
+   ENDDO
+  ENDIF
 !/
    isend_m(prc) = max(isend_m(prc),si1(prc,nnbdom1(prc)+1)-1)
    irecv_m(prc) = max(irecv_m(prc),ri1(prc,nnbdom1(prc)+1)-1)
@@ -536,110 +575,212 @@ ENDIF
 !
 ! NEW for SR for A
 IF(nnbdomA(prc).NE.0) THEN
-       
+  IF(isetup_comm.EQ.0) THEN
    WRITE(iu_prc(prc),*)(inbdomA(prc,i),i=1,nnbdomA(prc))
    WRITE(iu_prc(prc),*)(riA(prc,i),i=1,nnbdomA(prc)+1)
    WRITE(iu_prc(prc),*)(siA(prc,i),i=1,nnbdomA(prc)+1)
    WRITE(iu_prc(prc),*)(iperm1(prc,rintA(prc,i)),i=1,riA(prc,nnbdomA(prc)+1)-1)
    WRITE(iu_prc(prc),*)(iperm1(prc,sintA(prc,i)),i=1,siA(prc,nnbdomA(prc)+1)-1)
-ENDIF	
+  ELSE
+   DO i=1,nnbdomA(prc)
+      CALL stg_pushi(prc,inbdomA(prc,i))
+   ENDDO
+   DO i=1,nnbdomA(prc)+1
+      CALL stg_pushi(prc,riA(prc,i))
+   ENDDO
+   DO i=1,nnbdomA(prc)+1
+      CALL stg_pushi(prc,siA(prc,i))
+   ENDDO
+   DO i=1,riA(prc,nnbdomA(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,rintA(prc,i)))
+   ENDDO
+   DO i=1,siA(prc,nnbdomA(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,sintA(prc,i)))
+   ENDDO
+  ENDIF
+ENDIF
 	
 ! NEW for SR for R
 IF(ilv.NE.nlevel_N) THEN
 IF(nnbdomR(prc).NE.0) THEN
-       
+  IF(isetup_comm.EQ.0) THEN
    WRITE(iu_prc(prc),*)(inbdomR(prc,i),i=1,nnbdomR(prc))
    WRITE(iu_prc(prc),*)(riR(prc,i),i=1,nnbdomR(prc)+1)
    WRITE(iu_prc(prc),*)(siR(prc,i),i=1,nnbdomR(prc)+1)
    WRITE(iu_prc(prc),*)(iperm1(prc,rintR(prc,i)),i=1,riR(prc,nnbdomR(prc)+1)-1)
    WRITE(iu_prc(prc),*)(iperm1(prc,sintR(prc,i)),i=1,siR(prc,nnbdomR(prc)+1)-1)
+  ELSE
+   DO i=1,nnbdomR(prc)
+      CALL stg_pushi(prc,inbdomR(prc,i))
+   ENDDO
+   DO i=1,nnbdomR(prc)+1
+      CALL stg_pushi(prc,riR(prc,i))
+   ENDDO
+   DO i=1,nnbdomR(prc)+1
+      CALL stg_pushi(prc,siR(prc,i))
+   ENDDO
+   DO i=1,riR(prc,nnbdomR(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,rintR(prc,i)))
+   ENDDO
+   DO i=1,siR(prc,nnbdomR(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,sintR(prc,i)))
+   ENDDO
+  ENDIF
 ENDIF
 !
 ENDIF
 
 ! NEW for SR for P
 IF(nnbdomP(prc).NE.0) THEN
-       
+  IF(isetup_comm.EQ.0) THEN
    WRITE(iu_prc(prc),*)(inbdomP(prc,i),i=1,nnbdomP(prc))
    WRITE(iu_prc(prc),*)(riP(prc,i),i=1,nnbdomP(prc)+1)
    WRITE(iu_prc(prc),*)(siP(prc,i),i=1,nnbdomP(prc)+1)
    WRITE(iu_prc(prc),*)(iperm1(prc,rintP(prc,i)),i=1,riP(prc,nnbdomP(prc)+1)-1)
    WRITE(iu_prc(prc),*)(iperm1(prc,sintP(prc,i)),i=1,siP(prc,nnbdomP(prc)+1)-1)
+  ELSE
+   DO i=1,nnbdomP(prc)
+      CALL stg_pushi(prc,inbdomP(prc,i))
+   ENDDO
+   DO i=1,nnbdomP(prc)+1
+      CALL stg_pushi(prc,riP(prc,i))
+   ENDDO
+   DO i=1,nnbdomP(prc)+1
+      CALL stg_pushi(prc,siP(prc,i))
+   ENDDO
+   DO i=1,riP(prc,nnbdomP(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,rintP(prc,i)))
+   ENDDO
+   DO i=1,siP(prc,nnbdomP(prc)+1)-1
+      CALL stg_pushi(prc,iperm1(prc,sintP(prc,i)))
+   ENDDO
+  ENDIF
 ENDIF
 
-   WRITE(iu_prc(prc),*)'P-1'
-   
+   IF(isetup_comm.EQ.0) WRITE(iu_prc(prc),*)'P-1'
+
    nnodep = nnodep0(prc)
-   DO i=1,nnodep        
+   DO i=1,nnodep
        j=jperm(prc,i)   ! to global
        i1 = iai1(j)
        i2 = iai1(j+1)-1
        nnd = i2-i1+1
+      IF(isetup_comm.EQ.0) THEN
        WRITE(iu_prc(prc),*) nnd,(iperm1(prc,jai1(k)),k=i1,i2)
-       
+
        WRITE(iu_prc(prc),*) (Xintp1(k),k=i1,i2)
-       
+      ELSE
+       CALL stg_pushi(prc,nnd)
+       DO k=i1,i2
+          CALL stg_pushi(prc,iperm1(prc,jai1(k)))
+       ENDDO
+       DO k=i1,i2
+          CALL stg_pushr(prc,rt_ascii(Xintp1(k)))
+       ENDDO
+      ENDIF
+
        nnzi(prc) = nnzi(prc) + nnd
-       
+
    ENDDO
 
    nnodep0(prc) = nnodep1
-   
+
 ! R
-   WRITE(iu_prc(prc),*)'R-1'
+   IF(isetup_comm.EQ.0) WRITE(iu_prc(prc),*)'R-1'
    DO i=1,nnodep1
        j=jperm1(prc,i)   ! to global
        i1 = iar1(j)
        i2 = iar1(j+1)-1
        nnd = i2-i1+1
+      IF(isetup_comm.EQ.0) THEN
        WRITE(iu_prc(prc),*) nnd,(iperm(prc,jar1(k)),k=i1,i2)
-       
+
        WRITE(iu_prc(prc),*) (Xrest1(k),k=i1,i2)
-       
+      ELSE
+       CALL stg_pushi(prc,nnd)
+       DO k=i1,i2
+          CALL stg_pushi(prc,iperm(prc,jar1(k)))
+       ENDDO
+       DO k=i1,i2
+          CALL stg_pushr(prc,rt_ascii(Xrest1(k)))
+       ENDDO
+      ENDIF
+
        nnzr(prc) = nnzr(prc) + nnd
-       
+
    ENDDO
-      
+
 ! Ac
-   WRITE(iu_prc(prc),*)'Ac-1'
+   IF(isetup_comm.EQ.0) WRITE(iu_prc(prc),*)'Ac-1'
    DO i=1,nnodep1
        j=jperm1(prc,i)   ! to global
        i1 = ia1(j)
        i2 = ia1(j+1)-1
        nnd = i2-i1+1
+      IF(isetup_comm.EQ.0) THEN
        WRITE(iu_prc(prc),*) nnd,(iperm1(prc,ja1(k)),k=i1,i2)
-       
+      ELSE
+       CALL stg_pushi(prc,nnd)
+       DO k=i1,i2
+          CALL stg_pushi(prc,iperm1(prc,ja1(k)))
+       ENDDO
+      ENDIF
+
        mxnbne_mg = max(nnd,mxnbne_mg)
-       
+
        nnzc0(prc) = nnzc0(prc) + nnd
-       
-   ENDDO    
-   
-! !    GLOBAL 
-   
+
+   ENDDO
+
+! !    GLOBAL
+
    IF (n_GC.EQ.0) CYCLE
-   
+
    IF ((ilv_test.EQ.1).OR.(ilv.EQ.nlevel_N)) THEN
 
+    IF(isetup_comm.EQ.0) THEN
      write(iu_prc(prc),*)'A_GC'
      write(iu_prc(prc),*) nnodep1,nelem1,nnz1
      DO i=1,nnodep1
        j=jperm1(prc,i)   ! to global
        write(iu_prc(prc),*) j
      ENDDO
-    
-     DO i=1,nelem1       
+
+     DO i=1,nelem1
        i1 = ia1(i)
        i2 = ia1(i+1)-1
        nnd = i2-i1+1
        write(iu_prc(prc),*) nnd,(ja1(k),k=i1,i2),coord1(1:ndim,i)
-       
+
        mxnbne_mg = max(nnd,mxnbne_mg)
-       
-     ENDDO 
+
+     ENDDO
+    ELSE
+     CALL stg_pushi(prc,nnodep1)
+     CALL stg_pushi(prc,nelem1)
+     CALL stg_pushi(prc,nnz1)
+     DO i=1,nnodep1
+       CALL stg_pushi(prc,jperm1(prc,i))
+     ENDDO
+     DO i=1,nelem1
+       i1 = ia1(i)
+       i2 = ia1(i+1)-1
+       nnd = i2-i1+1
+       CALL stg_pushi(prc,nnd)
+       DO k=i1,i2
+          CALL stg_pushi(prc,ja1(k))
+       ENDDO
+       DO k=1,ndim
+          CALL stg_pushr(prc,rt_ascii(coord1(k,i)))
+       ENDDO
+
+       mxnbne_mg = max(nnd,mxnbne_mg)
+
+     ENDDO
+    ENDIF
 
    ENDIF
-     
+
 ENDDO
 
 ! NEW for A, R,P
@@ -695,10 +836,12 @@ IF(ilv_test.EQ.2) nlevel_N = ilv-1
     
 DEALLOCATE(ia1,ja1)
     
+IF(isetup_comm.EQ.0) THEN
 DO prc=1,np
    CLOSE(iu_prc(prc))
 ENDDO
-! 
+ENDIF
+!
    IF(isetup_comm.EQ.0) THEN
    OPEN(newunit=iu,file='MG_tmp/PMG_infor',status='replace')
    DO prc = 1,ndom
