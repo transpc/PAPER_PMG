@@ -5,7 +5,8 @@ SUBROUTINE subdomain_infor_mg
     USE MD_MG_index, ONLY: nlevel,n_GC,nlevel_N,ioplv,n2_min, report_text,   &
                             mxnbne_mg,isend_m,irecv_m,                       &
                             isetup_comm,stg_iintf,stg_inodegl,stg_inbdc,     &
-                            stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr
+                            stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr, &
+                            stg_fibuf,stg_frbuf,stg_ficnt,stg_frcnt,rt_ascii
     USE MD_parameter, ONLY: nf_max,ndim,ndom,nvpe
     USE MD_MG_matrix, ONLY: nnz1,nnzi1,iai1,jai1,iar1,jar1,                  &
                             iar2,jar2,Xintp1,Xrest1,ia1,ja1,Xrest2,          &
@@ -48,6 +49,7 @@ INTEGER(4) ialv_P(nlevel+1,ndom),iintf(nlevel,ndom),               &
            inodegl(nlevel,ndom),inbdc(nlevel,ndom)
 INTEGER(4) nnzc0(ndom),nnzi(ndom),nnzr(ndom),nnodep0(ndom),nnodep1gl(ndom)
 INTEGER(4) nc_min,ilv_test
+INTEGER(4) kci,kcr,icnt_t          ! C011-3: finest 스테이징 pack 커서·카운트
 REAL(8) tmp
 
 !-------------------------------------------
@@ -126,23 +128,48 @@ allocate(isend_m(ndom),irecv_m(ndom))
 isend_m = 1
 irecv_m = 1
 !/
+! C011-3 통신 모드: 카운트 선패스 → 스테이징 버퍼 할당 (reader 가 SCATTERV 로 분배)
+IF(isetup_comm.EQ.1) THEN
+   IF(ALLOCATED(stg_ficnt)) DEALLOCATE(stg_ficnt,stg_frcnt)
+   IF(ALLOCATED(stg_fibuf)) DEALLOCATE(stg_fibuf,stg_frbuf)
+   ALLOCATE(stg_ficnt(np),stg_frcnt(np))
+   DO prc=1,np
+      icnt_t = 8
+      DO i=1,cinter(prc)+cintf(prc)+cext(prc)
+         icnt_t = icnt_t + 1 + num_neigh_mg(jperm(prc,i))
+      ENDDO
+      IF(nnbdom(prc).NE.0)  icnt_t = icnt_t + nnbdom(prc) + 2*(nnbdom(prc)+1)    &
+                                   + (ri(prc,nnbdom(prc)+1)-1) + (si(prc,nnbdom(prc)+1)-1)
+      IF(nnbdomA(prc).NE.0) icnt_t = icnt_t + nnbdomA(prc) + 2*(nnbdomA(prc)+1)  &
+                                   + (riA(prc,nnbdomA(prc)+1)-1) + (siA(prc,nnbdomA(prc)+1)-1)
+      IF(nnbdomR(prc).NE.0) icnt_t = icnt_t + nnbdomR(prc) + 2*(nnbdomR(prc)+1)  &
+                                   + (riR(prc,nnbdomR(prc)+1)-1) + (siR(prc,nnbdomR(prc)+1)-1)
+      stg_ficnt(prc) = icnt_t
+      stg_frcnt(prc) = nnodegl_mg(prc)*ndim
+   ENDDO
+   ALLOCATE(stg_fibuf(SUM(stg_ficnt)),stg_frbuf(SUM(stg_frcnt)))
+   kci = 0
+   kcr = 0
+ENDIF
+!/
 DO prc=1,np
-   ! I0.3 포맷 — 읽기측 2_read_mesh_MPI.f90 과 동일 유지 (np>999 자동 확장)
-   WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', prc, '.out'
-   OPEN(newunit=iu_prc(prc),file=fout,status='replace')
-   
    nnodep=cinter(prc)+cintf(prc)+cext(prc)   !total number of nodes
-   nelemp=lnum(prc)                          !number of elements   
+   nelemp=lnum(prc)                          !number of elements
    nintr=cinter(prc)                         !number of internal nodes
    nintf=cinter(prc)+cintf(prc)              !number of interface nodes
    nneib=nnbdom(prc)                         !number of neighboring domains
    nnd = nnodegl_mg(prc)
-   
+
+  IF(isetup_comm.EQ.0) THEN
+   ! I0.3 포맷 — 읽기측 2_read_mesh_MPI.f90 과 동일 유지 (np>999 자동 확장)
+   WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', prc, '.out'
+   OPEN(newunit=iu_prc(prc),file=fout,status='replace')
+
    WRITE(iu_prc(prc),*) nelemp,nintr,nintf,nnodep,nneib,nnd
-   
+
    WRITE(iu_prc(prc),*) nnbdomA(prc),   nnbdomR(prc)         ! NEW
-   
-   DO i=1,nnodep                
+
+   DO i=1,nnodep
       ie=jperm(prc,i)
       j = num_neigh_mg(ie)
 !     WRITE(iu_prc(prc),*) j, iperm(prc,neigh_mg(1:j,ie))
@@ -153,40 +180,132 @@ DO prc=1,np
 !     WRITE(iu_prc(prc),*) xloc_tmp(jperm(prc,i),1:ndim)
       WRITE(iu_prc(prc),*) (xloc_tmp(jperm(prc,i),j),j=1,ndim)
    ENDDO
-! 
-  IF(nnbdom(prc).NE.0) THEN 
+  ELSE
+!  통신 모드 pack — 파일 레코드와 동일 순서·동일 값 (coord 는 rt_ascii 라운딩)
+   stg_fibuf(kci+1) = nelemp;  stg_fibuf(kci+2) = nintr
+   stg_fibuf(kci+3) = nintf;   stg_fibuf(kci+4) = nnodep
+   stg_fibuf(kci+5) = nneib;   stg_fibuf(kci+6) = nnd
+   stg_fibuf(kci+7) = nnbdomA(prc); stg_fibuf(kci+8) = nnbdomR(prc)
+   kci = kci + 8
+   DO i=1,nnodep
+      ie=jperm(prc,i)
+      j = num_neigh_mg(ie)
+      stg_fibuf(kci+1) = j
+      DO k=1,j
+         stg_fibuf(kci+1+k) = iperm(prc,neigh_mg(k,ie))
+      ENDDO
+      kci = kci + 1 + j
+   ENDDO
+   DO i=1,nnd
+      DO j=1,ndim
+         stg_frbuf(kcr+j) = rt_ascii(xloc_tmp(jperm(prc,i),j))
+      ENDDO
+      kcr = kcr + ndim
+   ENDDO
+  ENDIF
+!
+  IF(nnbdom(prc).NE.0) THEN
+   IF(isetup_comm.EQ.0) THEN
    WRITE(iu_prc(prc),*)(nbdom(prc,i),i=1,nnbdom(prc))
    WRITE(iu_prc(prc),*)(ri(prc,i),i=1,nnbdom(prc)+1)
    WRITE(iu_prc(prc),*)(si(prc,i),i=1,nnbdom(prc)+1)
    WRITE(iu_prc(prc),*)(iperm(prc,rint(prc,i)),i=1,ri(prc,nnbdom(prc)+1)-1)
    WRITE(iu_prc(prc),*)(iperm(prc,sint(prc,i)),i=1,si(prc,nnbdom(prc)+1)-1)
+   ELSE
+   DO i=1,nnbdom(prc)
+      stg_fibuf(kci+i) = nbdom(prc,i)
+   ENDDO
+   kci = kci + nnbdom(prc)
+   DO i=1,nnbdom(prc)+1
+      stg_fibuf(kci+i) = ri(prc,i)
+   ENDDO
+   kci = kci + nnbdom(prc)+1
+   DO i=1,nnbdom(prc)+1
+      stg_fibuf(kci+i) = si(prc,i)
+   ENDDO
+   kci = kci + nnbdom(prc)+1
+   DO i=1,ri(prc,nnbdom(prc)+1)-1
+      stg_fibuf(kci+i) = iperm(prc,rint(prc,i))
+   ENDDO
+   kci = kci + ri(prc,nnbdom(prc)+1)-1
+   DO i=1,si(prc,nnbdom(prc)+1)-1
+      stg_fibuf(kci+i) = iperm(prc,sint(prc,i))
+   ENDDO
+   kci = kci + si(prc,nnbdom(prc)+1)-1
+   ENDIF
 !/
    isend_m(prc) = max(isend_m(prc),si(prc,nnbdom(prc)+1)-1)
    irecv_m(prc) = max(irecv_m(prc),ri(prc,nnbdom(prc)+1)-1)
 !/
   ENDIF
-  
+
 !
 ! NEW for SR-for A
-  IF(nnbdomA(prc).NE.0) THEN 
+  IF(nnbdomA(prc).NE.0) THEN
+   IF(isetup_comm.EQ.0) THEN
    WRITE(iu_prc(prc),*)(inbdomA(prc,i),i=1,nnbdomA(prc))
    WRITE(iu_prc(prc),*)(riA(prc,i),i=1,nnbdomA(prc)+1)
    WRITE(iu_prc(prc),*)(siA(prc,i),i=1,nnbdomA(prc)+1)
    WRITE(iu_prc(prc),*)(iperm(prc,rintA(prc,i)),i=1,riA(prc,nnbdomA(prc)+1)-1)
    WRITE(iu_prc(prc),*)(iperm(prc,sintA(prc,i)),i=1,siA(prc,nnbdomA(prc)+1)-1)
+   ELSE
+   DO i=1,nnbdomA(prc)
+      stg_fibuf(kci+i) = inbdomA(prc,i)
+   ENDDO
+   kci = kci + nnbdomA(prc)
+   DO i=1,nnbdomA(prc)+1
+      stg_fibuf(kci+i) = riA(prc,i)
+   ENDDO
+   kci = kci + nnbdomA(prc)+1
+   DO i=1,nnbdomA(prc)+1
+      stg_fibuf(kci+i) = siA(prc,i)
+   ENDDO
+   kci = kci + nnbdomA(prc)+1
+   DO i=1,riA(prc,nnbdomA(prc)+1)-1
+      stg_fibuf(kci+i) = iperm(prc,rintA(prc,i))
+   ENDDO
+   kci = kci + riA(prc,nnbdomA(prc)+1)-1
+   DO i=1,siA(prc,nnbdomA(prc)+1)-1
+      stg_fibuf(kci+i) = iperm(prc,sintA(prc,i))
+   ENDDO
+   kci = kci + siA(prc,nnbdomA(prc)+1)-1
+   ENDIF
   ENDIF
 !
 ! NEW for SR-for R
-  IF(nnbdomR(prc).NE.0) THEN 
+  IF(nnbdomR(prc).NE.0) THEN
+   IF(isetup_comm.EQ.0) THEN
    WRITE(iu_prc(prc),*)(inbdomR(prc,i),i=1,nnbdomR(prc))
    WRITE(iu_prc(prc),*)(riR(prc,i),i=1,nnbdomR(prc)+1)
    WRITE(iu_prc(prc),*)(siR(prc,i),i=1,nnbdomR(prc)+1)
    WRITE(iu_prc(prc),*)(iperm(prc,rintR(prc,i)),i=1,riR(prc,nnbdomR(prc)+1)-1)
    WRITE(iu_prc(prc),*)(iperm(prc,sintR(prc,i)),i=1,siR(prc,nnbdomR(prc)+1)-1)
+   ELSE
+   DO i=1,nnbdomR(prc)
+      stg_fibuf(kci+i) = inbdomR(prc,i)
+   ENDDO
+   kci = kci + nnbdomR(prc)
+   DO i=1,nnbdomR(prc)+1
+      stg_fibuf(kci+i) = riR(prc,i)
+   ENDDO
+   kci = kci + nnbdomR(prc)+1
+   DO i=1,nnbdomR(prc)+1
+      stg_fibuf(kci+i) = siR(prc,i)
+   ENDDO
+   kci = kci + nnbdomR(prc)+1
+   DO i=1,riR(prc,nnbdomR(prc)+1)-1
+      stg_fibuf(kci+i) = iperm(prc,rintR(prc,i))
+   ENDDO
+   kci = kci + riR(prc,nnbdomR(prc)+1)-1
+   DO i=1,siR(prc,nnbdomR(prc)+1)-1
+      stg_fibuf(kci+i) = iperm(prc,sintR(prc,i))
+   ENDDO
+   kci = kci + siR(prc,nnbdomR(prc)+1)-1
+   ENDIF
   ENDIF
 !
-  
-CLOSE(iu_prc(prc) )
+
+  IF(isetup_comm.EQ.0) CLOSE(iu_prc(prc))
 
 ENDDO
 

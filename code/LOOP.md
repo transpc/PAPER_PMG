@@ -64,7 +64,7 @@ CSR 덤프 `(A, b)` 만 있으면 어떤 변경 후에도 `‖b − A·u‖ / �
 | iSMR ECT 436K셀 (rv_model=0, **구입력** blob d145c81) | 4 | 초기 과도 step 1~38 | **1~3 (최빈 2)** | ≤ 8.9e-9 | C005-r8 (fort.501, 76솔브) |
 | iSMR ECT 436K셀 (**ECT1 신입력** blob 29ee238, d5e2177) | 4 | 초기 과도 step 1~48 | **1~7 (최빈 2)** | ≤ 9.7e-9 | C016 (fort.501, 97솔브) |
 | **골든 재생** iSMR 436K (하네스 기준, 구입력 덤프) | 1 | s1/s10: its **2,2** · s30: **3,3** | 좌동 | 충실도 ≤1e-10 (gate 1e-9), 베이스라인 bitwise | C009 (golden/iSMR436k_np1/meta.md) |
-| **골든 재생** ECT1 436K (하네스 기준, 신입력 덤프) | 1 | s1/s10: its **1,1** · s30: **3,3** · s150(정착): **9,10** | 좌동 | 충실도 ≤8.9e-8 (gate 1e-6), 베이스라인 bitwise | C017 (golden/ECT1_436k_np1/meta.md) |
+| **골든 재생** ECT1 436K (하네스 기준, 신입력 덤프) | 1 | s1/s10: its **1,1** · s30: **3,3** · s150(정착): **9,9** | 좌동 | 충실도 ≤2.4e-7=k1 (gate 1e-6), 베이스라인 bitwise | C017, 재베이스라인 C011-3r1 (golden/ECT1_436k_np1/meta.md) |
 
 > 입력 이원화 (2026-08-12, 상류 d5e2177): 케이스 실측 기준은 입력 버전에 결박된다. 골든 덤프·C005 스모크 기준은 **구입력**(복원: `git show d5e2177^:code/2_iSMR_ECT_res1/somaFlow.in`), 현 워크트리 입력은 **ECT1 신입력**(C016/C017 행 기준). 두 골든 세트는 run_tests.sh 병행 게이트. 구입력의 step 38 발산은 신입력에서 미재현. max_bicg 는 10000→1000 으로 줄었으나 관측 최대 its 7 로 조기정지 없음 (C016).
 
@@ -136,7 +136,7 @@ CSR 덤프 `(A, b)` 만 있으면 어떤 변경 후에도 `‖b − A·u‖ / �
 | C008 | 덤프 훅 `dump_pmg.f90` (환경변수 게이트) + 본체 재빌드 green | §4-2 | C002 | ✔ setup+pre/post 캡처, 바이트 검증 완료 (r1: 셋업 덤프를 셋업 시점으로 이동) [LOG C008](LOG.md) |
 | C009 | 골든 덤프 채취 (rv_model=0 스모크 구간) + **ref 기준 확정** + `run_tests.sh` 완성 | §4-2, §4-4 | C005, C007, C008 | ✔ np=1 s1/s10/s30 — 3중 게이트(충실도·its·bitwise) green. np=2/4 채취는 MPI 하네스 확장(C010 준비)으로 이관 [LOG C009](LOG.md) |
 | C010 | **G1**: np=900 실행 가능하게 (파일 방식 유지 최소 수정) — 1차 목표는 **실패 재현·원인 확정** (후보 목록: PLAN §5-1 + 아래 검증 메모) | PLAN §5-1 | C007 | ▶ **합성 기준 달성**: -1 communicate 실물 / -2 np>1 가동 / -3 iar1 오버런(힙 오염) 수정 / -4 **np=900 its=7 green** + 발산 원인 Chebyshev eig 추정으로 확정 [LOG C010-1~4](LOG.md). 잔여: 프로덕션 케이스 np=900 실증(클러스터), eig 추정 강건화 |
-| C011 | **G2**: 파일 경유 분배(`MG_tmp/part###.out`)를 MPI 통신으로 대체 — 과도기 파일/통신 이중 모드로 bitwise 일치 확인 후 파일 경로 삭제 | PLAN §5-2 | C010 | ▶ -1 설계·ASCII 라운딩 실험 [LOG C011-1](LOG.md) / -2 `isetup_comm` 스위치+PMG_infor BCAST 화, 파일·통신 양모드 bitwise green [LOG C011-2](LOG.md). 잔여: part(-3)·part_MG(-4) Scatterv, shim 제거(-5), 파일 경로 삭제(-6) |
+| C011 | **G2**: 파일 경유 분배(`MG_tmp/part###.out`)를 MPI 통신으로 대체 — 과도기 파일/통신 이중 모드로 bitwise 일치 확인 후 파일 경로 삭제 | PLAN §5-2 | C010 | ▶ -1 설계·ASCII 라운딩 실험 [LOG C011-1](LOG.md) / -2 `isetup_comm`+PMG_infor BCAST [LOG C011-2](LOG.md) / -3 finest Scatterv + **실버그 2건 수정(y0 힙 가비지 시드 = C009 현상 정체, 솔버 결정화·재베이스라인)** [LOG C011-3](LOG.md). 잔여: part_MG(-4) Scatterv, shim 제거(-5), 파일 경로 삭제(-6) |
 | C012 | **G3**: 코드 간소화·가독성 (동작 불변 리팩터링) — its ±0 / bitwise 기준 | PLAN §5-3 | C007 | ▶ 1차 완료: 핵심 3파일 미사용 43건 + 죽은 파일 314줄 제거, 6/6+bitwise green [LOG C012-1](LOG.md). 후속: blaslapack IMPLICIT NONE, 잔여 파일 정리 |
 | C013 | 환경 이주 (root→sjdo) — env.sh 경로, poly_smooth 잠재 버그 수정 | — | — | ✔ [LOG C013](LOG.md) |
 | C014 | 골든 재채취 — 머신 간 bitwise 재현 확인, 재베이스라인 | §4-2 | C013 | ✔ [LOG C014](LOG.md) |

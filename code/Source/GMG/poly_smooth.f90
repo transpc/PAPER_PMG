@@ -213,6 +213,12 @@ subroutine lanczos_eig_max(np,k,nintf,n,nnz,ia,ja,au,nnbd,nbdom,si,ri,sintf,rint
   allocate(w(n))
   allocate(v_old(n))
 !  Allocate(y(n))
+! C011-3r1: 고스트 구간(nintf+1:n)이 미초기화인 채 amux0_PCG(full-row A·v)에
+! 읽혀 eig_max 가 힙 레이아웃(할당 순서·실행 환경)에 의존하던 문제 — 전체 제로
+! 초기화로 결정화. C009 "예조건자 시드 실행 문맥 의존"의 근원 기전
+  v = 0.d0
+  w = 0.d0
+  v_old = 0.d0
 
   ! Initialize the first vector v(:,1)
 !  call random_number(v(:,1))

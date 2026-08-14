@@ -39,6 +39,12 @@
       ALLOCATE(r0(nintf),p0(nintf),rb(nintf),s0(nintf),v0(nintf))
       ALLOCATE(y0(n),z0(n))
 	  ALLOCATE(solu(n))
+! C011-3r1: 첫 외부 반복에서 u = y0 로 읽히는 예조건 상태 벡터가 할당 직후의
+! 힙 가비지였음 (C009 "예조건자 시드 실행 문맥 의존"의 근원 — 결과가 할당
+! 순서·실행 환경의 힙 레이아웃에 결박). 0 초기화로 결정화, 2회차부터의
+! warm start(직전 예조건 출력 재사용)는 그대로 유지
+      y0 = 0.d0
+      z0 = 0.d0
 	  
       its = 0
 !	  solu = u

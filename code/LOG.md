@@ -451,3 +451,19 @@
   - mg.in 원복 검증: run_tests 12/12 green (C010-3 ⑤ 교훈 절차 준수)
 - 판정: **PASS** — L1(빌드)·L2(its ±0)·L3 상당(bitwise) green, 증분 ① 완료
 - 다음: C011-3 — `part###.out`(finest) 2-phase Scatterv, REAL(8) coord 는 문자열 왕복 shim (C011-1 로드맵)
+
+---
+
+## C011-3 | 2026-08-14 | G2 증분 ② — finest Scatterv + 게이트 red 가 실버그 2건을 적발 (y0 힙 가비지 = C009 "시드" 정체)
+
+- 목표: `part###.out`(finest)을 2-phase Scatterv 로 통신화, 파일 모드 대비 bitwise 유지
+- 변경 (transport): `MD_MG_index` — finest 스테이징(stg_fibuf/frbuf/ficnt/frcnt) + `rt_ascii`(문자열 왕복 shim, CONTAINS 함수). `6_subdomain_infor_mg` — 카운트 선패스 + prc 루프 pack 분기 (coord 는 rt_ascii). `2_read_mesh_MPI` — 카운트 SCATTER → 페이로드 SCATTERV(INT/REAL 2스트림) → READ 순서 그대로 커서 unpack + **커서 정합 자기 검증**(kci/kcr==수신 길이 아니면 STOP)
+- **게이트 red → 원인 규명 (r1)**:
+  - 통신 모드 res_gate 가 실행 방식에 따라 이동 (np1 direct 3.9707e-2 = 파일과 일치 vs np1 mpirun 3.8457e-2), 골든 재생은 **k1 bitwise 일치·k2 만 불일치** ×4종 — 데이터 오류로 보기엔 패턴이 이상함
+  - **전송 충실도 직접 입증**: 임시 계측으로 finest 전 배열(헤더·이웃·coord·SR×3) 체크섬 대조 → np=4 파일/통신 **완전 동일**. shim 자체도 3값/줄 왕복 실험 0/90,000 불일치 → transport 무결 확정, 원인은 솔버 측 레이아웃 의존
+  - `-init=snan,arrays -fpe0 -traceback` 디버그 빌드로 추적 → **실버그 ①**: `6_solver_pbcg_mg.f90` 의 예조건 상태 벡터 `y0(n)` 이 할당 직후(첫 외부 반복) `u = y0` 로 읽힘 — **힙 가비지가 MG 예조건 내부 솔브의 초기 추정**. k2 솔브는 힙 재사용으로 직전 k1 의 y0 잔재를 물려받는 비공식 warm start 였음 = **C009 "예조건자 시드 실행 문맥 의존"의 정체** (C014 의 SIF 교체 후 잔차 최하위 비트 드리프트와도 정합). **실버그 ②**: `poly_smooth` Lanczos 워크스페이스 v/w/v_old 고스트 구간 미초기화 (동일 계열, 방어적 수정)
+  - 수정: y0/z0·v/w/v_old 할당 직후 0 초기화 (warm start 는 2회차부터 그대로). snan 빌드 **완주·트랩 0** = 이 경로 미초기화 REAL 읽기 전멸
+- **재베이스라인 (PLAN §4-4 의도적 개선 절차 — 사유: 비결정성 제거)**: k1 전부 bitwise 불변, k2 만 변화. its 유일 변화 = ect1_s150 k2 10→9 (개선). **프로덕션 대비 k2 충실도 대폭 개선**: ect1 s1 6.1e-11→**4.6e-16**, s10 1.3e-10→6.3e-13, s30 2.2e-10→2.4e-13, s150 6.1e-8→4.3e-13 (k1 충실도는 전부 불변 — C009 관찰과 정합: 프로덕션 k2 도 사실상 0 근방 시드였던 것). 구골든 3스텝 its 불변. 베이스라인 14파일 재설치 + checksums 갱신 + run_tests s150 ref (9,9)
+- **최종 게이트**: 파일 모드 12/12 green. **파일/통신 × direct/mpirun 4조합 res_gate 완전 일치** (레이아웃 의존 소거 입증), 통신 모드 골든 재생 3종 신 베이스라인 bitwise 일치, 통신 모드에서 part###.out·PMG_infor 미생성 물증, mg.in 원복 검증, 프로덕션 빌드 에러 0
+- 판정: **PASS** — 증분 ② 완료 + 부수 성과(솔버 결정화·실버그 2건). G2 bitwise 안전망이 이후 증분에서도 성립하는 기반 확보
+- 다음: C011-4 — `part_MG###.out`(coarse 레벨 + A_GC Bcast) 통신화. 잔여 유의: 골든 .pre/.post 는 구 바이너리 프로덕션 산출물 (충실도 게이트 green 이므로 유지, 다음 골든 재채취 시 신 바이너리 기준 갱신 권고)

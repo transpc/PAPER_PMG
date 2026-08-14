@@ -25,5 +25,20 @@
       INTEGER(4) :: isetup_comm
       INTEGER(4),DIMENSION(:,:),ALLOCATABLE :: stg_iintf,stg_inodegl,stg_inbdc,stg_ialvP
       INTEGER(4),DIMENSION(:),ALLOCATABLE :: stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr
+!   finest fan-out (part###.out) 스테이징 (C011-3): prc 순 연접 정수/실수 스트림 + prc별 길이
+      INTEGER(4),DIMENSION(:),ALLOCATABLE :: stg_fibuf,stg_ficnt,stg_frcnt
+      REAL(8),DIMENSION(:),ALLOCATABLE :: stg_frbuf
+!
+    CONTAINS
+!     list-directed ASCII 왕복과 bitwise 동일한 라운딩 (C011-1 실험 검증).
+!     과도기 통신 모드가 파일 모드와 골든 bitwise 를 유지하기 위한 shim —
+!     제거(정확값 전달)는 C011-5 에서 별도 수치 사이클로 수행
+      FUNCTION rt_ascii(x) RESULT(y)
+      REAL(8), INTENT(IN) :: x
+      REAL(8) :: y
+      CHARACTER(32) :: buf
+      WRITE(buf,*) x
+      READ(buf,*) y
+      END FUNCTION rt_ascii
 !
     END MODULE MD_MG_index

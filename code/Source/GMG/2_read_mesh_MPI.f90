@@ -16,7 +16,8 @@ USE MD_MG_matrix, ONLY: nnzi1,iai1,jai1,iar1,jar1,Xintp1,Xrest1,               &
                         iai,jai,iar,jar,nnzc0,nnzi,nnzr,nnzs
 USE MD_MG_index, ONLY: mxnbne,nlevel,n_GC,nlevel_N,mxnbne_mg,isend_m,irecv_m,   &
                        isetup_comm,stg_iintf,stg_inodegl,stg_inbdc,             &
-                       stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr
+                       stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr,         &
+                       stg_fibuf,stg_frbuf,stg_ficnt,stg_frcnt
 USE MD_MG_Global_C, ONLY: nlv_glo  ,nnodeG,nnzG,nnodeC,imapG,imapGZ,           &
                           iaG,jaG,juG,eG,eG0,rG,rG0,auG,auG0,                  &
                           coordG
@@ -41,6 +42,10 @@ integer::alstatus,i1,i2,i3,i4,ierr
 real*8 tmp(10*mxnbne)
 INTEGER(4)::ilv,ntmpc,ntmp,ntmpf,ncolf1,ncolc1,ncolc2,nnode0,nnzt,nnzt1
 INTEGER(4), DIMENSION(:), ALLOCATABLE::id
+! C011-3: finest 통신 모드 수신 버퍼·커서
+INTEGER(4)::kci,kcr,icnt_my,rcnt_my
+INTEGER(4), DIMENSION(:), ALLOCATABLE::fibuf_my,idis_t,rdis_t
+REAL(8), DIMENSION(:), ALLOCATABLE::frbuf_my
 
 !%read grid data
 ! I0.3: 3자리 zero-padding, np>999 이면 자릿수 자동 확장 — 쓰기측
@@ -81,6 +86,61 @@ WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', myrank+1, '.out'
 !/
 ! 1: for the finest level: - - - - - - - - - - - - - - - 
 
+IF(isetup_comm.EQ.1) THEN
+! C011-3 통신 모드: 카운트 SCATTER → 페이로드 SCATTERV → 파일 READ 순서 그대로
+! 커서 unpack (part###.out 미생성). REAL(8) 은 pack 시점에 rt_ascii 라운딩 완료
+   IF(myrank.NE.0) THEN
+      IF(ALLOCATED(stg_ficnt)) DEALLOCATE(stg_ficnt,stg_frcnt)
+      ALLOCATE(stg_ficnt(1),stg_frcnt(1))          ! 비루트 더미 (MPI 송신 인자용)
+   ENDIF
+   IF(ndom.EQ.1) THEN
+      icnt_my = stg_ficnt(1)
+      rcnt_my = stg_frcnt(1)
+   ENDIF
+!DEC$IF defined (mpi_flag)
+   IF(ndom.GT.1) THEN
+   CALL MPI_SCATTER(stg_ficnt,1,mpi_INTEGER,icnt_my,1,mpi_INTEGER,0,mpi_comm_world,ierr)
+   CALL MPI_SCATTER(stg_frcnt,1,mpi_INTEGER,rcnt_my,1,mpi_INTEGER,0,mpi_comm_world,ierr)
+   ENDIF
+!DEC$ENDIF
+   ALLOCATE(fibuf_my(icnt_my),frbuf_my(MAX(1,rcnt_my)))
+   IF(ndom.EQ.1) THEN
+      fibuf_my(1:icnt_my) = stg_fibuf(1:icnt_my)
+      frbuf_my(1:rcnt_my) = stg_frbuf(1:rcnt_my)
+   ENDIF
+!DEC$IF defined (mpi_flag)
+   IF(ndom.GT.1) THEN
+      IF(myrank.EQ.0) THEN
+         ALLOCATE(idis_t(ndom),rdis_t(ndom))
+         idis_t(1) = 0
+         rdis_t(1) = 0
+         DO k=2,ndom
+            idis_t(k) = idis_t(k-1) + stg_ficnt(k-1)
+            rdis_t(k) = rdis_t(k-1) + stg_frcnt(k-1)
+         ENDDO
+      ELSE
+         ALLOCATE(idis_t(1),rdis_t(1))
+         IF(.NOT.ALLOCATED(stg_fibuf)) ALLOCATE(stg_fibuf(1),stg_frbuf(1))   ! 비루트 더미
+      ENDIF
+      CALL MPI_SCATTERV(stg_fibuf,stg_ficnt,idis_t,mpi_INTEGER,             &
+                        fibuf_my,icnt_my,mpi_INTEGER,0,mpi_comm_world,ierr)
+      CALL MPI_SCATTERV(stg_frbuf,stg_frcnt,rdis_t,MPI_DOUBLE_PRECISION,    &
+                        frbuf_my,rcnt_my,MPI_DOUBLE_PRECISION,0,mpi_comm_world,ierr)
+      DEALLOCATE(idis_t,rdis_t)
+   ENDIF
+!DEC$ENDIF
+   DEALLOCATE(stg_fibuf,stg_frbuf,stg_ficnt,stg_frcnt)
+   nelem   = fibuf_my(1)
+   nintr   = fibuf_my(2)
+   nintf   = fibuf_my(3)
+   nnode   = fibuf_my(4)
+   nnbd    = fibuf_my(5)
+   nnodegl = fibuf_my(6)
+   nnbdA   = fibuf_my(7)
+   nnbdR   = fibuf_my(8)
+   kci = 8
+   kcr = 0
+ELSE
 ! NEWUNIT: 런타임이 미사용 unit 을 배정 — 고정 unit(999 등)과의 충돌 원천 차단
 open(newunit=iu,file=fout,status='old',action='read',iostat=alstatus)
 IF(alstatus/=0) THEN
@@ -90,6 +150,7 @@ ENDIF
 read(iu,*)nelem,nintr,nintf,nnode,nnbd,nnodegl
 ! NEW
 read(iu,*)nnbdA,nnbdR
+ENDIF
 !----------------------------------------------------
 IF(nelem.NE.nnode) THEN
     WRITE(999,*)'nelem=/nnode'!
@@ -102,18 +163,36 @@ nelemgl = nnodegl
 
 ALLOCATE(num_neigh(nelem),e_neigh(nf_max,nelem),stat=alstatus)
 IF (alstatus/=0) STOP 'not enough inod memory'
+IF(isetup_comm.EQ.1) THEN
+DO ie=1,nelem
+   j = fibuf_my(kci+1)
+   DO k=1,j
+      e_neigh(k,ie) = fibuf_my(kci+1+k)
+   ENDDO
+   kci = kci + 1 + j
+   num_neigh(ie) = j
+ENDDO
+ELSE
 DO ie=1,nelem
    READ(iu,*) j,e_neigh(1:j,ie)
    num_neigh(ie) = j
 ENDDO
+ENDIF
 !
 !----------------------------------------------------------------------
 !%read coordinates
 ALLOCATE(coord(ndim,nnodegl),stat=alstatus)
 IF(alstatus/=0) STOP 'not enough connect memory'
+IF(isetup_comm.EQ.1) THEN
+DO ip=1,nnodegl
+   coord(1:ndim,ip) = frbuf_my(kcr+1:kcr+ndim)
+   kcr = kcr + ndim
+ENDDO
+ELSE
 DO ip=1,nnodegl
    READ(iu,*) coord(1:ndim,ip)
 ENDDO
+ENDIF
 !--------------------------------------------
 !%read neighboring data
 i = MAX(nnbd,1)
@@ -124,9 +203,18 @@ rpt = 0
 spt = 0
 
 IF(nnbd.NE.0) THEN
+IF(isetup_comm.EQ.1) THEN
+nbdom(1:nnbd)  = fibuf_my(kci+1:kci+nnbd)
+kci = kci + nnbd
+rpt(1:nnbd+1)  = fibuf_my(kci+1:kci+nnbd+1)
+kci = kci + nnbd+1
+spt(1:nnbd+1)  = fibuf_my(kci+1:kci+nnbd+1)
+kci = kci + nnbd+1
+ELSE
 READ(iu,*) nbdom(1:nnbd)
 READ(iu,*) rpt(1:nnbd+1)
 READ(iu,*) spt(1:nnbd+1)
+ENDIF
 ENDIF
 !
 i = MAX(1,nnode-nintf)
@@ -139,9 +227,16 @@ rintf = 0
 sintf = 0
 !
 IF(nnbd.NE.0) THEN
-    
+IF(isetup_comm.EQ.1) THEN
+! 파일 모드와 동일 계약: rint 개수 = rpt(nnbd+1)-1 = nnode-nintf (writer 측 ri 와 일치)
+rintf(1:(nnode-nintf))   = fibuf_my(kci+1:kci+(nnode-nintf))
+kci = kci + (nnode-nintf)
+sintf(1:(spt(nnbd+1)-1)) = fibuf_my(kci+1:kci+(spt(nnbd+1)-1))
+kci = kci + (spt(nnbd+1)-1)
+ELSE
 READ(iu,*) rintf(1:(nnode-nintf))
 READ(iu,*) sintf(1:(spt(nnbd+1)-1))
+ENDIF
 ENDIF
 ! - - - - - - - - - NEW for A  - - - - - - - - - 
 i = MAX(nnbdA,1)
@@ -152,9 +247,18 @@ nbdomA = 0
 rptA = 0
 sptA = 0
 IF(nnbdA.NE.0) THEN
+IF(isetup_comm.EQ.1) THEN
+nbdomA(1:nnbdA)  = fibuf_my(kci+1:kci+nnbdA)
+kci = kci + nnbdA
+rptA(1:nnbdA+1)  = fibuf_my(kci+1:kci+nnbdA+1)
+kci = kci + nnbdA+1
+sptA(1:nnbdA+1)  = fibuf_my(kci+1:kci+nnbdA+1)
+kci = kci + nnbdA+1
+ELSE
 READ(iu,*) nbdomA(1:nnbdA)
 READ(iu,*) rptA(1:nnbdA+1)
 READ(iu,*) sptA(1:nnbdA+1)
+ENDIF
 ENDIF
 !
 i = MAX(1,rptA(nnbdA+1)-1)
@@ -167,10 +271,15 @@ rintfA = 0
 sintfA = 0
 !
 IF(nnbdA.NE.0) THEN
-
+IF(isetup_comm.EQ.1) THEN
+rintfA(1:(rptA(nnbdA+1)-1)) = fibuf_my(kci+1:kci+(rptA(nnbdA+1)-1))
+kci = kci + (rptA(nnbdA+1)-1)
+sintfA(1:(sptA(nnbdA+1)-1)) = fibuf_my(kci+1:kci+(sptA(nnbdA+1)-1))
+kci = kci + (sptA(nnbdA+1)-1)
+ELSE
 READ(iu,*) rintfA(1:(rptA(nnbdA+1)-1))
 READ(iu,*) sintfA(1:(sptA(nnbdA+1)-1))
-
+ENDIF
 ENDIF
 ! - - - - - - - - - NEW for R  - - - - - - - - - 
 i = MAX(nnbdR,1)
@@ -181,9 +290,18 @@ nbdomR = 0
 rptR = 0
 sptR = 0
 IF(nnbdR.NE.0) THEN
+IF(isetup_comm.EQ.1) THEN
+nbdomR(1:nnbdR)  = fibuf_my(kci+1:kci+nnbdR)
+kci = kci + nnbdR
+rptR(1:nnbdR+1)  = fibuf_my(kci+1:kci+nnbdR+1)
+kci = kci + nnbdR+1
+sptR(1:nnbdR+1)  = fibuf_my(kci+1:kci+nnbdR+1)
+kci = kci + nnbdR+1
+ELSE
 READ(iu,*) nbdomR(1:nnbdR)
 READ(iu,*) rptR(1:nnbdR+1)
 READ(iu,*) sptR(1:nnbdR+1)
+ENDIF
 ENDIF
 !
 i = MAX(1,rptR(nnbdR+1)-1)
@@ -196,13 +314,27 @@ rintfR = 0
 sintfR = 0
 !
 IF(nnbdR.NE.0) THEN
-
+IF(isetup_comm.EQ.1) THEN
+rintfR(1:(rptR(nnbdR+1)-1)) = fibuf_my(kci+1:kci+(rptR(nnbdR+1)-1))
+kci = kci + (rptR(nnbdR+1)-1)
+sintfR(1:(sptR(nnbdR+1)-1)) = fibuf_my(kci+1:kci+(sptR(nnbdR+1)-1))
+kci = kci + (sptR(nnbdR+1)-1)
+ELSE
 READ(iu,*) rintfR(1:(rptR(nnbdR+1)-1))
 READ(iu,*) sintfR(1:(sptR(nnbdR+1)-1))
-
 ENDIF
-! 
+ENDIF
+!
+IF(isetup_comm.EQ.1) THEN
+! unpack 정합 검사: 커서가 정확히 수신 길이에서 끝나야 함 (프로토콜 자기 검증)
+IF(kci.NE.icnt_my .OR. kcr.NE.rcnt_my) THEN
+WRITE(*,*)'read_mesh_MPI: finest unpack mismatch rank',myrank,kci,icnt_my,kcr,rcnt_my
+STOP
+ENDIF
+DEALLOCATE(fibuf_my,frbuf_my)
+ELSE
 CLOSE(iu)
+ENDIF
 
 !/ delete the tmp. file
 !call system('del fout')
