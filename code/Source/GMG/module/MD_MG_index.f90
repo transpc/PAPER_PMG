@@ -16,6 +16,14 @@
 ! re-calculate: stiffness_MG
       INTEGER icase_MG
       INTEGER :: ihybrid
+! l1-보정 스무더 (해결책 A, Baker et al. 2011): 코어스 레벨 GS 대각에
+!   랭크 밖(고스트 열) 연결 |a_ij| 합을 더해 파티션 무관 수렴 보장.
+!   0 = 기존(순수 대각), 1 = l1 보정. np=1 에서는 고스트가 없어 두 모드 동일.
+      INTEGER(4) :: il1_gs
+! POL(Chebyshev) λ_max 산정 방식 (G3 수정, LOOP F): 0 = Lanczos 추정×1.1(기존),
+!   1 = Gershgorin 행합 상계 — 추정 실패로 인한 최상위 모드 증폭(np=96/128
+!   붕괴의 근본 원인)을 원천 차단. 분할 무관 확장성의 전제.
+      INTEGER(4) :: ieig_pol
 ! hibrid solver
       INTEGER(4) isol_start, i_precond
       INTEGER(4) nsol_start, nsol_start_mg

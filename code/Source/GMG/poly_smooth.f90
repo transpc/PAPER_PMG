@@ -156,15 +156,15 @@ subroutine eig_value
 
 USE MD_geometry, only: nnode
 USE MD_matrix, only: nnz, ia,ja,au
-use MD_MG_index, only: icheb, rcheb
+use MD_MG_index, only: icheb, rcheb, ieig_pol
 use MD_MPI, only: nintf,nprcs
 USE MD_MPI_ARP, only: nnbdA,sptA,rptA,sintfA,rintfA,nbdomA
 	  
 IMPLICIT NONE
       
 ! temp:
-real(8) eig_max, eig_min
-integer (4) k
+real(8) eig_max, eig_min, xtmp
+integer (4) k, i, j
 
 k= icheb(4)
 
@@ -174,6 +174,27 @@ eig_min = eig_max/30.d0
 
 rcheb(1) = eig_max*1.1
 rcheb(2) = eig_min
+
+! ieig_pol=1: Lanczos 추정 대신 Gershgorin 상계 사용 (G3 수정, LOOP F)
+!   8-스텝 Lanczos 추정은 분할 기하에 따라 수% 요동 → 특정 np 에서 구간이
+!   스펙트럼 상단을 놓쳐 Chebyshev 가 최상위 모드를 증폭 (np=96/128 붕괴 원인).
+!   Gershgorin 행합 상계는 항상 λ_max 이상이므로 증폭이 원천 차단됨.
+if (ieig_pol == 1) then
+   eig_max = 0.d0
+   do i = 1, nintf
+      xtmp = 0.d0
+      do j = ia(i), ia(i+1)-1
+         xtmp = xtmp + DABS(au(j))
+      enddo
+      eig_max = MAX(eig_max, xtmp)
+   enddo
+   if (nprcs > 1) then
+      call allreduce_max_r1(eig_max, xtmp)
+      eig_max = xtmp
+   endif
+   rcheb(1) = eig_max
+   rcheb(2) = eig_max/30.d0
+endif
 
 return
     END 

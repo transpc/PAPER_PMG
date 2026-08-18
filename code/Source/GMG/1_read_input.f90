@@ -6,7 +6,7 @@
                                 iter_mg, n_GC, isth, AR_hi, crit_1, relax, &
                                 iter_max, nlevel_N, n1_min, n2_min, ioplv, ip_lev, &
                                 isol_mg, id_GS_sym, itergs, icheb, icase_MG, &
-                                crit_bcg_mg, ihybrid, isol_start, isetup_comm
+                                crit_bcg_mg, ihybrid, isol_start, isetup_comm, il1_gs, ieig_pol
          USE MD_MPI, ONLY: myrank, myrankt
          USE MD_MG_Global_C, ONLY: i_dir, nlv_glo, nlv_glomax, igather
          USE MD_MPI_MG, ONLY: icommu, iGS, nGS, iallocate_c
@@ -46,7 +46,7 @@
          NAMELIST /MG_method/ isol_mg, icase_MG, mdf_matrix, isol_start
          NAMELIST /MG_level/ nlevel, nlv_glomax, ioplv
          NAMELIST /MG_coarsening/ teta, isemi, AR_hi
-         NAMELIST /MG_smoothing/ smothing, itergs, id_GS_sym, relax, icheb
+         NAMELIST /MG_smoothing/ smothing, itergs, id_GS_sym, relax, icheb, il1_gs, ieig_pol
          NAMELIST /MG_interpolation/ teta_p, ip_nmax, ip_inter, ip_lev, alpha
          NAMELIST /MG_coarsest/ n_GC, i_dir, ipar, iGS, nGS, iallocate_c, crit_1
          NAMELIST /MG_MPI/ icommu, igather, isetup_comm
@@ -61,6 +61,8 @@
          crit = eps_mg
          ndom = np_mg
          isetup_comm = 0            ! 기본 = 파일 모드 (mg.in 미지정 시 기존 동작)
+         il1_gs = 0                 ! 기본 = 기존 스무더 (mg.in 미지정 시 기존 동작)
+         ieig_pol = 0               ! 기본 = Lanczos 추정 (mg.in 미지정 시 기존 동작)
 !
          OPEN (newunit=iu, file='mg.in', status='old', action='read', iostat=ios)
          IF (ios /= 0) THEN

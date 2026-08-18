@@ -5,7 +5,7 @@
       USE MD_MG_matrix, ONLY: ia1,ja1, ia2, ja2, au1, au2, iac,jac,juc,auc,diagrc,        &
                               iar, jar, Xrest, iar2, jar2, Xrest2,                        &
                               nnzs,ias,jas,aus,nnz1,nnz2
-      USE MD_MG_index, ONLY: nlevel,mxnbne,n_GC
+      USE MD_MG_index, ONLY: nlevel,mxnbne,n_GC,il1_gs
 	  USE MD_MG_coord, only: nnode1,nnode2,nnode1gl,nnode2gl,ialv,nnods,inmax
       USE MD_MPI, ONLY: nnbd,spt,rpt,sintf,rintf,nbdom,nnsend,nnrecv,nintf,myrank
       USE MD_MPI_MG, ONLY:  icommu, siaf,riaf,iintf,inodegl,nintf1,nintf2,nintfs,iallocate_c
@@ -169,15 +169,23 @@
        DEALLOCATE(ia2,ja2,au2)
 
 !     FOr diagrc
-       
+
         ntmp = ncolc1 - nnode2
-    !$omp PARALLEL DO private(j)
-        
+    !$omp PARALLEL DO private(j,k,tmp)
+
         DO i = 1, nintf2
                  j = juc(ntmp+i)
-            diagrc(ntmp+i) = 1.d0/auc(j)
+            tmp = auc(j)
+! il1_gs=1: 랭크 밖(고스트, 레벨 내 로컬번호 > nintf2) 열의 |a_ij| 를 대각에
+! 가산 — l1-hybrid-GS (해결책 A). 고스트 열은 jac > ntmp+nintf2 로 판별
+            IF (il1_gs .EQ. 1) THEN
+               DO k = iac(ntmp+i), iac(ntmp+i+1)-1
+                  IF (jac(k) .GT. ntmp+nintf2) tmp = tmp + ABS(auc(k))
+               ENDDO
+            ENDIF
+            diagrc(ntmp+i) = 1.d0/tmp
         ENDDO
-       
+
     !$omp END PARALLEL DO
         
       ENDDO
