@@ -29,7 +29,6 @@ FSRCS = md_function.f90\
         coarsening_semi_amg.f90\
         connectivity_coarse.f90\
         mt_amux.f90\
-        mt_amuxvr1.f90\
         mt_precond.f90\
         PCG_Dig.f90\
 		poly_smooth.f90\
@@ -37,12 +36,10 @@ FSRCS = md_function.f90\
         Domain_infor_FVM_coarse.f90\
         Domain_infor_FVM_coarsest.f90\
         Relax_GSP.f90\
-        Relax_GSx.f90\
         send_receive.f90\
         send_receive_csr.f90\
         send_receive_mt.f90\
         solve_CG.f90\
-        solve_CG_P.f90\
         SOLVE_GC.f90\
         stiffness_MG.f90\
 	    mt_trans.f90\
