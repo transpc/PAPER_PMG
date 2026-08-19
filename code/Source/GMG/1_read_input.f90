@@ -62,7 +62,7 @@
          ndom = np_mg
          isetup_comm = 0            ! 기본 = 파일 모드 (mg.in 미지정 시 기존 동작)
          il1_gs = 0                 ! 기본 = 기존 스무더 (mg.in 미지정 시 기존 동작)
-         ieig_pol = 0               ! 기본 = Lanczos 추정 (mg.in 미지정 시 기존 동작)
+         ieig_pol = 1               ! 기본 = Gershgorin 상계 (분할-무관, G3 확정 후 기본화. 0 = 구 Lanczos 추정)
 !
          OPEN (newunit=iu, file='mg.in', status='old', action='read', iostat=ios)
          IF (ios /= 0) THEN

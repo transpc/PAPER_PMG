@@ -93,10 +93,10 @@ run_golden() {  # $1=디렉토리명 $2=접두어 $3=fid_gate, 이후 인자 = "
   done
 }
 
-# 구입력(d145c81) 골든 — 하네스 ref its: meta.md (C009/C014)
-run_golden iSMR436k_np1 gold 1e-9  "1 2 2"  "10 2 2"  "30 3 3"
-# ECT1 신입력(29ee238) 골든 — 하네스 ref its: meta.md (C017)
+# 구입력(d145c81) 골든 — 하네스 ref its: meta.md (C009/C014), ieig_pol=1 재베이스라인 (2026-08-19)
+run_golden iSMR436k_np1 gold 1e-9  "1 3 3"  "10 3 3"  "30 3 3"
+# ECT1 신입력(29ee238) 골든 — 하네스 ref its: meta.md (C017), ieig_pol=1 재베이스라인 (2026-08-19)
 # s150 = dt 포화(0.05s)·정착 상태의 어려운 행렬 (its 9~10) — 초기 과도(s1~30)보다 감지력 높음
-run_golden ECT1_436k_np1 ect1 1e-6  "1 1 1"  "10 1 1"  "30 3 3"  "150 9 9"
+run_golden ECT1_436k_np1 ect1 1e-6  "1 2 2"  "10 3 3"  "30 3 3"  "150 9 9"
 
 exit $fail

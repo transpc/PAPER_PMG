@@ -45,3 +45,5 @@
   반복해에 도달하지만 둘 다 eps_bicg=1e-8 수렴 판정을 충족한 해 (uscale~1e5 Pa 기준
   절대차 ~2.7e-2 Pa 이하). 추출 무결성의 정밀 판정은 bitwise 게이트가 담당.
 - 하네스 결정성: 베이스라인 채취 직후 run_tests 재생(2회차)이 6파일 전부 cmp bitwise 통과.
+
+- 2026-08-19 재베이스라인: ieig_pol=1(Gershgorin λ 상계) 기본화에 따라 baseline_s*_k*.u 재채취, 하네스 ref its 갱신 (iSMR 3,3/3,3/3,3; ECT1 2,2/3,3/3,3/9,9). 골든 입력(.pre/.post/setup)은 불변.

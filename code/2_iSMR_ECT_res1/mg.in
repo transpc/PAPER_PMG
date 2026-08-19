@@ -21,6 +21,7 @@
  icheb(3)   = 2                                     ! chebyshev smoothing method (1 or 2)
  icheb(4)   = 8                                     ! number of Lanczos iterations for max eigenvalue (5~10)
  relax      = 1.d0                                  ! GS relaxation factor: used by GAS smoothing AND by coarse-level GS in SOLVE_GC (keep even with POL)
+ ieig_pol   = 1                                     ! (1) Gershgorin bound for POL eig_max (G3 fix, partition-robust)
  /
 
  &MG_interpolation
