@@ -217,11 +217,7 @@
       
       
       IF(n_GC.EQ.1) THEN
-        IF(icommu.EQ.1) THEN
-        CALL stiffness_GC(nintfs,nnods,nnzs,ias,aus)
-        ELSE
-        CALL stiffness_GC_all(iallocate_c,nintfs,nnods,nnzs,ias,aus) 
-        ENDIF
+        CALL stiffness_GC_all(iallocate_c,nintfs,nnods,nnzs,ias,aus)
         
       ENDIF
 ! 

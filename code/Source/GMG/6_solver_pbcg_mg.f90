@@ -6,7 +6,7 @@
       USE MD_geometry,  ONLY: nnode
       USE MD_matrix,    ONLY: nnz,ia,ja, au,u,b
       USE MD_parameter, ONLY: maxit, ndom
-      USE MD_MG_index,  ONLY: crit_bcg_mg,ihybrid
+      USE MD_MG_index,  ONLY: crit_bcg_mg
 	  
 	  
 !      
@@ -132,7 +132,8 @@
             rho = rho1
          ENDIF  
 !
-!      IF(rhold.eq.0.0d0.or.omega.eq.0.0d0) GOTO 990
+! breakdown 가드 (E, LOOP F): rho/omega 소멸 시 0-나눗셈 -> NaN 침묵 정체 방지
+      IF(DABS(rhold).LT.1.d-300 .OR. DABS(omega).LT.1.d-300) GOTO 991
 !
       beta=rho/rhold*alpha/omega
 !
@@ -156,11 +157,7 @@
       u = y0
       b = scale_mg*p0
       
-      IF(ihybrid == 1) THEN
-        CALL SOLVER_NEW(ierr)
-      ELSE
-        CALL SOLVER_NEW_MPI(ierr)
-      ENDIF
+      CALL SOLVER_NEW(ierr)
 !/
       
       y0 = scale_mg_inv*u
@@ -188,7 +185,7 @@
             alphad = alphad1
          ENDIF
 !
-!      IF(alphad.eq.0.0d0) GOTO 990
+      IF(DABS(alphad).LT.1.d-300) GOTO 991     ! breakdown 가드 (E)
       alpha=rho/alphad
 !
       DO i=1,nintf
@@ -206,11 +203,7 @@
       u = z0
       b = scale_mg*s0
       
-      IF(ihybrid == 1) THEN
-        CALL SOLVER_NEW(ierr)
-      ELSE
-        CALL SOLVER_NEW_MPI(ierr)
-      ENDIF
+      CALL SOLVER_NEW(ierr)
 !/
       
       z0 = scale_mg_inv*u
@@ -266,6 +259,7 @@
 !      IF(np.gt.1) CALL allreducei_r1(ro)
 !      ro=SQRT(ro)
 !
+      IF(ro.NE.ro) GOTO 991                       ! NaN 가드 (E)
       IF(ro/ro0.le.eps) GOTO 990
       IF(its.ge.maxiter) GOTO 991
       GOTO 10
