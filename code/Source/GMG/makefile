@@ -11,7 +11,6 @@ BACKUPNAME = $(MYNAME1)_$(VER).tar
 #----------------------------------------------------------------------
 # extension type : .f90
 FSRCS = md_function.f90\
-	    06_solver_pcg_ilu.f90\
 	    6_solver_pbcg_mg.f90\
         1_read_input.f90\
         2_Prep_fine_global.f90\

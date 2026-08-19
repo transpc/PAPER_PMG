@@ -876,16 +876,6 @@
 !      iter1=1
         Iter0 = itergs(1)
 
-! for ILU smoothing:
-        IF (isth == 2) THEN
-           alu = au
-           CALL ilupcp(nintf, nnode, nnz, ia, ja, ju, alu)
-! test:
-!        alu = 0.d0
-!      CALL ilupcp_new(nintf,nnode,nnz,ia,ja,ju,au,alu)
-
-        END IF
-
 ! NEW for A - - - - - - -
         IF (nnbdA .NE. 0) THEN
            CALL send_receive(nnbdA, nnode, sptA, rptA, sintfA, rintfA, nbdomA, u)
@@ -1225,11 +1215,6 @@
 !      iter1=1
         Iter0 = itergs(1)
 
-! for ILU smoothing:
-        IF (isth == 2) THEN
-           alu = au
-           CALL ilupcp(nintf, nnode, nnz, ia, ja, ju, alu)
-        END IF
 
 ! NEW for A - - - - - - -
         IF (nnbdA .NE. 0) THEN

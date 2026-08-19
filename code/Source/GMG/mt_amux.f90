@@ -322,3 +322,37 @@ enddo
 !=====
 return
 end subroutine
+
+! = = = = (P1-⑤에서 06_solver_pcg_ilu.f90 로부터 이식 — BiCGSTAB 본체 SpMV) = = = =
+      SUBROUTINE amux0P(nintf,n,nnz,x,y,a,ja,ia)
+!-----------------------------------------------------------
+!     Y = A * X
+!     input:
+!       n     = row dimension of A
+!       x     = array of length equal to the column dimension of matrix A
+!       a, ja, ia = input matrix in compressed sparse row format.
+!     output:
+!       y     = real array of length n, containing the product y=Ax
+!-------------------------------------------------------------------
+      IMPLICIT NONE
+!      
+      INTEGER  nintf,n,nnz
+	  INTEGER  ja(nnz),ia(nintf+1)
+      REAL*8 a(nnz),x(n)
+! 
+      REAL*8 y(n)
+! tmp
+      INTEGER i, k
+      REAL*8 tmp
+	  
+!
+      DO i= 1,nintf
+        tmp = 0.d0
+        DO k=ia(i),ia(i+1)-1
+          tmp = tmp + a(k)*x(ja(k))
+        ENDDO
+        y(i) = tmp
+      ENDDO
+!	  
+      RETURN
+      END
