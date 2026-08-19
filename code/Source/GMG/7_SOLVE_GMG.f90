@@ -61,11 +61,7 @@
 
 ! max_eig for Poly_smoothing
 
-           IF (isth == 3) THEN
-
-              CALL eig_value
-
-           END IF
+           CALL eig_value
         END IF
 
 ! - - - - - - - - - - - - - - - -
@@ -464,7 +460,7 @@
 ! 1. for finest level:
 ! ----PRE-SMOOTHING
 ! NEW for A
-           CALL smoothing_fine(Iter0, isth, ndom, relax, nintf, nnode, nnz, ia, ja, ju, au, &
+           CALL smoothing_fine(Iter0, ndom, nintf, nnode, nnz, ia, ja, ju, au, &
                                u, b, nnbdA, nbdomA, sptA, rptA, sintfA, rintfA)
 
 !      call send_receive(nnbd,nnode,spt,rpt,sintf,rintf,nbdom,u)
@@ -519,13 +515,7 @@
 
               DO i = 1, Iter0
 !
-                 IF ((MOD(i, 2) .EQ. 1) .OR. (id_GS_sym .EQ. 0)) THEN
-
-                    CALL Smooth_GS2(1, ista, iend, rc, e, auc, iac, jac, juc, diagrc)
-
-                 ELSE
-                    CALL Smooth_GS_BW(1, ista, iend, rc, e, auc, iac, jac, juc)
-                 END IF
+                 CALL Smooth_GS2(1, ista, iend, rc, e, auc, iac, jac, juc, diagrc)
 
 !
 ! NEW for A
@@ -608,11 +598,7 @@
               DO i = 1, Iter0
                  CALL MD_S_R_NEW(id, ilv, i1, e)
 
-                 IF ((MOD(i, 2) .EQ. 1) .OR. (id_GS_sym .EQ. 0)) THEN
-                    CALL Smooth_GS2(1, i1, i2, rc, e, auc, iac, jac, juc, diagrc)
-                 ELSE
-                    CALL Smooth_GS_BW(1, i1, i2, rc, e, auc, iac, jac, juc)
-                 END IF
+                 CALL Smooth_GS2(1, i1, i2, rc, e, auc, iac, jac, juc, diagrc)
 
               END DO
 
@@ -648,7 +634,7 @@
 ! POST SMOTHING
            Iter0 = itergs(1)
 ! NEW For A
-           CALL smoothing_fine(Iter0, isth, ndom, relax, nintf, nnode, nnz, ia, ja, ju, au, &
+           CALL smoothing_fine(Iter0, ndom, nintf, nnode, nnz, ia, ja, ju, au, &
                                u, b, nnbdA, nbdomA, sptA, rptA, sintfA, rintfA)
 
 !      call send_receive(nnbd,nnode,spt,rpt,sintf,rintf,nbdom,u)

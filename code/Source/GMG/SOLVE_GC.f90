@@ -132,7 +132,7 @@
 ! = = = = = = = = = = = = = = = = = = = = = = = = 
       SUBROUTINE SOLVE_COARSE(i_dir,ipar,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
 ! 
-      USE MD_MG_index, ONLY: iter_mg,relax, id_GS_sym
+      USE MD_MG_index, ONLY: iter_mg
 	  USE MD_MG_Global_C,ONLY: nlv_glo,                                                   &
 	                      nnziG,XintpG,XrestG,iaiG,jaiG,jarG,iarG,                        &
 						  nnodeGC,nnzGC,iaGC,jaGC,juGC,auGC,                              &
@@ -197,7 +197,7 @@
 ! IF: nlv_glo = 1 -> goto diret solver directly
 ! IF: nlv_glo >1 ->  some levels more and goto direct solver. 
 ! 
-	  CALL Relax_GS(ITER_MGC,relax,nnodeG,nnzG,iaG,jaG,juG,auG,eG,rG)
+	  CALL Relax_GS(ITER_MGC,1.d0,nnodeG,nnzG,iaG,jaG,juG,auG,eG,rG)
       
 
       CALL resi_GC(nnodeG,eG,rG,rGt,auG,jaG,iaG)
@@ -238,7 +238,7 @@
 	
     !$omp END PARALLEL	
 !
-	  CALL Relax_GS(ITER_MGC,relax,nnode2,nnz,ia,ja,ju,au,e,r)
+	  CALL Relax_GS(ITER_MGC,1.d0,nnode2,nnz,ia,ja,ju,au,e,r)
     
 	  
 ! store
@@ -354,7 +354,7 @@
 	
     !$omp END PARALLEL
 !
-	  CALL Relax_GS(ITER_MGC,relax,nnode1,nnz,ia,ja,ju,au,e,r)
+	  CALL Relax_GS(ITER_MGC,1.d0,nnode1,nnz,ia,ja,ju,au,e,r)
      
 	  
 ! for next level: (finer)
@@ -371,7 +371,7 @@
 	  ENDDO
     !$omp END PARALLEL DO
 !	  
-	  CALL Relax_GS(ITER_MGC,relax,nnodeG,nnzG,iaG,jaG,juG,auG,eG,rG)  
+	  CALL Relax_GS(ITER_MGC,1.d0,nnodeG,nnzG,iaG,jaG,juG,auG,eG,rG)  
      
 ! 
 !      DEALLOCATE( r,rt,e,et)

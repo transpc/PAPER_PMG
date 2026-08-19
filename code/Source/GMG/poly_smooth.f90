@@ -50,48 +50,6 @@
   
 
 ! - - - - - 
-  if(icheb(3) == 2) goto 10 
-  
-  
-! this is for method -1: 
-     z = 0.d0
-     
-      if(nnbd >0) then
-      CALL send_receive(nnbd,n,si,ri,sintf,rintf,nbdom,x)
-      endif
-      call amux0_PCG(nintf,n,nnz,x,r,au,ja,ia) !!A*x=r
-     
-      r (1:nintf) = b(1:nintf) - r(1:nintf)
-! 
-  ! Polynomial smoothing iterations
-  do k = 1, max_iter
-      rk = dble(k)
-      
-      alpha = (2.d0*rk-3.d0)/(2.d0*rk+1.d0)
-      beta = (8.d0*rk-4.d0)/(2.d0*rk+1.d0)
-      
-      z(1:nintf)  = alpha*z(1:nintf) + beta/eig_max*r(1:nintf) 
-      
-      x(1:nintf) = x(1:nintf) + z(1:nintf) 
-      
-      IF(k.LT.max_iter) THEN
-          
-      if(nnbd >0) then
-      CALL send_receive(nnbd,n,si,ri,sintf,rintf,nbdom,z)
-      endif
-      call amux0_PCG(nintf,n,nnz,z,y,au,ja,ia) !!A*z=y
-     
-      r(1:nintf) = r(1:nintf) - y(1:nintf)
-    
-     ENDIF
-      
-  enddo
-	
-!
-  goto 11
-  
-! = = = = = = = = = = = = = = = = =  = = = = 
-10 continue 
    
 ! this is for method 2: 
    
@@ -138,7 +96,6 @@
   enddo   
    
    
-11 continue 
 
 ! ---
 ! - - - - - 
@@ -153,33 +110,20 @@
     
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 subroutine eig_value
-
-USE MD_geometry, only: nnode
+!
+!  POL(Chebyshev) 스무딩의 스펙트럼 상계 — Gershgorin 행합 (G3 확정, P3 단일화)
+!  참 상계(λ_max 이상 보장)·분할 무관·통신 1회. 구 Lanczos 추정 경로는
+!  분할 의존 요동으로 np-붕괴를 유발해 제거됨 (Finding 문서 참조).
+!
 USE MD_matrix, only: nnz, ia,ja,au
-use MD_MG_index, only: icheb, rcheb, ieig_pol
+use MD_MG_index, only: rcheb
 use MD_MPI, only: nintf,nprcs
-USE MD_MPI_ARP, only: nnbdA,sptA,rptA,sintfA,rintfA,nbdomA
-	  
+
 IMPLICIT NONE
-      
-! temp:
-real(8) eig_max, eig_min, xtmp
-integer (4) k, i, j
 
-k= icheb(4)
+real(8) eig_max, xtmp
+integer (4) i, j
 
-call  lanczos_eig_max(nprcs,k,nintf,nnode,nnz,ia,ja,au,nnbdA,nbdomA,sptA,rptA,sintfA,rintfA,eig_max)
-
-eig_min = eig_max/30.d0
-
-rcheb(1) = eig_max*1.1
-rcheb(2) = eig_min
-
-! ieig_pol=1: Lanczos 추정 대신 Gershgorin 상계 사용 (G3 수정, LOOP F)
-!   8-스텝 Lanczos 추정은 분할 기하에 따라 수% 요동 → 특정 np 에서 구간이
-!   스펙트럼 상단을 놓쳐 Chebyshev 가 최상위 모드를 증폭 (np=96/128 붕괴 원인).
-!   Gershgorin 행합 상계는 항상 λ_max 이상이므로 증폭이 원천 차단됨.
-if (ieig_pol == 1) then
    eig_max = 0.d0
    do i = 1, nintf
       xtmp = 0.d0
@@ -194,230 +138,6 @@ if (ieig_pol == 1) then
    endif
    rcheb(1) = eig_max
    rcheb(2) = eig_max/30.d0
-endif
 
 return
-    END 
-    
-! - - - - - - - - - - - - - - - - - - - - - - - 
-    
-subroutine lanczos_eig_max(np,k,nintf,n,nnz,ia,ja,au,nnbd,nbdom,si,ri,sintf,rintf,eig_max)
-
-! this sub. to find Maximum value of eigenvalue of matrix A(n,n)
-! lanczos theory is used; the code is modified from chatGPT
-
-!use md_geometry, only: coord
-!use md_MPI, only: myrank
-
-  implicit none
-  
-! int: 
-  integer(4) n,nnz,k,nintf
-  integer(4) ia(n+1),ja(nnz)
-  real(8) au(nnz)
-  INTEGER(4) nnbd,np
-  INTEGER(4) si(nnbd+1),ri(nnbd+1),nbdom(nnbd),sintf(si(nnbd+1)-1),rintf(ri(nnbd+1)-1)
-  
-!out 
-  real(8) eig_max
-  
- ! temp
-!  integer, parameter :: k = 10   ! Number of Lanczos steps
-  integer :: i, j, iter
-  real(8) :: beta, alpha, tol
-  real(8) T(k,k)
-  real(8), allocatable :: v(:,:), w(:), v_old(:)    !, y(:)
-  real(8) xtmp,xtmp1
-
-  ! Allocate arrays
-  allocate(v(n,k))
-  allocate(w(n))
-  allocate(v_old(n))
-!  Allocate(y(n))
-! C011-3r1: 고스트 구간(nintf+1:n)이 미초기화인 채 amux0_PCG(full-row A·v)에
-! 읽혀 eig_max 가 힙 레이아웃(할당 순서·실행 환경)에 의존하던 문제 — 전체 제로
-! 초기화로 결정화. C009 "예조건자 시드 실행 문맥 의존"의 근원 기전
-  v = 0.d0
-  w = 0.d0
-  v_old = 0.d0
-
-  ! Initialize the first vector v(:,1)
-!  call random_number(v(:,1))
-! notes that in parallel, if set v is difference with that of serial, 
-! the results may difference (max_eig)
-  
-  do i = 1,nintf
-      
-  v(i,1) = 1.d0    !dsin(xtmp) set to 1 for consisten with parallel
-  enddo
-  
-!
-! cal. xtmp = nor2(v,v)
-  
-      xtmp = 0.d0
-      DO i=1,nintf
-         xtmp = xtmp + v(i,1)*v(i,1)
-      ENDDO
-!
-      IF(np.gt.1)THEN
-         CALL allreduce_r_s(xtmp,xtmp1)
-         xtmp = xtmp1
-      ENDIF
-    
-      xtmp = DSQRT(xtmp)
-! ...
-!
-  v(1:nintf,1) = v(1:nintf,1) / xtmp
-  
-! - - - - - - - - - - 
-  T = 0.d0
-
-  ! Lanczos iteration
-  do iter = 1, k
-    ! w = A * v(:,iter)
-      
-      if(nnbd >0) then
-      CALL send_receive(nnbd,n,si,ri,sintf,rintf,nbdom,v(1:n,iter))
-      endif
-     
-      call amux0_PCG(nintf,n,nnz,v(:,iter),w,au,ja,ia) !!A*v=w
-      
-!
-
-    if (iter > 1) then
-      w(1:nintf) = w(1:nintf) - beta * v_old(1:nintf)
-    end if
-!
-!
-! cal. xtmp = dot_product(v,w):    alpha = dot_product(v(:,iter), w)
-  
-      xtmp = 0.d0
-      DO i=1,nintf
-         xtmp = xtmp + v(i,iter)*w(i)
-      ENDDO
-!
-      IF(np.gt.1)THEN
-         CALL allreduce_r_s(xtmp,xtmp1)
-         xtmp = xtmp1
-      ENDIF
-! 
-    alpha = xtmp   
-    
-    w(1:nintf) = w(1:nintf) - alpha * v(1:nintf,iter) 
-!
-    ! Reorthogonalize
-    do j = 1, iter       
-!
-! ! cal. xtmp = dot_product(v(:,j),w): 
-      xtmp = 0.d0
-      DO i=1,nintf
-         xtmp = xtmp + v(i,j)*w(i)
-      ENDDO
-!
-      IF(np.gt.1)THEN
-         CALL allreduce_r_s(xtmp,xtmp1)
-         xtmp = xtmp1
-      ENDIF
-! - - - - - 
-      w(1:nintf) = w(1:nintf) -  xtmp*v(1:nintf,j)
-      
-    end do
-
-!
-!     beta = sqrt(dot_product(w, w))
-      xtmp = 0.d0
-      DO i=1,nintf
-         xtmp = xtmp + w(i)*w(i)
-      ENDDO
-!
-      IF(np.gt.1)THEN
-         CALL allreduce_r_s(xtmp,xtmp1)
-         xtmp = xtmp1
-      ENDIF
-
-      beta =   dsqrt(xtmp)
-!
-!    if (beta < tol) exit
-
-    if (iter < k) then
-      v_old(1:nintf) = v(1:nintf,iter)
-      v(1:nintf,iter+1) = w(1:nintf) / beta
-    end if
-
-    T(iter, iter) = alpha
-	
-    if (iter < k) then
-      T(iter, iter+1) = beta
-      T(iter+1, iter) = beta
-    end if
-	
-  end do
-  
-  ! Compute eigenvalues of the tridiagonal matrix T
-  call compute_eigenvalues(T, k,eig_max)
-  
-! test
-!  write(*,*)'eig_max = ',eig_max
-! 
-  deallocate(v,w,v_old)
-  
-  return
-  
-  end
-  
-! = = = = = = = = = = = = = = = = = = = = = = = = 
-  subroutine compute_eigenvalues(T, k,eig_max)
-  
-  use MD_MPI, only: myrank
-  implicit none
-  
-  integer (4) k
-    real(8), intent(in) :: T(k,k)
-
-    integer :: info
-! out
-	real(8) :: eig_max
-    
-    real(8) d(k),e(k-1),z(k,k),eigvals(k)
-  integer (4) i
-    
-! 
-    d= 0.d0
-    e = 0.d0
-    z = 0.d0
-    eigvals = 0.d0
-    
-    
-    do i=1,k
-        d(i) = T(i,i)
-    enddo
-    
-    do i=1,k-1
-        e(i) = T(i,i+1)
-    enddo
-    
-
-     call dsteqr('N',k,d,e,z,k, eigvals,  info)
-     
-!    call dsyev('V', 'U', k, T, k, eigvals, work, lwork, info)
-	
- !    if(myrank == 0) then
-         
- !   if (info == 0) then
- !     print *, "Maximum eigenvalue: ", maxval(d(1:k))
- !     print *, "Minimum eigenvalue: ", minval(abs(d(1:k)))
- !     print *, "condition: ", maxval(d(1:k))/minval(abs(d(1:k)))
- !   else
- !     print *, "Error in eigenvalue computation, info: ", info
- !   end if
- !    endif
-     
-	
-	eig_max = maxval(d(1:k))    !eigvals(k) -> spectral radius 
-    
-! test 
-!    write(*,*)'test for eigr'
-!    eig_max = 1.59367410523645
-	
-  end subroutine compute_eigenvalues
-
+    END
