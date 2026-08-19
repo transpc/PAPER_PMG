@@ -101,7 +101,7 @@ LD = $(FC)
 # 6-4) SkyLake
 #LIBDIR= -L/usr/local/metis-5.0.2/lib -lmetis $(PWD)/SourceM/11_LinkToMASTER/libmaster4.0.so
 METIS_LIB ?= /root/00_apptainer/metis-5.0.2/build/Linux-x86_64/libmetis
-LIBDIR= -mkl -L$(METIS_LIB) -lmetis -Wl,-rpath,$(METIS_LIB)
+LIBDIR= -qopenmp -L$(METIS_LIB) -lmetis -Wl,-rpath,$(METIS_LIB)
 #LIBDIR= 
 #
 # What additional libraries to link the programs with (eg., -lmpi)

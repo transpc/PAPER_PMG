@@ -1994,3 +1994,95 @@
 !*     End of DTRMV .
 !*
       END
+
+! = = = LSAME — LAPACK 보조함수 로컬 구현 (D5: MKL 링크 제거에 따라 추가) = = =
+      LOGICAL FUNCTION LSAME(CA,CB)
+      CHARACTER CA,CB
+      INTEGER INTA,INTB
+      LSAME = CA.EQ.CB
+      IF (LSAME) RETURN
+      INTA = ICHAR(CA)
+      INTB = ICHAR(CB)
+      IF (INTA.GE.97 .AND. INTA.LE.122) INTA = INTA - 32
+      IF (INTB.GE.97 .AND. INTB.LE.122) INTB = INTB - 32
+      LSAME = INTA.EQ.INTB
+      RETURN
+      END
+
+! = = = IDAMAX / DLAMCH / ILAENV — LAPACK 보조 로컬 구현 (D5) = = =
+      INTEGER FUNCTION IDAMAX(N,DX,INCX)
+      INTEGER N,INCX,I,IX
+      REAL(8) DX(*),DMAX
+      IDAMAX = 0
+      IF (N.LT.1 .OR. INCX.LE.0) RETURN
+      IDAMAX = 1
+      IF (N.EQ.1) RETURN
+      IF (INCX.EQ.1) THEN
+         DMAX = DABS(DX(1))
+         DO I = 2,N
+            IF (DABS(DX(I)).GT.DMAX) THEN
+               IDAMAX = I
+               DMAX = DABS(DX(I))
+            END IF
+         END DO
+      ELSE
+         IX = 1
+         DMAX = DABS(DX(1))
+         IX = IX + INCX
+         DO I = 2,N
+            IF (DABS(DX(IX)).GT.DMAX) THEN
+               IDAMAX = I
+               DMAX = DABS(DX(IX))
+            END IF
+            IX = IX + INCX
+         END DO
+      END IF
+      RETURN
+      END
+
+      REAL(8) FUNCTION DLAMCH(CMACH)
+      CHARACTER CMACH
+      LOGICAL LSAME
+      EXTERNAL LSAME
+      REAL(8), PARAMETER :: ONE = 1.0D0, ZERO = 0.0D0
+      IF (LSAME(CMACH,'E')) THEN
+         DLAMCH = EPSILON(ZERO)*0.5D0
+      ELSE IF (LSAME(CMACH,'S')) THEN
+         DLAMCH = TINY(ZERO)
+      ELSE IF (LSAME(CMACH,'B')) THEN
+         DLAMCH = DBLE(RADIX(ZERO))
+      ELSE IF (LSAME(CMACH,'P')) THEN
+         DLAMCH = EPSILON(ZERO)*0.5D0*DBLE(RADIX(ZERO))
+      ELSE IF (LSAME(CMACH,'N')) THEN
+         DLAMCH = DBLE(DIGITS(ZERO))
+      ELSE IF (LSAME(CMACH,'R')) THEN
+         DLAMCH = ONE
+      ELSE IF (LSAME(CMACH,'M')) THEN
+         DLAMCH = DBLE(MINEXPONENT(ZERO))
+      ELSE IF (LSAME(CMACH,'U')) THEN
+         DLAMCH = TINY(ZERO)
+      ELSE IF (LSAME(CMACH,'L')) THEN
+         DLAMCH = DBLE(MAXEXPONENT(ZERO))
+      ELSE IF (LSAME(CMACH,'O')) THEN
+         DLAMCH = HUGE(ZERO)
+      ELSE
+         DLAMCH = ZERO
+      END IF
+      RETURN
+      END
+
+      INTEGER FUNCTION ILAENV(ISPEC,NAME,OPTS,N1,N2,N3,N4)
+      INTEGER ISPEC,N1,N2,N3,N4
+      CHARACTER*(*) NAME,OPTS
+!     블록 크기 등 튜닝 파라미터 — MKL 제거(D5)에 따른 보수적 고정값
+      IF (ISPEC.EQ.1) THEN
+         ILAENV = 64
+      ELSE IF (ISPEC.EQ.2) THEN
+         ILAENV = 2
+      ELSE IF (ISPEC.EQ.3) THEN
+         ILAENV = 128
+      ELSE
+         ILAENV = 1
+      END IF
+      RETURN
+      END
