@@ -173,3 +173,90 @@ git 추적 파일 아님(확인됨). 삭제는 `make clean` 성격이며 언제�
 - 모든 삭제 후보는 "현 고정 설정" 기준. 설정을 되살릴 가능성이 있는 항목
   (예: GAS 스무딩 비교 실험)이 논문 플랜에 있으면 §2·§3-2 해당 행을 보류할 것.
 - genmod 파일은 컴파일 산출물이므로 소스 삭제와 무관하게 정리 가능.
+
+---
+
+# §7 고정 조합 클리닝 플랜 — "현 mg.in 조합 전용" 단일화 (2026-08-19 수립)
+
+전제: **현재 케이스 mg.in 조합만 사용**한다는 결정 (isol_mg=-2, POL, ihybrid=1,
+icommu=2, igather=1, n_GC=1, i_dir=1, isemi=0, mdf_matrix=1, ioplv=1).
+스무딩 튜닝 파라미터(teta, teta_p, itergs, icheb(1)/(3)/(4), alpha, ip_*)와
+신규 강건성 스위치(ieig_pol, il1_gs)는 유지. §2·§3 인벤토리를 실행 플랜으로
+구체화한 것이며, **본 절 수립 시점 기준 계획일 뿐 실행 전**이다.
+
+규모: GMG 현재 19,064줄 → 예상 삭제 약 3,600~4,300줄(~20%). §1(794줄)과 별도.
+
+## P0 — 선행 결정 (실행 전 확정 필요)
+
+| # | 결정 | 권고 | 근거 |
+|---|---|---|---|
+| D1 | `smothing` 스위치(GAS/JAC/ILU/COG) 완전 삭제? | 삭제 | git 이력으로 복원 가능. GAS 는 이번 진단의 A/B 도구였으나 역할 종료. 단 gathered 레벨 GS(SOLVE_COARSE)는 별개로 존치 |
+| D2 | `ieig_pol=1` 기본화 + 골든 재베이스라인을 클리닝 전에? | **선행 권고** | 기본화가 먼저면 P3 에서 Lanczos 경로(~200줄) 삭제 가능. 후행이면 스위치·양 경로 유지 |
+| D3 | `il1_gs` 유지? | 유지 | np-강건 자산, 비용 ~15줄 |
+| D4 | `relax` 처리 | 1.0 하드코딩 | gathered GS 만 사용 — namelist 에서 제거 |
+| D5 | MKL 링크 플래그 | 유지 | padiso.f 삭제와 무관하게 CUPID 본체가 -mkl 사용 |
+| D6 | isetup_comm 파일 모드 소거 | 이 플랜 범위 밖 | G2 트랙에서 기본값 플립 후 별도 수행 |
+
+## P1 — 조건부 데드 파일 5종 (호출 분기 소거 + 파일 삭제, ~1,500줄)
+
+§2 의 실행. 순서 = 리스크 오름차순, 파일당 1커밋:
+
+1. `coarsening_semi_amg.f90`(374) — isemi 분기 소거 (5_PREP_GMG 2곳)
+2. `padiso.f`(127) — ipar 분기 소거 (SOLVE_GC 2곳)
+3. `solve_CG.f90`(317) — SOLVE_EXACT* 의 i_dir∉{1,2} 분기 소거
+4. `mt_precond.f90`(109) — stiffness_GC:281 분기 소거
+5. `06_solver_pcg_ilu.f90`(629) — **선행: amux0P 를 mt_amux.f90 으로 이동**
+   (BiCGSTAB 핵심 SpMV), ilupcp 호출부(7_SOLVE_GMG isth==2 셋업 2곳) 소거 후 삭제
+
+## P2 — 솔버 변형 단일화 (~1,700줄, 최대 덩어리)
+
+경로 고정: `SOLVE_GMG → solve_pbcg_mg → SOLVER_NEW → SOLVE_GC_all → SOLVE_COARSE → SOLVE_EXACT(i_dir=1)`
+
+| 파일 | 삭제 대상 | 잔존 |
+|---|---|---|
+| 7_SOLVE_GMG.f90 (1,527) | `SOLVER`(구판, ~245), `SOLVER_NEW_MPI`(~345), `matrix_vec`, `*_N_MPI`/`residl_MPI`, isol_mg 디스패치 분기, n_GC=0 분기(PCG_Dig 호출), isth==2 셋업, `Dig_mdf_matrix_inv` | `SOLVE_GMG`(디스패치 단순화), `SOLVER_NEW`, `matrix_vec_N`, `residl`, `Dig_mdf_matrix` |
+| SOLVE_GC.f90 (1,150) | `SOLVE_GC`(icommu=1), 3번째 변형(ihybrid≠1), `SOLVE_COARSE_MPI`, `SOLVE_EXACT_MPI`, `Relax_GS_MPI`, `Relax_GS_SYM` 호출 분기(id_GS_sym), i_dir=2 분기, igather=0 분기 | `SOLVE_GC_all`, `SOLVE_COARSE`, `SOLVE_EXACT`(i_dir=1 만), `Relax_GS` |
+| stiffness_GC.f90 (840) | `stiffness_GC`(icommu=1), igather=0 분기, `STIFF_COARSE2`/`STIFF_*` 미사용 변형, pc_ilu 경로 | `stiffness_GC_all`, `STIFF_COARSE`, `STIFF_EXACT`(i_dir=1) |
+| 6_solver_pbcg_mg.f90 (407) | ihybrid 분기(SOLVER_NEW_MPI 호출 2곳), 주석 덩어리 | + breakdown 가드 **복원**(E, 이 사이클에 포함) |
+| PCG_Dig.f90 | `pcg_dig` 서브루틴 | `amux0_PCG`(POL 이 사용) |
+
+## P3 — 스무딩 단일화 (~600줄 ± D2 결정)
+
+- `Relax_GSP.f90`(879): `smoothing_fine` 을 POL 전용으로 축약(isth 디스패치 소거),
+  `Smooth_ILU`/`smooth_CG`/`Relax_GS0P(_BW)`/`Smooth_GS2_MPI`/`Smooth_GS_BW` 삭제.
+  잔존: `smoothing_fine`(축약), `Smooth_GS2`(+l1 diagrc), gathered GS 커널
+- `poly_smooth.f90`(423): icheb(3) 메서드-1 분기(~50줄). D2 선행 시
+  `lanczos_eig_max`+`compute_eigenvalues`(~200줄)도 삭제 → eig_value = Gershgorin 전용
+- 모듈: `isth`, `id_GS_sym`, `icheb(2)/(5)`, `relax`(D4) 소거
+
+## P4 — 완전 데드 서브루틴·고아 변수 (~300줄)
+
+§3-1 목록 실행: `csr_coarse`, `matrix_inverse_GS`, `mt_amux1`/`mt_amux2p`,
+`md_s_r_mt2`+`send_receive_mtc2`, `send_receive_mt`(sub), `send_receive_c`(확인 후),
+AR_hi/iallocate_c/icase_MG/isol_start/iGS/nGS/ipar/icommu/igather/ihybrid 등
+고정된 스위치의 모듈 변수·USE 정리 (읽기만 하고 분기 없어진 것 전부).
+
+## P5 — 입력 계층 최종 정리 (read_input + mg.in)
+
+1. `1_read_input.f90`: 전 파라미터 명시적 기본값 대입 → 각 namelist READ 에
+   `iostat` 부여(그룹 부재 허용) → **namelist 그룹 통합**: `&MG_tuning`(teta,
+   teta_p, alpha, itergs, icheb, ip_*) + `&MG_options`(ieig_pol, il1_gs,
+   isetup_comm, nthre) 2개 수준으로 축약. `ncycle_pre`/`crit_pre` 지역변수 함정 제거
+2. mg.in 재작성 (케이스 + tests 동기): ~15줄 수준 목표
+3. 사멸 파라미터의 mg.in 잔존 항목 제거는 코드 소거와 같은 커밋으로
+
+## P6 — 범위 밖 (별도 트랙, 이 플랜에서 하지 않음)
+
+- isetup_comm=0 파일 모드 + MG_tmp 산출 코드 (G2 완결 후)
+- dump_pmg 계측 (논문 종료 후)
+- 2_read_mesh_MPI/6_subdomain_infor_mg 의 셋업 확장성 개선 (O(np·N) 등 — SCALING 이슈)
+- .gitignore 정비 (fort.*, build_chk/ 등)
+
+## 검증 프로토콜 (모든 단계 공통)
+
+- **불변식: 기본 설정에서 모든 삭제는 수치 bitwise 중립** — dead code 제거이므로
+  게이트가 그대로 안전망. 단계마다: standalone `run_tests.sh` 12/12 (its·md5 불변)
+  + CUPID 전체 빌드 링크.
+- P2 완료 후 + P5 완료 후: ECT1 케이스 러닝 스팟(np=1/np=4, fort.501 대조).
+- 커밋 단위: P1 파일당 1커밋, P2~P5 단계당 1커밋. 각 커밋 메시지에 삭제 줄수 기록.
+- 회귀 발견 시: 해당 커밋만 revert 가능하도록 단계 간 의존 최소화(P1→P2→P3 순서 준수).
