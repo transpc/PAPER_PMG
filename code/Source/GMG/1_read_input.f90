@@ -1,183 +1,115 @@
       SUBROUTINE read_input_mg
-! ---
-         USE MD_parameter, ONLY: ndim, maxit, mdf_matrix, ip_inter, ndom, ipar, &
-                                 isemi, crit, teta, teta_p, alpha
+! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
+!  PMG 입력 (클리닝 P5 재작성)
+!
+!  고정 구성(현 조합 전용 — 코드 상수, mg.in 으로 변경 불가):
+!    isol_mg=-2(BiCGSTAB+MG 예조건자), POL(Chebyshev)+Gershgorin λ상계,
+!    mdf_matrix=1, n_GC=1, i_dir=1(직접해), icommu=2, igather=1,
+!    ioplv=1(레벨 자동), 예조건자 = V-cycle 1회
+!
+!  mg.in (선택 — 없으면 전부 기본값):
+!    &MG_tuning  teta, teta_p, alpha, itergs, icheb, ip_nmax, ip_inter, ip_lev
+!    &MG_options il1_gs, isetup_comm, nthre
+! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
+         USE MD_parameter, ONLY: ndim, maxit, mdf_matrix, ip_inter, ndom, &
+                                 crit, teta, teta_p, alpha
          USE MD_MG_index, ONLY: nlevel, ncycle, mxnbne, maxit_1, ip_nmax, &
-                                iter_mg, n_GC, isth, AR_hi, crit_1, relax, &
+                                iter_mg, n_GC, crit_1, &
                                 iter_max, nlevel_N, n1_min, n2_min, ioplv, ip_lev, &
-                                isol_mg, id_GS_sym, itergs, icheb, icase_MG, &
-                                crit_bcg_mg, ihybrid, isol_start, isetup_comm, il1_gs, ieig_pol
+                                itergs, icheb, icase_MG, &
+                                crit_bcg_mg, il1_gs, isetup_comm
          USE MD_MPI, ONLY: myrank, myrankt
+         USE MD_OpenMP, ONLY: nthre
          USE MD_MG_Global_C, ONLY: i_dir, nlv_glo, nlv_glomax, igather
-         USE MD_MPI_MG, ONLY: icommu, iGS, nGS, iallocate_c
-         USE MD_OpenMP
-         USE Zparam, ONLY:  ndim_cupid => ndim
+         USE MD_MPI_MG, ONLY: icommu
+         USE Zparam, ONLY: ndim_cupid => ndim
          USE Zbicg, ONLY: eps_mg => eps_bicg
          USE Zcore, ONLY: myrank_mg => myrank, np_mg => np
 !
          IMPLICIT NONE
-! = = = = = = = = = = = = = = = = = = = = = = = !
-!       control value for PMG solver            !
-!                                               !
-!       crit: criteria convergence              !
-!       crit = res/res0                         !
-!       mdf_matrix =1 => divided by diagonal    !
-!     n_GC=1 =>global domain on coarsest level  !
-!     ipar=1 => pardiso for coarsest level      !
-!     isth=0:GS smoothing, isth=1:CG smoothing  !
-!      iVcy = 0: new V-cycle:                   !
-!       only 1 iter. on second level            !
-!     iter_mg: No. iteration for smoothing      !
-!     nlevel: no. level for PMG                 !
-! crit_1:criteria convergence for the coarsest  !
-!   levle in case of ipar = 0 (using CG)        !
-!    teta: using for semi-coarsing and          !
-!      for interpolation
-! = = = = = = = = = = = = = = = = = = = = = = = !
-! FOR EACH CASE, USING SUITABLE nlevle and teta !
-! - - - - - - - - - - - - - - - - - - - - - - - !
-
 !
-         INTEGER i, ncycle_pre, iu, ios
-         CHARACTER :: smothing*3
-         REAL(8) ::  crit_pre
-
+         INTEGER i, iu, ios
 !
-         NAMELIST /MG_method/ isol_mg, icase_MG, mdf_matrix, isol_start
-         NAMELIST /MG_level/ nlevel, nlv_glomax, ioplv
-         NAMELIST /MG_coarsening/ teta, isemi, AR_hi
-         NAMELIST /MG_smoothing/ smothing, itergs, id_GS_sym, relax, icheb, il1_gs, ieig_pol
-         NAMELIST /MG_interpolation/ teta_p, ip_nmax, ip_inter, ip_lev, alpha
-         NAMELIST /MG_coarsest/ n_GC, i_dir, ipar, iGS, nGS, iallocate_c, crit_1
-         NAMELIST /MG_MPI/ icommu, igather, isetup_comm
-         NAMELIST /MG_OpenMP/ ihybrid, nthre
-         NAMELIST /MG_Precond/ ncycle_pre, crit_pre
-         NAMELIST /MG_more_option/ mxnbne
-
+         NAMELIST /MG_tuning/ teta, teta_p, alpha, itergs, icheb, &
+                              ip_nmax, ip_inter, ip_lev
+         NAMELIST /MG_options/ il1_gs, isetup_comm, nthre
 !
          myrank = myrank_mg
          myrankt = myrank_mg
          ndim = ndim_cupid
-         crit = eps_mg
          ndom = np_mg
-         isetup_comm = 0            ! 기본 = 파일 모드 (mg.in 미지정 시 기존 동작)
-         il1_gs = 0                 ! 기본 = 기존 스무더 (mg.in 미지정 시 기존 동작)
-         ieig_pol = 1               ! 기본 = Gershgorin 상계 (분할-무관, G3 확정 후 기본화. 0 = 구 Lanczos 추정)
 !
-         OPEN (newunit=iu, file='mg.in', status='old', action='read', iostat=ios)
-         IF (ios /= 0) THEN
-            WRITE (*, *) 'read_input_mg: cannot open mg.in, rank', myrank
-            STOP
-         ENDIF
-!
-         READ (iu, nml=MG_method)
-         READ (iu, nml=MG_level)
-         READ (iu, nml=MG_coarsening)
-         READ (iu, nml=MG_smoothing)
-         READ (iu, nml=MG_interpolation)
-         READ (iu, nml=MG_coarsest)
-         READ (iu, nml=MG_MPI)
-         READ (iu, nml=MG_OpenMP)
-         READ (iu, nml=MG_Precond)
-         READ (iu, nml=MG_more_option)
-
-         CLOSE (iu)
-
-!
-
-! set default parameters - - - - - - - -
-
+! ---- 고정 구성 ----
+         mdf_matrix = 1
+         icase_MG = 2
+         n_GC = 1
+         i_dir = 1
+         icommu = 2
+         igather = 1
+         ioplv = 1
+         n1_min = 100
+         n2_min = 5
+         mxnbne = 100
          maxit = 1000
          maxit_1 = 1000
-         ncycle = 500
-!      mxnbne = 300
-         iter_mg = itergs(1)          ! not use
-         iter_max = iter_mg            ! not use
-
-         IF (ioplv .EQ. 1) THEN
-!          IF(ndim.EQ.2) THEN
-!              n1_min = 100
-!          ELSE
-            n1_min = 100
-!          ENDIF
-
-            n2_min = 5
-
-            nlevel = 20
-
-! set nvl_glo:
-            IF (ndom .LE. 10) THEN
-               nlv_glomax = 0
-            ELSEIF (ndom .LE. 50) THEN
-               nlv_glomax = 1
-            ELSEIF (ndom .LE. 1000) THEN
-               nlv_glomax = 2
-            ELSE
-               nlv_glomax = 3
-            END IF
+         crit_1 = 1.d-1
+! ---- 예조건자 모드 (구 isol_mg=-2 경로의 net 효과) ----
+         crit_bcg_mg = eps_mg       ! BiCGSTAB 수렴 판정
+         crit = 1.d-1               ! V-cycle 내부 판정 (구 crit_pre)
+         ncycle = 1                 ! 예조건자 적용당 V-cycle 수 (구 ncycle_pre)
+! ---- 튜닝 기본값 ----
+         teta = 0.6d0
+         teta_p = 0.65d0
+         alpha = 0.005d0
+         itergs = 0
+         itergs(1) = 1
+         itergs(2) = 1
+         itergs(3) = 2
+         icheb = 0
+         icheb(1) = 2               ! Chebyshev 반복수 (2~4)
+         ip_nmax = 4
+         ip_inter = 1
+         ip_lev = 1
+! ---- 옵션 기본값 ----
+         il1_gs = 0                 ! (1) l1-보정 코어스 GS (Baker et al. 2011)
+         isetup_comm = 0            ! (1) 셋업 분배 MPI 통신 모드
+         nthre = 1                  ! OpenMP 스레드 수
 !
+! ---- mg.in (선택) : 그룹 순서 무관, 부재 허용 ----
+         OPEN (newunit=iu, file='mg.in', status='old', action='read', iostat=ios)
+         IF (ios == 0) THEN
+            READ (iu, nml=MG_tuning, iostat=ios)
+            REWIND (iu)
+            READ (iu, nml=MG_options, iostat=ios)
+            CLOSE (iu)
+         ELSE
+            IF (myrank == 0) WRITE (*, *) 'read_input_mg: mg.in not found - using defaults'
          END IF
-
-! set nvl_glo:
-!      IF(ndom.LE.10) THEN
-!          nlv_glomax = 0
-!      ELSEIF(ndom.LE.30) THEN
-!          nlv_glomax = 1
-!      ELSEIF(ndom.LE.60) THEN
-!          nlv_glomax = 2
-!      ELSE
-!          nlv_glomax = 3
-!      ENDIF
-
+!
+! ---- 레벨 자동 선택 (ioplv=1 로직) ----
+         nlevel = 20
+         IF (ndom .LE. 10) THEN
+            nlv_glomax = 0
+         ELSEIF (ndom .LE. 50) THEN
+            nlv_glomax = 1
+         ELSEIF (ndom .LE. 1000) THEN
+            nlv_glomax = 2
+         ELSE
+            nlv_glomax = 3
+         END IF
 !
          nlevel = nlevel - nlv_glomax
          nlevel_N = nlevel
          nlv_glo = nlv_glomax
 !
-         IF (n_GC .EQ. 0) THEN
-            i_dir = 0
-            nlv_glo = 0
-         END IF
-!
-! for itergs:
+         iter_mg = itergs(1)
+         iter_max = iter_mg
+! itergs: 미지정 레벨은 직전 값 상속
          DO i = 2, 20
             IF (itergs(i) == 0) THEN
                itergs(i) = itergs(i - 1)
             END IF
          END DO
-
-! for smothing scheme:
-
-         IF (smothing == 'GAS') THEN
-            isth = 0
-         ELSEIF (smothing == 'JAC') THEN
-            isth = 1
-         ELSEIF (smothing == 'ILU') THEN
-            isth = 2
-         ELSEIF (smothing == 'POL') THEN
-            isth = 3
-         ELSEIF (smothing == 'COG') THEN
-            isth = 4
-         ELSE
-            WRITE (*, *) 'need to provide smothing approach'
-            WRITE (999, *) 'need to provide smothing approach'
-            PAUSE
-            STOP
-         END IF
-
-! MG as preconditioner
-
-         IF (isol_mg .LE. 0) THEN
-            ncycle = ncycle_pre
-
-            crit_bcg_mg = crit
-            crit = crit_pre
-
-            IF ((ncycle .GT. 2) .OR. (crit_1 .LT. 1.d-3)) THEN
-               WRITE (*, *) 'no good for MG pre, check ncycle_pre, crit_pre'
-            END IF
-         END IF
-
 !
          RETURN
       END

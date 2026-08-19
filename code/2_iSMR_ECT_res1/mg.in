@@ -1,58 +1,16 @@
- &MG_method
- isol_mg    = -2                                    ! (1): old mg version, (2): new version, (-2): MG as preconditioner
- mdf_matrix = 1                                     ! (1) modify matrix (Af) by diagonal
- /
-
- &MG_level
- ioplv      = 1                                     ! (1): automatic selection of nlevel/nlv_glomax (see 1_read_input.f90). (0): must set nlevel, nlv_glomax here
- /
-
- &MG_coarsening
- teta       = 0.6                                   ! for semi-coarsening
- isemi      = 0                                     ! coarsening method: (0): MIS ; (1) MIS using amg concept
- /
-
- &MG_smoothing
- smothing   = 'POL'                                 ! POL, GAS, JAC, ILU, COG
- itergs(1)  = 1                                     ! smoothing iterations per level (1~2); unset levels inherit the previous value
+ &MG_tuning
+ teta       = 0.6          ! coarsening threshold
+ teta_p     = 0.65         ! interpolation neighbor threshold
+ alpha      = 0.005        ! P-matrix drop tolerance
+ itergs(1)  = 1            ! smoothing sweeps per level; unset levels inherit previous
  itergs(2)  = 1
  itergs(3)  = 2
- icheb(1)   = 2                                     ! number of chebyshev iterations (k_max) 2~4
- icheb(3)   = 2                                     ! chebyshev smoothing method (1 or 2)
- icheb(4)   = 8                                     ! number of Lanczos iterations for max eigenvalue (5~10)
- relax      = 1.d0                                  ! GS relaxation factor: used by GAS smoothing AND by coarse-level GS in SOLVE_GC (keep even with POL)
- ieig_pol   = 1                                     ! (1) Gershgorin bound for POL eig_max (G3 fix, partition-robust)
+ icheb(1)   = 2            ! Chebyshev iterations (2~4)
+ ip_nmax    = 4            ! max neighbor cells for interpolation
+ ip_inter   = 1            ! (1) distance-based; (2) linear function
+ ip_lev     = 1            ! connectivity levels for neighbor search
  /
-
- &MG_interpolation
- teta_p     = 0.65                                  ! finding neighbor cells for P
- ip_nmax    = 4                                     ! number of neighbor cells needed to use for P (interpolation)
- ip_inter   = 1                                     ! interpolation method: (1) using distance cells; (2) using linear function
- ip_lev     = 1                                     ! number of connectivity levels for finding neighbor (P)
- alpha      = 0.005                                 ! drop tolerance for P matrix (delete entries smaller than alpha)
- /
-
- &MG_coarsest                                       ! coarsest level L
- n_GC       = 1                                     ! (1): serial solver on the coarsest level (1 domain)
- i_dir      = 1                                     ! (1): direct solver by inverting Acs (recommended); (0): iterative (then set ipar/iGS/nGS here)
- crit_1     = 1.d-1                                 ! convergence criterion for coarsest iterative solver (also sanity-checked in precond mode)
- /
-
- &MG_MPI
- icommu     = 2                                     ! coarse level (L-1) solve: (2): all processors solve at the same time; (1): root only, then send back
- igather    = 1                                     ! (1): MPI_GATHERV (recommended); (0): MPI_REDUCE
- /
-
- &MG_OpenMP
- ihybrid    = 1                                     ! (1): hybrid (MPI + OpenMP)
- nthre      = 1                                     ! number of OpenMP threads
- /
-
- &MG_Precond
- ncycle_pre = 1                                     ! number of V-cycles per preconditioner application (keep 1)
- crit_pre   = 1.d-1                                 ! becomes 'crit' in preconditioner mode; only matters when ncycle_pre > 1
- /
-
- &MG_more_option
- mxnbne     = 100                                   ! max neighbors per node (array sizing)
+ &MG_options
+ il1_gs     = 0            ! (1) l1-corrected coarse GS (partition-robust)
+ nthre      = 1            ! OpenMP threads
  /

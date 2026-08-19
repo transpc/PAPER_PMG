@@ -1,84 +1,16 @@
- &MG_method
- isol_mg    = -2                                    ! (1): old mg version, (2): new version, (-2): MG as preconditioner 
- icase_MG   = 2                                     ! (1): matrix is changed for "cupid_solve_non_orth". (2) matrix is not changed
- mdf_matrix = 1                                     ! (1) modify matrix (Af) by diagonal 
+ &MG_tuning
+ teta       = 0.6          ! coarsening threshold
+ teta_p     = 0.65         ! interpolation neighbor threshold
+ alpha      = 0.005        ! P-matrix drop tolerance
+ itergs(1)  = 1            ! smoothing sweeps per level; unset levels inherit previous
+ itergs(2)  = 1
+ itergs(3)  = 2
+ icheb(1)   = 2            ! Chebyshev iterations (2~4)
+ ip_nmax    = 4            ! max neighbor cells for interpolation
+ ip_inter   = 1            ! (1) distance-based; (2) linear function
+ ip_lev     = 1            ! connectivity levels for neighbor search
  /
- 
- &MG_level
- nlevel     =  9
- nlv_glomax =  2                                    ! coarse levels that solved by serial way 
- ioplv      =  1                                    ! (1): automatic selection for "nlevel" and "nlv_glomax". refer to "1_read_input.f90" (GMG part)
+ &MG_options
+ il1_gs     = 0            ! (1) l1-corrected coarse GS (partition-robust)
+ nthre      = 1            ! OpenMP threads
  /
-
- &MG_coarsening 
-teta        = 0.6                                   ! for semi-coarsening 
-isemi       = 0                                     ! coarsening method: (0): MIS ; (1) MIS using amg concept  
-AR_hi       = 0                                     !(1) for very high ratio grid
- /
- 
- &MG_smoothing
- smothing    = 'POL' 			            ! POL, GAS, JAC, ILU, COG
-itergs(1)   = 1                                     ! number of smoothing iteration each level. (1~2)
-itergs(2)   = 1	
-itergs(3)   = 2	
-itergs(4)   = 2		
-itergs(5)   = 2		 
-
-id_GS_sym   = 0                                     ! (1) backward GS smoothing
-relax       = 1.d0                                  ! only for Gauss-seidel smoothing
-il1_gs      = 0                                     ! (1) l1-corrected coarse GS (Baker et al. 2011) - partition-robust
-ieig_pol    = 1                                     ! (1) Gershgorin bound for POL eig_max - partition-robust (G3 fix)
-
-icheb(1)    = 	2	                            ! number of chebyshev  iterations (k_max) 2~4.
-icheb(2)    = 	1                                   ! not use (will be deleted)
-icheb(3)    = 	2                                   ! chebyshev smoothing method (1 or 2).
-icheb(4)    = 	8                                   ! number Lanczos iteration to find "Maximum value of eigenvalue" ~ CG iteration (From 5~10)   		
-icheb(5)    = 	0                                   ! not use (will be deleted)
- /
-
- &MG_interpolation
-teta_p      = 0.65                                   ! finding neighbor cells for P 
-ip_nmax     = 4                                     !  number of neighbor cells needed to use for P (interpolation)
-ip_inter    = 1                                     ! interpolation method: (1) using distance cells; (2) using linear function 
-ip_lev      = 1                                     ! number of level connectivity levels for finding neighbor (P)
-alpha       = 0.005                                 ! for reducing P martix. -> delete number that smaller than alpha. 		 
- /
- 
- &MG_coarsest                                       ! coarsest level L
-n_GC        = 1                                     ! (1): using serial solver on the coarsest level (L) (1 domain). 
-i_dir       = 1                                     ! (1): Direct solver for (L) using inverting Acs (recommended) 
-ipar        = 0                                     ! (1): Pardiso solver for (L) (only for i_dir = 0)
-iGS         = 0                                     ! (1): Gauss-seidel solver for (L); (0): using CG solver for (L).(only for i_dir = 0)
-nGS         = 20                                    ! number of GS solver for (L). (only for i_dir = 0 and iGS   = 1)
-iallocate_c = 0                                     ! (1) allocated variables for coarser level 
-crit_1      = 1.d-1                                 ! convergence criteria for (L) (only for using itertion solver like GS or CG)
- /
-
- &MG_MPI
-icommu         = 2                                  ! for solve coarse level (L-1) on 1 domain. (2): all processor solve same time; (1): only solve on root and send back to others   
-igather        = 1                                  ! (1): using MPI_GATHERV(recommended); (0): MPI_REDUCE
- /
-
- &MG_OpenMP
-ihybrid       = 1				    ! = 1 for Hybrid (MPI + OpenMP)
-nthre         = 1                                   ! number of thread for OpenMP (When Hybrid)
- /
-
- &MG_Precond
-ncycle_pre    = 1                                   ! number of V-cycle when MG as preconditioner (1)-> not use
-crit_pre      = 1.d-1                               ! not use
- /
-
- &MG_more_option
-mxnbne          = 100      			    ! not important
- /
-
-
-
-! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  !
-! allmost parameters are set as default, just for the purpose of testing         !
-! for different case, consider to have change some parameters:		         !
-! (1)(&MG_method):           isol_mg, icase_MG				 	 !
-! (2)(&MG_coarsening):       teta						 !
-! (3)(&MG_smoothing):        smothing, itergs, icheb(1), icheb(4)		 !
-! (4)(&MG_interpolation):    teta_p						 !

@@ -13,7 +13,6 @@
       USE MD_MPI ,      ONLY: nnbd,nbdom,nnsend,nnrecv,spt,rpt,sintf,rintf,nintf,myrank
       USE MD_MPI_MG,    ONLY: siaf,riaf,nmaxgl
       USE MD_MG_matrix, ONLY: diagt
-      USE MD_MG_index, ONLY: isth
 !
 !-------------------
       IMPLICIT NONE

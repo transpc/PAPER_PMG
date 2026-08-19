@@ -3,30 +3,21 @@
       IMPLICIT NONE
       SAVE
 !
-      INTEGER(4) nlevel,ncycle,mxnbne,maxit_1,ip_nmax,nmax,iter_mg,n_GC, isth,AR_hi,mxnbne_mg
-      REAL(8):: relax
+      INTEGER(4) nlevel,ncycle,mxnbne,maxit_1,ip_nmax,nmax,iter_mg,n_GC,mxnbne_mg
       REAL(8) crit_1,crit_bcg_mg
-      INTEGER(4) iter_max,nlevel_N,n1_min,n2_min,ioplv,ip_lev,isol_mg, id_GS_sym
+      INTEGER(4) iter_max,nlevel_N,n1_min,n2_min,ioplv,ip_lev
       CHARACTER :: report_text*100
       INTEGER(4) itergs(20)
+! icase_MG: pressure_solve 2차(non-orth) 호출의 SOLVE_GMG 인자 — 고정 2 (행렬 불변)
+      INTEGER(4) :: icase_MG
       INTEGER(4),DIMENSION(:),ALLOCATABLE :: isend_m,irecv_m
 ! NEW for polynormial
       integer (4) icheb(5)
       real(8) rcheb(5)
-! re-calculate: stiffness_MG
-      INTEGER icase_MG
-      INTEGER :: ihybrid
 ! l1-보정 스무더 (해결책 A, Baker et al. 2011): 코어스 레벨 GS 대각에
 !   랭크 밖(고스트 열) 연결 |a_ij| 합을 더해 파티션 무관 수렴 보장.
 !   0 = 기존(순수 대각), 1 = l1 보정. np=1 에서는 고스트가 없어 두 모드 동일.
       INTEGER(4) :: il1_gs
-! POL(Chebyshev) λ_max 산정 방식 (G3 수정, LOOP F): 0 = Lanczos 추정×1.1(기존),
-!   1 = Gershgorin 행합 상계 — 추정 실패로 인한 최상위 모드 증폭(np=96/128
-!   붕괴의 근본 원인)을 원천 차단. 분할 무관 확장성의 전제.
-      INTEGER(4) :: ieig_pol
-! hibrid solver
-      INTEGER(4) isol_start, i_precond
-      INTEGER(4) nsol_start, nsol_start_mg
 ! G2 셋업 분배 이중 모드 (LOOP C011): 0=파일(MG_tmp), 1=MPI 통신
 !   stg_*: rank0 이 writer(subdomain_infor_mg)에서 채우고 reader(read_mesh_MPI)가
 !          BCAST 로 분배하는 스테이징 메타 (PMG_infor 파일 내용과 1:1)

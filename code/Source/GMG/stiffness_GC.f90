@@ -1,11 +1,11 @@
 ! - - - - - - - - - 
     
- SUBROUTINE stiffness_GC_all(id,nintf,nnode,nnz,ia,au)
+ SUBROUTINE stiffness_GC_all(nintf,nnode,nnz,ia,au)
           
       USE MD_MG_Global_C, ONLY: i_dir,nlv_glo,nnodeG,nnzG,eG,rG,rG0,imapG,iaG,jaG,juG,auG,auG0,imapGZ, &
                                 igather, nsengatA, irevgatA, idispA , imapgatA
       USE MD_MPI, ONLY: myrank
-      USE MD_parameter, ONLY: ndom,ipar
+      USE MD_parameter, ONLY: ndom
       use omp_lib
       
       IMPLICIT NONE
@@ -15,7 +15,7 @@
 !DEC$ENDIF
 !
 ! input: 
-  INTEGER nintf,nnode,nnz,id
+  INTEGER nintf,nnode,nnz
   INTEGER ia(nnode+1)
   REAL*8 au(nnz)
 ! out:
@@ -109,9 +109,9 @@
 !    IF(myrank.EQ.0) THEN
         
       IF(nlv_glo.EQ.0) THEN
-          CALL STIFF_EXACT(i_dir,ipar,nnodeG,nnzG,iaG,jaG,juG,auG)
+          CALL STIFF_EXACT(i_dir,nnodeG,nnzG,iaG,jaG,juG,auG)
       ELSE
-          CALL STIFF_COARSE2(i_dir,ipar,nnodeG,nnzG,iaG,jaG,juG,auG)
+          CALL STIFF_COARSE2(i_dir,nnodeG,nnzG,iaG,jaG,juG,auG)
       ENDIF
 !         
 !    ENDIF
@@ -120,14 +120,14 @@
       END
 ! - - - - - - - - - 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = !
-    SUBROUTINE STIFF_EXACT(i_dir,ipar,nnode,nnz,ia,ja,ju,au)
+    SUBROUTINE STIFF_EXACT(i_dir,nnode,nnz,ia,ja,ju,au)
 !
     USE MD_MG_Global_C, ONLY: Ainv, aluG
     use omp_lib
 !
     IMPLICIT NONE 
 ! 
-    INTEGER (4) i_dir,ipar
+    INTEGER (4) i_dir
 	INTEGER (4) nnode,nnz
 	INTEGER (4) ia(*),ja(*),ju(*)
     REAL(8)  au(*)
@@ -278,7 +278,7 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
-      SUBROUTINE STIFF_COARSE2(i_dir,ipar,nnodeG,nnzG,iaG,jaG,juG,auG)
+      SUBROUTINE STIFF_COARSE2(i_dir,nnodeG,nnzG,iaG,jaG,juG,auG)
 ! ---
       USE MD_MG_matrix, ONLY: nnz1,nnz2      !, ia1,ja1,ju1,au1, ia2,ja2,au2, iar2, jar2, Xrest2
 	  USE MD_MG_coord, only: nnode1,nnode2
@@ -289,7 +289,7 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 !
       implicit none  
       
-      INTEGER(4) i_dir,ipar
+      INTEGER(4) i_dir
       INTEGER(4) nnodeG,nnzG
       INTEGER(4) iaG(nnodeG+1),jaG(nnzG),juG(nnodeG)
       REAL(8) auG(nnzG)
@@ -395,7 +395,7 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 !	 ALLOCATE(ju1(nnode1))
 	 ju1(1:nnode1) = juGC(1:nnode1,nlv_glo)
 	 
-     CALL STIFF_EXACT(i_dir,ipar,nnode1,nnz1,ia1,ja1,ju1,au1)
+     CALL STIFF_EXACT(i_dir,nnode1,nnz1,ia1,ja1,ju1,au1)
       
 !      DEALLOCATE(ia1,ja1,ju1,au1)   
 ! 

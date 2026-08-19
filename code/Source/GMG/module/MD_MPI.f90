@@ -30,7 +30,7 @@
       INTEGER(4),DIMENSION(:),ALLOCATABLE:: inbdc
       INTEGER(4),DIMENSION(:,:),ALLOCATABLE:: ibdomc,isptc,irptc,isintfc,irintfc,isiac,iriac
       INTEGER(4) nnsend_m,nnrecv_m
-      INTEGER (4) icommu,iGS,nGS,iallocate_c
+      INTEGER (4) icommu
  
 !---
       save

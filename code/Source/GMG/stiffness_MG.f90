@@ -8,7 +8,7 @@
       USE MD_MG_index, ONLY: nlevel,mxnbne,n_GC,il1_gs
 	  USE MD_MG_coord, only: nnode1,nnode2,nnode1gl,nnode2gl,ialv,nnods,inmax
       USE MD_MPI, ONLY: nnbd,spt,rpt,sintf,rintf,nbdom,nnsend,nnrecv,nintf,myrank
-      USE MD_MPI_MG, ONLY:  icommu, siaf,riaf,iintf,inodegl,nintf1,nintf2,nintfs,iallocate_c
+      USE MD_MPI_MG, ONLY:  siaf,riaf,iintf,inodegl,nintf1,nintf2,nintfs
       use omp_lib	  
       
       implicit none  
@@ -217,7 +217,7 @@
       
       
       IF(n_GC.EQ.1) THEN
-        CALL stiffness_GC_all(iallocate_c,nintfs,nnods,nnzs,ias,aus)
+        CALL stiffness_GC_all(nintfs,nnods,nnzs,ias,aus)
         
       ENDIF
 ! 

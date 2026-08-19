@@ -5,7 +5,7 @@
       USE MD_MG_Global_C, ONLY: i_dir,nlv_glo,nnodeG,nnzG,eG,rG,rG0,imapG,iaG,jaG,juG,auG,      &
                                       igather, nsengatR, irevgatR, idispR , imapgatR
       USE MD_MPI, ONLY: myrank
-      USE MD_parameter, ONLY: ndom,ipar
+      USE MD_parameter, ONLY: ndom
        
       use omp_lib
       
@@ -91,9 +91,9 @@
 !      time_begin=real(i,kind=8)/real(j,kind=8) 
       
       IF(nlv_glo.EQ.0) THEN
-          CALL SOLVE_EXACT(i_dir,ipar,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
+          CALL SOLVE_EXACT(i_dir,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
       ELSE
-          CALL SOLVE_COARSE(i_dir,ipar,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
+          CALL SOLVE_COARSE(i_dir,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
           
       ENDIF
 !
@@ -129,7 +129,7 @@
 ! = = = = = = = = = = = = = = = = = = = = = = = =     
     
 ! = = = = = = = = = = = = = = = = = = = = = = = = 
-      SUBROUTINE SOLVE_COARSE(i_dir,ipar,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
+      SUBROUTINE SOLVE_COARSE(i_dir,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
 ! 
       USE MD_MG_index, ONLY: iter_mg
 	  USE MD_MG_Global_C,ONLY: nlv_glo,                                                   &
@@ -146,7 +146,7 @@
       implicit none
 
 ! ---input
-      INTEGER (4) i_dir,ipar
+      INTEGER (4) i_dir
 	  INTEGER (4) nnodeG,nnzG
 	  INTEGER (4) iaG(nnodeG+1),jaG(nnzG),juG(nnodeG)
 	  REAL(8) eG(nnodeG),rG(nnodeG),auG(nnzG)
@@ -295,7 +295,7 @@
 	 ENDIF
 	 
 !	  e(1:nnode2) = 0.d0
-	  CALL SOLVE_EXACT(i_dir,ipar,nnode2,e,r,nnz,ia,ja,ju,au)
+	  CALL SOLVE_EXACT(i_dir,nnode2,e,r,nnz,ia,ja,ju,au)
 	  
 ! = = = = = = = = = = = = = = = = == = 
 	  
@@ -425,7 +425,7 @@ return
 ! - - - - - - - - -- 
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = !
-    SUBROUTINE SOLVE_EXACT(i_dir,ipar,nnode,e,r,nnz,ia,ja,ju,au)
+    SUBROUTINE SOLVE_EXACT(i_dir,nnode,e,r,nnz,ia,ja,ju,au)
 !
     USE MD_MG_Global_C, ONLY: Ainv, aluG
     USE MD_MG_index, ONLY: crit_1,maxit_1
@@ -445,7 +445,7 @@ return
        integer::status(mpi_status_size)
 !DEC$ENDIF
        
-    INTEGER (4) i_dir,ipar
+    INTEGER (4) i_dir
 	INTEGER (4) nnode,nnz
 	INTEGER (4) ia(*),ja(*),ju(*)
     REAL(8) e(*),r(*), au(*)
