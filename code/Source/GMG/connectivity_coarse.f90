@@ -192,33 +192,4 @@
     End	  
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
     
-      subroutine CSR_coarse(nnode,mxn,iwk,nei_c,ia,ja,ju,nnz)
-      implicit none
-! ---
-      integer mxn,nnode,nnz
-      integer iwk(nnode),nei_c(mxn,nnode)
-! ---
-      integer ia(nnode+1),ja(nnz),ju(nnode)
-! ---
-      integer i,j,id,imax,itemp
-! --------------------------------------------------------!
-      ia = 0
-	  ja = 0
-      ju = 0
-! ---
-      ia(1) = 1
-      Do i = 1,nnode
-         imax = iwk(i)
-		 ia(i+1) = ia(i) + imax
-         itemp = ia(i)
-         do j = 1,imax
-            id = nei_c(j,i)
-            ja(itemp+j-1) = id
-            if(id.eq.i) ju(i) = itemp+j-1
-         end do
-      End do
-      if(ia(nnode+1).ne.(nnz+1)) stop"csr-coarse error"
-! --
-      return
-      End
 		

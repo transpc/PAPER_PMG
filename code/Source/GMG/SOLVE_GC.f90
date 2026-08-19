@@ -6,7 +6,6 @@
                                       igather, nsengatR, irevgatR, idispR , imapgatR
       USE MD_MPI, ONLY: myrank
       USE MD_parameter, ONLY: ndom,ipar
-      USE MD_MG_index, only: ihybrid
        
       use omp_lib
       

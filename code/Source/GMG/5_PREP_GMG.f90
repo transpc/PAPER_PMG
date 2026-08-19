@@ -3,7 +3,7 @@
          USE MD_parameter, ONLY: nv_max, ndim, teta,teta_p, nf_max, alpha, ip_inter
          USE MD_geometry, ONLY: nelem, coord, num_neigh_mg, neigh_mg, imap
          USE MD_MG_coord
-         USE MD_MG_index, ONLY: nlevel, mxnbne,ip_nmax, nmax, AR_hi, ioplv,ip_lev, report_text,nlevel_N
+         USE MD_MG_index, ONLY: nlevel, mxnbne,ip_nmax, nmax, ioplv,ip_lev, report_text,nlevel_N
          USE MD_MG_matrix
          USE MD_matrix, ONLY: nnz, ia, ja, ju, au
          USE MD_connectivity, ONLY: ia_neigh, ja_neigh, nnz_neigh,   &
@@ -105,12 +105,6 @@
 
 ! 2: coarsening step
             teta1 = teta
-            IF (AR_hi .EQ. 1) THEN
-               IF (ilv .GE. 4) teta1 = teta+0.1
-               IF (ilv .GE. 6) teta1 = teta+0.2
-               IF (ilv .GE. 9) teta1 = teta+0.3
-               IF (teta1 .GT. 0.92) teta1 = 0.92
-            END IF
 
             nnode2 = INT(0.6*nnode1)
             IF (nnode1 .LE. 2000) nnode2 = nnode1

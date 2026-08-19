@@ -64,58 +64,6 @@
     
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
     
-SUBROUTINE MD_S_R(ilv,ista,u)
-    
-USE MD_MPI_MG, ONLY: inbdc,ibdomc,isintfc,irintfc,           &
-                     nnsend_m,nnrecv_m,isptc,irptc
-USE MD_parameter, ONLY: ndom
-
-IMPLICIT NONE
-
-INTEGER(4)::ilv,ista
-REAL(8) u(*)
-! temp:
-INTEGER(4)::nnbd,nnsend,nnrecv
-!INTEGER(4),DIMENSION(:),ALLOCATABLE::nbdom,spt,rpt,sintf,rintf
-INTEGER(4)::nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_m),rintf(nnrecv_m)
-
-!ALLOCATE(nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_m),rintf(nnrecv_m))
-!-------------------------------------------------------------------
-!nbdom = 0
-!spt = 0
-!rpt = 0
-!sintf = 0
-!rintf = 0
-
-!-------------------------------------------------------------------
-   
-   nnbd = inbdc(ilv) 
-   IF(nnbd.EQ.0) GOTO 50
-   
-   nbdom(1:nnbd) = ibdomc(1:nnbd,ilv)
-   spt(1:nnbd+1) = isptc(1:nnbd+1,ilv)
-   rpt(1:nnbd+1) = irptc(1:nnbd+1,ilv)
-   
-   nnsend = spt(nnbd+1) - 1
-   nnrecv = rpt(nnbd+1) - 1
-   
-! 
-   IF(nnsend.GT.nnsend_m.OR.nnrecv.GT.nnrecv_m) THEN
-       WRITE(999,*)'nnsend_m is small',nnsend,nnrecv,nnsend_m,nnrecv_m
-       STOP
-   ENDIF
-   
-   sintf(1:nnsend) = isintfc(1:nnsend,ilv)
-   rintf(1:nnrecv) = irintfc(1:nnrecv,ilv)
-   
-CALL send_receive_C(nnbd,ista,nnsend,nnrecv,spt,rpt,sintf,rintf,nbdom,u,ndom,nnsend_m,nnrecv_m)
-
-50 CONTINUE
-!-------------------------------------------------------------------
-!DEALLOCATE(nbdom,spt,rpt,sintf,rintf)
-return
-   
-End subroutine
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
     

@@ -46,43 +46,6 @@ subroutine linalg_invM(n, a, option)
 
 ! inverse matrix by using GS elimination
 
-subroutine matrix_inverse_GS(n,A)
-      use omp_lib
-      USE MD_OpenMP
-  implicit none
-  ! input
-  integer :: n
-  real(8) :: A(n,n)
-  ! tmp
-  real(8) ::  Ide(n,n)
-  integer :: i, j, k
-  real(8) :: pivot, temp
-  ! Initialize the identity matrix I
-  Ide = 0.0
-  do i = 1, n
-     Ide(i, i) = 1.0
-  end do
-  ! Perform Gauss-Jordan elimination
-  do i = 1, n
-     pivot = A(i, i)
-     A(i, :) = A(i, :) / pivot
-     Ide(i, :) = Ide(i, :) / pivot
-    !$omp PARALLEL DO PRIVATE(temp)
-     do j = 1, n
-        if (j /= i) then
-           temp = A(j, i)
-           A(j, :) = A(j, :) - temp * A(i, :)
-           Ide(j, :) = Ide(j, :) - temp * Ide(i, :)
-        end if
-     end do
-    !$omp END PARALLEL DO
-	
-  end do
-! out:
-   A = Ide
-  !
-  return
-end 
 
 ! == = = = = = = =  = = = = = = = = = = = = = = = = = = = = 
 ! inverse matrix by using GS elimination

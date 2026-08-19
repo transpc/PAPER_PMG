@@ -8,7 +8,6 @@
         USE MD_parameter, ONLY: mdf_matrix
         USE md_geometry, ONLY: nnode
         USE MD_matrix, ONLY: u, ut
-        USE MD_MG_index, ONLY: isth
         USE MD_MPI, ONLY: myrank
         USE omp_lib
 
@@ -380,7 +379,7 @@
      SUBROUTINE SOLVER_NEW(ierror)
 !
         USE MD_MPI, ONLY: nintf, myrank
-        USE MD_MPI_MG, ONLY: icommu, iGS, nGS, nintfs, nnbds, spts, rpts, sintfs, &
+        USE MD_MPI_MG, ONLY: nintfs, nnbds, spts, rpts, sintfs, &
                              rintfs, nbdoms, iintf
         USE MD_geometry, ONLY: nnode
         USE MD_matrix, ONLY: nnz, ia, ja, ju, au, u, b, alu
@@ -390,7 +389,7 @@
                                 iai, jai, iar, jar, &
                                 auc, aus, Xrest, Xintp, nnzs, diagrc
         USE MD_MG_index, ONLY: ncycle, nlevel, n_GC, &
-                               relax, crit_1, maxit_1, isth, id_GS_sym, itergs
+                               crit_1, maxit_1, itergs
         USE MD_MG_coord, ONLY: ialv, nnods, ncolc
 
         USE MD_MPI_ARP, ONLY: nnbdA, sptA, rptA, sintfA, rintfA, nbdomA, &
