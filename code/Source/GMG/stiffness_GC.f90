@@ -275,12 +275,6 @@
           CALL linalg_invM(nnode, Ainv, 1)
          ENDIF
          
-       ELSE
-           IF(ipar.EQ.0) THEN
-           aluG(1:nnz) = au(1:nnz)
-           CALL pc_ilu1(nnode,i,ia,ja,ju,aluG)
-           ENDIF
-           
        ENDIF
 !         
 !

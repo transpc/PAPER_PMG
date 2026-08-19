@@ -789,13 +789,6 @@ end subroutine
         CALL  MPI_ALLREDUCE(e0,e,nnode,mpi_double_precision,mpi_sum,mpi_comm_world,ierr)
 !DEC$ENDIF     
 !
-    ELSE
-
-     IF(ipar.EQ.0) THEN
-     CALL solve_cg2(nnode,nnz,crit_1,maxit_1,ia,ja,ju,au,aluG,r,e)
-     ELSE
-     call pardiso_solve(nnode,ia(1),ja(1),au(1),e(1),r(1))
-     ENDIF
 	ENDIF
 	
 	RETURN
@@ -867,13 +860,6 @@ end subroutine
         CALL  MPI_ALLREDUCE(e0,e,nnode,mpi_double_precision,mpi_sum,mpi_comm_world,ierr)
 !DEC$ENDIF     
 !
-    ELSE
-
-     IF(ipar.EQ.0) THEN
-     CALL solve_cg2(nnode,nnz,crit_1,maxit_1,ia,ja,ju,au,aluG,r,e)
-     ELSE
-     call pardiso_solve(nnode,ia(1),ja(1),au(1),e(1),r(1))
-     ENDIF
 	ENDIF
 	
 	RETURN

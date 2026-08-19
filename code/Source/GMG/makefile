@@ -28,7 +28,6 @@ FSRCS = md_function.f90\
         coarsening_semi.f90\
         connectivity_coarse.f90\
         mt_amux.f90\
-        mt_precond.f90\
         PCG_Dig.f90\
 		poly_smooth.f90\
         Domain_infor_FVM_fine.f90\
@@ -38,7 +37,6 @@ FSRCS = md_function.f90\
         send_receive.f90\
         send_receive_csr.f90\
         send_receive_mt.f90\
-        solve_CG.f90\
         SOLVE_GC.f90\
         stiffness_MG.f90\
 	    mt_trans.f90\
@@ -48,8 +46,7 @@ FSRCS = md_function.f90\
         write_report.f90\
         interpolation.f90\
         Neighbor_node_ARP.f90\
-        linear_algebra.f90\
-        padiso.f
+        linear_algebra.f90
 
 FSRCV = 
 #----------------------------------------------------------------------
@@ -76,9 +73,7 @@ default : mk_lib
 mk_exe: $(OBJS)
 	$(FC) -o $(EXCNAME) $(OBJS)  $(CFLAGS) $(LFLAGS)
 
-mk_lib: $(OBJS) padiso.o
-padiso.o: padiso.f 
-	$(FC) $(FOPTFLAGS) -c padiso.f
+mk_lib: $(OBJS)
 mt_trans.o: md_function.f90
 clean:
 #	rm -f *~
