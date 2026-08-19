@@ -1,6 +1,6 @@
       SUBROUTINE PREP_GMG_global_coarse
 
-         USE MD_parameter, ONLY: ndim, teta,teta_p, alpha, isemi,ip_inter
+         USE MD_parameter, ONLY: ndim, teta,teta_p, alpha, ip_inter
          USE MD_geometry, ONLY: imap
          USE MD_MG_coord
          USE MD_MG_index, ONLY:  ip_nmax, ioplv,ip_lev
@@ -87,12 +87,7 @@
             imap = 0
             icoarse = 0
 
-               IF (isemi .eq. 0) THEN
-                  CALL coarsening_semi(ndim, nnode1, nmax1, nnz_neighc, ia_neighc, ja_neighc, nnode2, imap, icoarse, teta, coord1)
-!                  CALL coarsening_semi(ndim, nnode1, nmax1, nnei, inei, nnode2, imap, icoarse, teta, coord1)
-               ELSE
- !                 CALL coarsening_semi_amg(ndim, nnode1, nmax1, nnei, inei, nnode2, imap, icoarse, teta, coord1)
-               END IF
+               CALL coarsening_semi(ndim, nnode1, nmax1, nnz_neighc, ia_neighc, ja_neighc, nnode2, imap, icoarse, teta, coord1)
 !
             ALLOCATE (coord2(ndim, nnode2))
 !

@@ -26,7 +26,6 @@ FSRCS = md_function.f90\
 		blaslapack_sub_n.f90\
         bubble_sort.f90\
         coarsening_semi.f90\
-        coarsening_semi_amg.f90\
         connectivity_coarse.f90\
         mt_amux.f90\
         mt_precond.f90\

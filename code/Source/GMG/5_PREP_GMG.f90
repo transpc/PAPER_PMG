@@ -1,6 +1,6 @@
       SUBROUTINE PREP_GMG
 
-         USE MD_parameter, ONLY: nv_max, ndim, teta,teta_p, nf_max, alpha, isemi,ip_inter
+         USE MD_parameter, ONLY: nv_max, ndim, teta,teta_p, nf_max, alpha, ip_inter
          USE MD_geometry, ONLY: nelem, coord, num_neigh_mg, neigh_mg, imap
          USE MD_MG_coord
          USE MD_MG_index, ONLY: nlevel, mxnbne,ip_nmax, nmax, AR_hi, ioplv,ip_lev, report_text,nlevel_N
@@ -127,18 +127,10 @@
             
             IF (ilv .EQ. 2) THEN
 
-               IF (isemi .eq. 0) THEN
-                  CALL coarsening_semi(ndim, nnode1, nmax1, nnz_neigh, ia_neigh, ja_neigh, nnode2, imap, icoarse, teta, coord)
-               ELSE
-                  CALL coarsening_semi_amg(ndim, nnode1, nmax1, nnz_neigh, ia_neigh, ja_neigh, nnode2, imap, icoarse, teta, coord)
-               END IF
+               CALL coarsening_semi(ndim, nnode1, nmax1, nnz_neigh, ia_neigh, ja_neigh, nnode2, imap, icoarse, teta, coord)
 
             ELSE
-               IF (isemi .eq. 0) THEN
-                  CALL coarsening_semi(ndim, nnode1, nmax1, nnz_neighc, ia_neighc, ja_neighc, nnode2, imap, icoarse, teta1, coord1)
-               ELSE
-                  CALL coarsening_semi_amg(ndim, nnode1, nmax1*10, nnz_neighc, ia_neighc,ja_neighc, nnode2, imap, icoarse, teta1, coord1)
-               END IF
+               CALL coarsening_semi(ndim, nnode1, nmax1, nnz_neighc, ia_neighc, ja_neighc, nnode2, imap, icoarse, teta1, coord1)
 
             END IF
 !
