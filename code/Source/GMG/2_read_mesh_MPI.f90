@@ -414,7 +414,6 @@ ENDIF
 
 
 !IF((nnode-nintf).NE.nnrecv_m) THEN
-!WRITE(*,*)'error/nnode-nintf.NE.nnrecv_m'
 !STOP
 !ENDIF
 
@@ -458,12 +457,10 @@ ENDIF
 DO ilv=2,nlevel
     j = ialv(ilv+1)-ialv(ilv)-iintf(ilv)
     IF(j.GT.nnsend_m) THEN
-!     write(*,*)'nsend_m',ilv,j,nnsend_m
      nnsend_m = j
     endif
     
      IF(j.GT.nnrecv_m) THEN
-!        write(*,*)'nnrecv_m',ilv,j,nnrecv_m
      nnsend_m = j
      endif  
 ENDDO
@@ -502,8 +499,6 @@ ALLOCATE(iai1(i+1),jai1(nnzi),Xintp1(nnzi))
 ALLOCATE(iar1(i+1),jar1(nnzr),Xrest1(nnzr))
 !/
 !  IF(minval([nnode, nnzc0]) == 0) THEN
-!      write(myrank+1000,*)'error for nnode, zero point',myrank,nnode
-!      write(*,*)'error for nnode, zero point',myrank,nnode
 !  ENDIF
 !/
 ALLOCATE(ia1(nnode+1),ja1(nnzc0),ju1(nnode),au1(nnzc0))
@@ -964,7 +959,6 @@ DEALLOCATE(iar1,jar1,Xrest1)
   
 !/
 !  IF(minval([nnodeC, nnodeG, nnzG]) == 0) THEN
-!      write(myrank,*)'error for n_GC, zero point',myrank,nnodeC,nnodeG, nnzG
 !  ENDIF
 !/
   ALLOCATE(iaG(nnodeG+1),jaG(nnzG),juG(nnodeG),auG(nnzG),auG0(nnzG),stat=alstatus)

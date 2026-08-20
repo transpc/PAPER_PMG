@@ -24,7 +24,6 @@
 ! temp:
   INTEGER i,j,k,ierr
   REAL(8) tmp
-  real*8 time_begin,time_end,time_cpu
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
 !$omp PARALLEL DO
    DO i=1,nnodeG
@@ -87,8 +86,6 @@
       
 !     eG = 0.d0
 ! 
-!      call system_clock(i,j,k)
-!      time_begin=real(i,kind=8)/real(j,kind=8) 
       
       IF(nlv_glo.EQ.0) THEN
           CALL SOLVE_EXACT(i_dir,nnodeG,eG,rG,nnzG,iaG,jaG,juG,auG)
@@ -97,11 +94,6 @@
           
       ENDIF
 !
-!      call system_clock(i,j,k)
-!      time_end=real(i,kind=8)/real(j,kind=8)
-!	  time_cpu = time_end-time_begin
-!      WRITE(21,*) time_cpu
-!         IF (myrank .eq. 0) WRITE (101, *) 'SOLVE_COARSE', time_cpu
       
 !     ENDIF
        

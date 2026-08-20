@@ -103,7 +103,6 @@ USE MD_MPI, ONLY: myrank
 ! 
   End do
 ! 
-!  write(*,*) 'initial coarse nodes',nnd
 
 ! modifying: Change some nodes from F-> C (no connection)
     

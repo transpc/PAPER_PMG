@@ -15,14 +15,10 @@
 !     
       integer(4) jmax,i,j,k,ilv,nnzt,ncolf1,ncolc1,ntmp,nnzr2,nnzt1,ntmpf
       REAL(8) tmp
-      real*8 time_begin,time_end,time_cpu
-      real*8 time_begin0,time_end0,time_cpu0
 	  
 !      jmax = mxnbne
      
  
-!      call system_clock(i,j,k)
-!      time_begin0=real(i,kind=8)/real(j,kind=8)  
 	  
 ! initial fine level
       nnode1 = nnode
@@ -39,7 +35,6 @@
       au1 = 0.d0
      
 ! test-MG
-!     write(*,*)'Gar-pre'
  
       DO ilv = 1, nlevel-1
           
@@ -212,8 +207,6 @@
       DEALLOCATE(ia1,ja1,au1)
       
 !
-!      call system_clock(i,j,k)
-!      time_begin=real(i,kind=8)/real(j,kind=8)  
       
       
       IF(n_GC.EQ.1) THEN
@@ -224,16 +217,9 @@
       
 !     IF(myrank.EQ.0) THEN
 
-!      call system_clock(i,j,k)
-!      time_end0=real(i,kind=8)/real(j,kind=8)
-!          time_cpu0 = time_end0-time_begin0
-!      write(101,*)'cpu Gar in=',time_cpu0
 
-!          time_cpu = time_end0-time_begin
-!      write(*,*)'cpu Gar-GC=',time_cpu
 !     ENDIF
     
-!     write(*,*)'Gar-post'
       return	  
     End
     

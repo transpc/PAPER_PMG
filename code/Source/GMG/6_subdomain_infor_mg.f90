@@ -173,12 +173,10 @@ DO prc=1,np
    DO i=1,nnodep
       ie=jperm(prc,i)
       j = num_neigh_mg(ie)
-!     WRITE(iu_prc(prc),*) j, iperm(prc,neigh_mg(1:j,ie))
       WRITE(iu_prc(prc),*) j, (iperm(prc,neigh_mg(k,ie)),k=1,j)
    ENDDO
 
    DO i=1,nnd
-!     WRITE(iu_prc(prc),*) xloc_tmp(jperm(prc,i),1:ndim)
       WRITE(iu_prc(prc),*) (xloc_tmp(jperm(prc,i),j),j=1,ndim)
    ENDDO
   ELSE
@@ -539,7 +537,6 @@ DO prc=1,np
 ! test
    IF(si1(prc,nnbdom1(prc)+1)-1.GE.nelemt) THEN
    WRITE(*,*)'PMG error: nelemt is small'
-!   PAUSE
    STOP
    ENDIF
 !
@@ -908,7 +905,6 @@ WRITE(999,*)'minimun cells',i1
 WRITE(999,*)'maximun cells',i2
 IF(i1.EQ.0) THEN
     WRITE(999,*)'coarsest level zero cells'
-!    WRITE(*,*)'=> using smaller nlevel or np'
 ENDIF
 
 ! for optimal nlv_go

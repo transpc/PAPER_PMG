@@ -169,7 +169,6 @@
             END IF
             
 ! allocate:
-!                         write(999,*) 'test1', alstatus
 !            IF(ALLOCATED(ia_tmp))      DEALLOCATE(ia_tmp)
 !            IF(ALLOCATED(ja_tmp))      DEALLOCATE(ja_tmp)
 
@@ -634,7 +633,6 @@
 
 !         n2 = INT(n1/ndom)
          ! test
-!   write(*,*)'n0,',n0,n1,n2,ndom
 
 !         IF ((n2 .LE. n2_min) .OR. (n1 .LE. n1_min)) THEN
          IF (n1 .LE. n1_min) THEN

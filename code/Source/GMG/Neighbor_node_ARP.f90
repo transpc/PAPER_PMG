@@ -27,7 +27,6 @@ imark = 0
 ! 
 
 ! test
-! write(999,*)'FVM-1,nn=',nn
 do ip=1,np
    do jp=1,np
        IF(jp==ip) CYCLE
@@ -57,7 +56,6 @@ do ip=1,np
 enddo
 ! - - - - - - - - - - 
 ! test
-! write(999,*)'FVM-2,nn=',nn
 allocate(rnbcnt(np,np),nbrecv(np,np,nn))
 
 !  
@@ -81,7 +79,6 @@ do prc=1,np
 enddo
 !
 ! test
-! write(999,*)'FVM-3,nn=',nn
 !---------------------------
 !%copy recv to send
 allocate(snbcnt(np,np),nbsend(np,np,nn))
@@ -103,7 +100,6 @@ do jp=1,np
 enddo
 !
 ! test
-! write(999,*)'FVM-4,nn=',nn
 !----------------------------------------------
 ! ri and si !
 do prc=1,np
@@ -129,9 +125,7 @@ do prc=1,np
       enddo
    enddo
 enddo
-!write(*,*)'nintf=',sort(1)
 ! test
-! write(999,*)'FVM-5,nnb=',nnb
 !----------------------------
 
 do prc=1,np
@@ -151,9 +145,7 @@ do prc=1,np
       enddo
    enddo
 enddo
-!write(*,*)'nintf=',sort(1)
 ! test
-! write(999,*)'FVM-6,nnb=',nnb
 ! - - - - - - 
      
 deallocate(rnbcnt,nbrecv,imark)

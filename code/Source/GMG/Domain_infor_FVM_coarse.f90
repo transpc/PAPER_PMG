@@ -219,7 +219,6 @@ ENDDO
 !-------------------------------------------------NEW-
 allocate(sort(np))
 sort=cinter
-!write(*,*)'ninter=',sort(1)
 ! 4-nbdom
 imark = 0
 
@@ -333,7 +332,6 @@ do prc=1,np
       enddo
    enddo
 enddo
-!write(*,*)'nintf=',sort(1)
 !---------------------------------------------------------
 do prc=1,np
    do jp=1,nnbdom(prc)
@@ -351,7 +349,6 @@ do prc=1,np
       enddo
    enddo
 enddo
-!write(*,*)'neq=',sort(1)
 !--------------------------------------------
 ! 
 ! cheking: 
@@ -399,7 +396,6 @@ enddo
       ENDDO
       
       nnodegl = sort
-!     write(*,*)'nnodegl=',sort(1)     
 ! - - - - - - 
 i = MAXVAL(sort)
 IF(i.GT.nnodet) THEN

@@ -22,7 +22,6 @@
 ! temp:
   INTEGER i,j,ierr,i1,i2,k,nd,ip
 
-  REAL*8 time_begin,time_end,time_cpu 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
 !step-1: transfer residual from local to global
   
@@ -71,8 +70,6 @@
 
 ! step-2: S&R to all processors
 
-!      call system_clock(i,j,k)
-!      time_begin=real(i,kind=8)/real(j,kind=8) 
     IF(igather.EQ.0) THEN
         
        CALL MPI_ALLREDUCE(auG0,auG,nnzG,mpi_double_precision,mpi_sum,mpi_comm_world,ierr)
@@ -95,10 +92,6 @@
 !    call mpi_barrier(mpi_comm_world,ierr)
 
 !      IF(myrank.EQ.0) THEN
-!      call system_clock(i,j,k)
-!      time_end=real(i,kind=8)/real(j,kind=8)
-!      time_cpu = time_end-time_begin
-!      write(*,*)'reduce time=',time_cpu
 
 !     ENDIF
     
@@ -296,8 +289,6 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 !     
       integer(4) jmax,i,j,k,ilv,nnzr2
       REAL(8) tmp
-      real*8 time_begin,time_end,time_cpu
-      real*8 time_begin0,time_end0,time_cpu0
 	  
 !    temp
       INTEGER(4) ia1(nnodeGC(1)+1), ja1(nnzGC(1))
@@ -308,8 +299,6 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
       REAL(8)  Xrest2(nnziG)      
       INTEGER(4) ju1(nnodeGC(nlv_glo))
       
-!      call system_clock(i,j,k)
-!      time_begin0=real(i,kind=8)/real(j,kind=8)  
 	  
 ! initial fine level
       nnode1 = nnodeG
@@ -399,12 +388,7 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
       
 !      DEALLOCATE(ia1,ja1,ju1,au1)   
 ! 
-!      call system_clock(i,j,k)
-!      time_end0=real(i,kind=8)/real(j,kind=8)
-!	  time_cpu0 = time_end0-time_begin0
-!      write(*,*)'cpu Gar coarse=',time_cpu0 
     
-!     write(*,*)'Gar-post'
       return
 	  
     End

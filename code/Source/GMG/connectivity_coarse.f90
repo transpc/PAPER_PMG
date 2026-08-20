@@ -77,7 +77,6 @@
       
       Deallocate(imark)   
              	
-!      write(*,*)'nnz on coarse grid = ',nnz1
 ! --------------------------------------
       
       return

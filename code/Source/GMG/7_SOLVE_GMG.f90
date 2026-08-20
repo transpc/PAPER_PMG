@@ -51,7 +51,6 @@
 !     GALERKIN condition
 
 !!DEC$IF defined (mpi_flag)
-!      t1 = MPI_Wtime()
 !!DEC$ENDIF
 
 ! - - - - - - - - - - - - - - - - -
@@ -66,9 +65,7 @@
 ! - - - - - - - - - - - - - - - -
 
 !!DEC$IF defined (mpi_flag)
-!      t2 = MPI_Wtime()
 
-!         IF (myrank .eq. 0) WRITE (101, *) 'GAR out', t2-t1
 
 !!DEC$ENDIF
 
@@ -439,7 +436,6 @@
            res0 = DSQRT(res1)
         END IF
 
-!     IF(myrank.eq.0) write(999,*)'res0=',res0
 
         IF (res0 .LE. 1.d-16) THEN
            IF (myrank .EQ. 0) WRITE (999, *) 'ncycle=', 0
@@ -655,7 +651,6 @@
            END IF
 !
 !      if(myrank==0) then
-!      print*,'cycle=',icycle,res
 !      ENDIF
 
            IF (res .lt. crit) GOTO 200

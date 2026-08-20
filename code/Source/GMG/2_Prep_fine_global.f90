@@ -63,7 +63,6 @@
 
 ! ---     
 
-!      write(*,*)'---------CSR procedure----------' 
 !
       nnz = sum(num_neigh_mg(1:nelem))+nelem       ! FVM
 ! 	  
@@ -82,7 +81,6 @@
  !     call execute_command_line(command,status)
       call system('mkdir MG_tmp')
 !      IF(status /= 0) THEN
-!          WRITE(*,*)'Failed to create folder "PMG_pre"'
 !          STOP
 !      ENDIF
 !/
