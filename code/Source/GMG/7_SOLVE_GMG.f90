@@ -672,11 +672,6 @@
         RETURN
 ! ---------------------
 200     CONTINUE
-
-        IF (myrank == 0) THEN
-!      print*,'convergence, cycle=',icycle,res
-           WRITE (16 + myrank, *) icycle
-        END IF
 ! ---
         RETURN
      END
