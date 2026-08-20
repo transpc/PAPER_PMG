@@ -180,7 +180,7 @@
       Deallocate(imark)  
       
       IF(ia1(nnode1+1).NE.(nnz1+1)) THEN
-          WRITE(999,*)'error in connectivity_coarse, ia1/nnz',ia1(nnode1+1),nnz1+1
+          WRITE(*,*)'PMG error in connectivity_coarse, ia1/nnz',ia1(nnode1+1),nnz1+1
           STOP
       ENDIF
       

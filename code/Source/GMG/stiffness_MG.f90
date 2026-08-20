@@ -194,7 +194,7 @@
     
 ! for the coarsest level:
       IF(nnode1.NE.nnods) THEN
-          WRITE(999,*)'error in nnods-stiffness-MG'
+          WRITE(*,*)'PMG error in nnods-stiffness-MG'
           STOP
       ENDIF
       

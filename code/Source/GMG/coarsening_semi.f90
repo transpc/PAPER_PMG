@@ -147,8 +147,7 @@ USE MD_MPI, ONLY: myrank
  
   
   IF(nnd.GT.nnodc) THEN
-      WRITE(999,*)'initial nelem1 is small,nnd=',nnd,nnodc
-!      PAUSE
+      WRITE(*,*)'PMG error: initial nelem1 is small,nnd=',nnd,nnodc
       STOP
   ELSE
       

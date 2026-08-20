@@ -538,7 +538,7 @@ DO prc=1,np
    
 ! test
    IF(si1(prc,nnbdom1(prc)+1)-1.GE.nelemt) THEN
-   WRITE(999,*)'nelemt is small'
+   WRITE(*,*)'PMG error: nelemt is small'
 !   PAUSE
    STOP
    ENDIF

@@ -59,7 +59,7 @@
       
 ! 
    IF(nnsend.GT.nnsend_m.OR.nnrecv.GT.nnrecv_m) THEN
-       WRITE(999,*)'nnsend_m is small-2',nnsend,nnrecv,nnsend_m,nnrecv_m
+       WRITE(*,*)'PMG error: nnsend_m is small-2',nnsend,nnrecv,nnsend_m,nnrecv_m
        STOP
    ENDIF
       
@@ -109,7 +109,7 @@
       iriac(1:nnrecv+1,ilv) = ria(1:nnrecv+1)
 ! check:
       IF((ria(nnrecv+1)-ria(1)).NE.(ia2(nnode2+1)-ia2(nintf2+1))) THEN
-          WRITE(999,*)'error in ria',myrank,ria(nnrecv+1)-ria(1),ia2(nnode2+1)-ia2(nintf2+1)
+          WRITE(*,*)'PMG error in ria',myrank,ria(nnrecv+1)-ria(1),ia2(nnode2+1)-ia2(nintf2+1)
           STOP
       ENDIF      
       

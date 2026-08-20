@@ -15,6 +15,7 @@
       INTEGER(4) rc
 	  IF(myrank.EQ.0) THEN
 	    WRITE(999,*) report_text
+	    WRITE(*,*) 'PMG STOP: ', report_text
 	  ENDIF
 	  
 ! 

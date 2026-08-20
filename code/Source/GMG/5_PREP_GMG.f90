@@ -178,7 +178,7 @@
 
             IF (alstatus/=0) THEN
                report_text = 'not enough memory,PREP_GMG_FEM, ja_tmp'
-             write(999,*) nnz_tmp,nnode1,jmax
+             write(*,*) 'PMG alloc fail:',nnz_tmp,nnode1,jmax
                CALL STOP_MPI(report_text)
             ENDIF
 

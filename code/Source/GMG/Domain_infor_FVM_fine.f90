@@ -367,7 +367,7 @@ write(999,*)'neq=',sort(1)
      
 i = MAXVAL(sort)
 IF(i.GT.nnodet) THEN
-WRITE(999,*)'error,nnodet small',nnodet,i
+WRITE(*,*)'PMG error: nnodet small',nnodet,i
 STOP
 ENDIF
 

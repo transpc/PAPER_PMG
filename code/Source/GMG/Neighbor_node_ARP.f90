@@ -125,7 +125,7 @@ do prc=1,np
          nd=nbsend(prc,inb,k)
          sint(prc,nk-1+k)=nd
 ! test
-         IF(nk-1+k.GT.nn) write(999,*) 'error-1',nk-1+k,nn
+         IF(nk-1+k.GT.nn) write(*,*) 'PMG error-1 (ARP)',nk-1+k,nn
       enddo
    enddo
 enddo
@@ -147,7 +147,7 @@ do prc=1,np
          nd=nbrecv(prc,inb,k)
          rint(prc,nk - 1+ k) = nd
 ! test
-         IF(nk-1+k.GT.nn) write(999,*) 'error-2',nk-1+k,nn
+         IF(nk-1+k.GT.nn) write(*,*) 'PMG error-2 (ARP)',nk-1+k,nn
       enddo
    enddo
 enddo

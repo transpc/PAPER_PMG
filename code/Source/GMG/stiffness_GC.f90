@@ -389,7 +389,7 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 ! for the coarsest level:
 	 
       IF(nnode1.NE.nnodeGC(nlv_glo)) THEN
-          WRITE(999,*)'error in Stiffness_GC2,',nnode1,nnodeGC(nlv_glo)
+          WRITE(*,*)'PMG error in Stiffness_GC2,',nnode1,nnodeGC(nlv_glo)
       ENDIF
 !
 !	 ALLOCATE(ju1(nnode1))

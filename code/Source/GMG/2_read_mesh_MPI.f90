@@ -153,7 +153,7 @@ read(iu,*)nnbdA,nnbdR
 ENDIF
 !----------------------------------------------------
 IF(nelem.NE.nnode) THEN
-    WRITE(999,*)'nelem=/nnode'!
+    WRITE(*,*)'PMG error: nelem=/nnode'
     STOP
 ENDIF
 
@@ -1022,8 +1022,7 @@ DEALLOCATE(iar1,jar1,Xrest1)
   ENDDO
 
    IF(iaG(nnodeG+1).GT.(nnzG+1))THEN
-    WRITE(*,*)'error in read AcG'
-    PAUSE
+    WRITE(*,*)'PMG error in read AcG'
    ENDIF
 
   ENDIF

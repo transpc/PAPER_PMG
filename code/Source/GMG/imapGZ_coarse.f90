@@ -32,8 +32,7 @@
                       IF(k1.EQ.jaG(m)) GOTO 10
                    ENDDO
                    
-                   WRITE(*,*)'error in imapGZ'
-           PAUSE
+                   WRITE(*,*)'PMG error in imapGZ'
                    
 10         CONTINUE
            imapGZ(k) = m

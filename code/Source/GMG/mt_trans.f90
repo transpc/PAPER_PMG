@@ -34,7 +34,7 @@
         ENDDO
 ! 
         IF(ia1(nc+1).NE.(nnz+1)) THEN
-            WRITE(999,*)'error in matrix-transpose, ia1(nc+1)=/nnz+1'
+            WRITE(*,*)'PMG error in matrix-transpose, ia1(nc+1)=/nnz+1'
             STOP
         ENDIF
 !

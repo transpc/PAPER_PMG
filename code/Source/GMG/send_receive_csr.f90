@@ -193,7 +193,6 @@
 		   WRITE(*,*)'error in ordering_csr',i,j0,eps1
                    write(*,*)xtemp2(1:ndim)
                    write(*,*)coord1(1:ndim,j0)
-		   PAUSE
                    stop
 		   
 10        CONTINUE

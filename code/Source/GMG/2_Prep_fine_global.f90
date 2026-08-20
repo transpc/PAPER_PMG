@@ -129,7 +129,7 @@
       End do
       
       IF(ia(nelem+1).ne.(nnz+1)) THEN
-          WRITE(999,*)'csr-FVM error'
+          WRITE(*,*)'PMG error: csr-FVM (2_Prep_fine_global)'
           STOP
       ENDIF
 	  
