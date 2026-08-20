@@ -72,3 +72,10 @@ code/pmg_standalone/golden/**/*.post
 code/pmg_standalone/golden/**/*.bin
 code/pmg_standalone/golden/**/*.u
 code/pmg_standalone/tests/replay_*.u
+
+# Python bytecode caches (docs/PMG_algorithm scripts, demo2d)
+__pycache__/
+*.pyc
+
+# pmg_standalone 검증 빌드 산출물
+code/pmg_standalone/build_chk/
