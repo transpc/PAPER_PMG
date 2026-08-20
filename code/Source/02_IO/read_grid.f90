@@ -505,11 +505,8 @@
 !
 !.....Process ilup 
 !
-      write(*,*)'test,pre ilu'
-
       CALL reorder_ilup
 
-      write(*,*)'test,after ilu'
 ! Rearrange A in blocks of equal number of neighbors to vectorize
       CALL gener_vect_size(ncell_fluid,max_neigh,ia_a,ngroup)
 !     write(*,*) 'ngroup',ncell_fluid,ngroup,max_neigh

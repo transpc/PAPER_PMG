@@ -91,7 +91,6 @@
          ENDIF
       ENDIF
 !
-     write(*,*) '====>lev_typet',levt,lev_typet
 !
 !.....Must always allocate used to call csr_cg_solver
 !
