@@ -82,7 +82,6 @@ cinter=0
 cintf=0
 cext=0
 !
-lcnode3=0
 jwk=0
 mark_own=0
 
@@ -234,7 +233,7 @@ enddo
       next_m = MAX(next_m,20)
       next_m = MAX(next_m,np)
       
-allocate(rnbcnt(np,np),nbrecv(np,np,next_m),stat=alstatus)
+allocate(rnbcnt(np,np),nbrecv(next_m,np,np),stat=alstatus)
 
      IF (alstatus/=0) THEN
          WRITE(*,*)'not enough memory,serial-pre-MPI1-index-nbrecv'
@@ -242,7 +241,6 @@ allocate(rnbcnt(np,np),nbrecv(np,np,next_m),stat=alstatus)
      ENDIF
      
 rnbcnt=0
-nbrecv=0
 do prc=1,np
    do ip=1,nnbdom(prc)
       neigh=nbdom(prc,ip)
@@ -251,7 +249,7 @@ do prc=1,np
          if(celem(jd)==neigh) then
             rnbcnt(prc,neigh)=rnbcnt(prc,neigh)+1
             cnt=rnbcnt(prc,neigh)
-            nbrecv(prc,neigh,cnt)=jd
+            nbrecv(cnt,prc,neigh)=jd
          endif
       enddo
    enddo
@@ -271,7 +269,7 @@ do prc=1,np
    do jp=1,nnbdom(prc)
       si(prc,jp+1)=si(prc,jp)+rnbcnt(nbdom(prc,jp),prc)
       do k=1,rnbcnt(nbdom(prc,jp),prc)
-         nd=nbrecv(nbdom(prc,jp),prc,k)
+         nd=nbrecv(k,nbdom(prc,jp),prc)
          if(jwk(nd)==0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
@@ -285,7 +283,7 @@ do prc=1,np
    do jp=1,nnbdom(prc)
       ri(prc,jp+1)=ri(prc,jp)+rnbcnt(prc,nbdom(prc,jp))
       do k=1,rnbcnt(prc,nbdom(prc,jp))
-         nd=nbrecv(prc,nbdom(prc,jp),k)
+         nd=nbrecv(k,prc,nbdom(prc,jp))
          if(jwk(nd).eq.0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
@@ -356,7 +354,6 @@ ENDIF
 ! - - - - - - - - - - - - - - - - - -
      DEALLOCATE(lcnode3)
 	 ALLOCATE(lcnode3(np,next_m),cext_tmp(np))
-	 lcnode3 = 0
 	 cext_tmp = 0
 !
      CALL Ext_nodes_R(np,next_m,nnode,nnode1,nnzi,celem,icoarse,iar,jar,cext_tmp,lcnode3)

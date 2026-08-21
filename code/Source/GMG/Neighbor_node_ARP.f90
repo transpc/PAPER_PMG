@@ -11,8 +11,8 @@ INTEGER(4) ri(np,np),si(np,np),rint(np,nn),sint(np,nn)
 ! temp 
 integer(4) i,j,k,nd,nk,inb,nnb,prc,cnt,ip,jp,id,jd,neigh,index
 
-integer(4),dimension(:,:),allocatable::rnbcnt,snbcnt,imark
-integer(4),dimension(:,:,:),allocatable::nbrecv,nbsend
+integer(4),dimension(:,:),allocatable::rnbcnt,imark
+integer(4),dimension(:,:,:),allocatable::nbrecv
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - -
 nbdom=0
@@ -56,11 +56,10 @@ do ip=1,np
 enddo
 ! - - - - - - - - - - 
 ! test
-allocate(rnbcnt(np,np),nbrecv(np,np,nn))
+allocate(rnbcnt(np,np),nbrecv(nn,np,np))
 
 !  
 rnbcnt=0
-nbrecv=0
 
 do prc=1,np
    do ip=1,nnbdom(prc)
@@ -72,7 +71,7 @@ do prc=1,np
          if(cnode(jd)==neigh) then
             rnbcnt(prc,neigh)=rnbcnt(prc,neigh)+1
             cnt=rnbcnt(prc,neigh)
-            nbrecv(prc,neigh,cnt)=jd
+            nbrecv(cnt,prc,neigh)=jd
          endif
       enddo
    enddo
@@ -80,24 +79,7 @@ enddo
 !
 ! test
 !---------------------------
-!%copy recv to send
-allocate(snbcnt(np,np),nbsend(np,np,nn))
-do jp=1,np
-   do ip=1,np
-      snbcnt(jp,ip)=rnbcnt(ip,jp)
-   enddo
-enddo
-
-do jp=1,np
-   do ip=1,np
-      cnt=rnbcnt(ip,jp)
-      if(cnt>0)then
-         do j=1,cnt
-            nbsend(jp,ip,j)=nbrecv(ip,jp,j)
-          enddo
-      endif
-   enddo
-enddo
+! send 목록 = recv 목록의 전치 — 별도 배열 없이 rnbcnt/nbrecv 를 (이웃,자기) 순서로 직접 참조
 !
 ! test
 !----------------------------------------------
@@ -112,13 +94,13 @@ do prc=1,np
    do jp=1,nnbdom(prc)
    
       inb = nbdom(prc,jp)
-	  nnb = snbcnt(prc,inb)
+	  nnb = rnbcnt(inb,prc)
 	  nk = si(prc,jp)
 	  
-      si(prc,jp+1)=nk + nnb             ! snbcnt(prc,nbdom(prc,jp))
+      si(prc,jp+1)=nk + nnb
 	  
-      do k=1, nnb     !snbcnt(prc,nbdom(prc,jp))
-         nd=nbsend(prc,inb,k)
+      do k=1, nnb
+         nd=nbrecv(k,inb,prc)
          sint(prc,nk-1+k)=nd
 ! test
          IF(nk-1+k.GT.nn) write(*,*) 'PMG error-1 (ARP)',nk-1+k,nn
@@ -138,7 +120,7 @@ do prc=1,np
       ri(prc,jp+1)= nk + nnb
 	  
       do k=1,nnb                              !rnbcnt(prc,nbdom(prc,jp))
-         nd=nbrecv(prc,inb,k)
+         nd=nbrecv(k,prc,inb)
          rint(prc,nk - 1+ k) = nd
 ! test
          IF(nk-1+k.GT.nn) write(*,*) 'PMG error-2 (ARP)',nk-1+k,nn
@@ -149,7 +131,6 @@ enddo
 ! - - - - - - 
      
 deallocate(rnbcnt,nbrecv,imark)
-deallocate(snbcnt,nbsend)
 !
 RETURN
 
