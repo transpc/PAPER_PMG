@@ -4,7 +4,6 @@
 ! * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * !
 ! find the connectivity - neibor_c - of coarse grid                             ! 
 ! for each node I, fine all nodes J such that                                   !
-! Ac(I,J) = R(I,k)*A(k,l)*P(l,J) =/ 0 , A(k,l) on fine -grid.                   !
 ! because the grid is non-nested => J is a litle more than all neibor of I      !
 !   desiged by Sang-Ha - May-2018                                               !
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
@@ -60,7 +59,6 @@
                      
                      if(imark(j).ne.i) then
                          nnd = nnd + 1 
-!                         ni(nnd) = j
                          imark(j) = i
                      end if
                      
@@ -90,7 +88,6 @@
 ! * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * !
 ! find the connectivity - neibor_c - of coarse grid                             ! 
 ! for each node I, fine all nodes J such that                                   !
-! Ac(I,J) = R(I,k)*A(k,l)*P(l,J) =/ 0 , A(k,l) on fine -grid.                   !
 ! because the grid is non-nested => J is a litle more than all neibor of I      !
 !   desiged by Sang-Ha - May-2018                                               !
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !

@@ -14,14 +14,12 @@
       USE MD_MPI_MG,    ONLY: siaf,riaf,nmaxgl
       USE MD_MG_matrix, ONLY: diagt
 !
-!-------------------
       IMPLICIT NONE
 
 !!DEC$IF defined (mpi_flag)
 !      INCLUDE 'mpif.h'
 !!DEC$ENDIF
 !!DEC$IF defined (mpi_flag)
-!      INTEGER(4)::status(mpi_status_size),tag,ierr
 !!DEC$ENDIF
 
       REAL(8) pi,tmp,tmp1
@@ -34,7 +32,6 @@
       diagt = 0.d0
      
 ! --- 
-! 
      ALLOCATE(diagr(nelem))
      IF(ALLOCATED(ia))     DEALLOCATE(ia)
      IF(ALLOCATED(ja))     DEALLOCATE(ja)
@@ -117,14 +114,11 @@
     
 ! ALU 
     
-!          if(isth == 2) then
       ALLOCATE(alu(nnz))
       alu = 0.d0
-!          endif
     
 !100   CONTINUE
 ! 
-! deallocate:
     
     DEALLOCATE(coord)
     DEALLOCATE(num_neigh, e_neigh)
@@ -211,4 +205,3 @@
       End
 
 ! = = = = = = = = = = = = = = = = = = = 
-!

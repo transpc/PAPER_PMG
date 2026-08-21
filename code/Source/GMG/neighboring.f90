@@ -23,8 +23,6 @@
 ! --- temp
       INTEGER(4):: alstatus
       INTEGER(4) ID(nnd),ie,nn,ne,I,J,JD,index, J1, J2
-!      INTEGER(4),dimension(:,:),allocatable::iwork
-!      INTEGER(4),dimension(:),allocatable::iwk,live
 
 ! ----------------------------------------!       
 
@@ -114,8 +112,6 @@
 ! --- temp
       INTEGER(4):: alstatus
       INTEGER(4) ID(nnd),ie,nn,ne,I,J,JD,index, J1, J2
-!      INTEGER(4),dimension(:,:),allocatable::iwork
-!      INTEGER(4),dimension(:),allocatable::iwk,live
 
 ! ----------------------------------------!       
 
@@ -243,8 +239,6 @@
           STOP
         ENDIF
 !	   
-!  ----------------------
-!    
         nnd = 0
         nf = 0
         DO i = 1,nnode
@@ -306,7 +300,6 @@
           STOP
         ENDIF
 !	   
-!  ----------------------
         ia_neigh(1) = 1
 !    
         DO i = 1,nnode
@@ -343,7 +336,6 @@
     END
     
 ! - - - - - - - - - - - - - - - - - - - - - - -- - - - - - - - - - 
-          !
       SUBROUTINE neighbor_fine_graph(nnodef, nnodec, nnz_neighc, ia_neighc, ja_neighc,  &
                                         icoarse, nnz,jmax, ia, ja)
 !
@@ -399,7 +391,6 @@
 
 ! ordering
 ! it will be re-ordered later after reducing no. ni.
-!            CALL bubble_sort(nnd, ni)
             
 !
             DO i = 1, nnd
@@ -504,7 +495,6 @@
 ! ordering
 ! ordering
 ! it will be re-ordered later after reducing no. ni.
-!            CALL bubble_sort(nnd, ni)
             
 !
             DO i = 1, nnd
@@ -527,7 +517,6 @@
       SUBROUTINE neighbor_fine_graph_nnz(nnodef, nnodec, nnz_neighc, ia_neighc, ja_neighc,  &
                  icoarse, nnz, jmax)
 !
-!
          USE MD_MPI, ONLY: myrank
 !/
          IMPLICIT NONE
@@ -545,7 +534,6 @@
 !.....temporary
 !
          INTEGER(4) i, j, k, l, nnd, ie, je,nd, nn, i1, i2
-!
 !
          nnz = 0
          jmax = 1
@@ -573,7 +561,6 @@
                nnd = nnd+1
             END DO
 !  
-!
             
             nnz = nnz + nnd
             
@@ -688,7 +675,6 @@
     
       SUBROUTINE reduce_neibor(ndim,jmax,ip_nmax,teta_p,nnodf,nnodc,coordf,coordc,nnz,ia,ja)
 !
-! 
       IMPLICIT NONE
 !  - - - -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -!
 ! reduce the number of coarse cell neighbour of cell.                        !
@@ -753,7 +739,6 @@
 	
 	      xc(1:ndim) = coordf(1:ndim,ie)
 !		  
-!         
           dmin = 1.d10
           DO i = 1,kmax
             

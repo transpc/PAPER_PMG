@@ -309,7 +309,6 @@ DO prc=1,np
 ENDDO
 
 ! NEW for ArP - - - - - - - - - - 
-! DEALLOCATE
     DEALLOCATE(inbdomA,nnbdomA)
     DEALLOCATE(riA,siA,rintA,sintA)
     
@@ -781,7 +780,6 @@ ENDIF
 ENDDO
 
 ! NEW for A, R,P
-! allocate:
     DEALLOCATE(inbdomA,nnbdomA)
     DEALLOCATE(riA,siA,rintA,sintA)
 !
@@ -914,7 +912,6 @@ WRITE(999,*)'optimal nlv_gobal, nnz,ext,beta',nnz1, i1, tmp
 IF(tmp.GT.0.3)  WRITE(999,*)'increse "nlv_glo" in mg.in file'
 IF(tmp.LT.0.1)  WRITE(999,*)'reduce "nlv_glo" in mg.in file'
 !/
-!
 DEALLOCATE(imapc,icoarsef,ialv,iperm,jperm,num_neigh_mg,neigh_mg)
 DEALLOCATE(iar1,jar1,Xrest1,iai,jai,iar,jar,iac,jac)
 DEALLOCATE(Xrest,Xintp)

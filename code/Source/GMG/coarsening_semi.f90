@@ -86,16 +86,13 @@ USE MD_MPI, ONLY: myrank
 	  
       DO k=1,nn
       id = ja(k+j1-1) 
-!        id = iworkf(k,j)
         IF(i_test(id).EQ.0) CYCLE
         IF(i_test(id).EQ.1) CYCLE !
 		
         IF(dx(k).LE.dmin) THEN
         i_test(id) = 0 
         
-!        ELSE
 ! NEW
-!        i_test(id) = 1
         ENDIF
         
 
@@ -119,9 +116,7 @@ USE MD_MPI, ONLY: myrank
    j1 = ia(j)
    j2 = ia(j+1)-1
    
-!     nn = j2-j1+1  
      
-!      nn = iwkf(j)
       DO k=j1,j2      !1,nn
       id = ja(k)
       m=i_test(id)

@@ -142,12 +142,8 @@ do ip=1,np
       lcnode3(ip,cext(ip))=id
       jwk(ip,id)=1
 
-!     IF(jwk(jd,ip).EQ.0) THEN
-!      cintf(ip)=cintf(ip)+1
 
-!      jwk(jd,ip) = 1
 
-!     ENDIF
 
 !notes-> update for intf
     jp= celem(id)
@@ -323,7 +319,6 @@ write(999,*)'neq=',sort(1)
 !1-neiboring Element of each node:     
 !------------
 !2-index element:
-!      index_elem = 0
       jwk = 0
       
       DO proc=1,np
@@ -383,7 +378,6 @@ ENDIF
      CALL Neighbor_node_ARP(np,nnode,next_m,next_m,celem,cext_tmp,lcnode3,inbdomR,nnbdomR,riR,siR,rintR,sintR)	 
 	 
 	 DEALLOCATE(cext_tmp)
-! - - - - - - 
 ! - - - - - - 
 deallocate(index_elem,sort)
 deallocate(rnbcnt,nbrecv)

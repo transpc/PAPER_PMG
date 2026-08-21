@@ -318,7 +318,6 @@ do prc=1,np
    enddo
 enddo
 !--------------------------------------------
-! 
 i = MAXVAL(sort)
 IF(i.GT.nnodet) THEN
 WRITE(*,*)'error,nnodet small',nnodet,i

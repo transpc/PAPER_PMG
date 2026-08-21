@@ -2,7 +2,6 @@
 ! ---CSR format of transpose matrix -----------------------
 ! ====================================================================!
       subroutine mt_trans(nr,nc,nnz,ia,ja,ia1,ja1,a,a1)
-!      use md_function
 ! ---
       implicit none
 ! ---inlet
@@ -14,7 +13,6 @@
       real*8 a1(nnz)
 ! ---temp
       integer i,j,k,jj,i1,i2,init, j1, j2, nn
-!      integer irow,icsr
       integer,dimension(:),allocatable::iwk, ia2
 ! --- 
       allocate(iwk(nc))
@@ -65,9 +63,6 @@
         ENDDO
 !
 ! set values: a1
- !       DO i = 1,nnz
- !           a1(i) = a(i)
- !       ENDDO
         
 ! 
         DEALLOCATE(ia2)

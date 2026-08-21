@@ -32,7 +32,6 @@
    eG(i) = 0.d0
    ENDDO
 !$omp end PARALLEL DO 
-!   eG = 0.d0
 
 
 !step-1: transfer residual from local to global
@@ -56,12 +55,10 @@
     
     ELSE
 !DEC$IF defined (mpi_flag)
-!   call mpi_barrier(mpi_comm_world,ierr) 
 
     IF(igather.EQ.0) THEN
 ! step-2: S&R to all processors
         CALL  MPI_ALLREDUCE(rG0,rG,nnodeG,mpi_double_precision,mpi_sum,mpi_comm_world,ierr)
- !       CALL  MPI_REDUCE(rG0,rG,nnodeG,mpi_double_precision,mpi_sum,0,mpi_comm_world,ierr)
  
     ELSE
              
@@ -81,10 +78,8 @@
     ENDIF
          
 ! step-3: SOLVE EXAC on coarsest level
-!  IF(myrank.EQ.0) THEN  
 !
       
-!     eG = 0.d0
 ! 
       
       IF(nlv_glo.EQ.0) THEN
@@ -95,10 +90,8 @@
       ENDIF
 !
       
-!     ENDIF
        
 !!DEC$IF defined (mpi_flag)
-!    CALL MPI_BCAST(eG,nnodeG,mpi_double_precision,0,mpi_comm_world,ierr)   
 
 !!DEC$ENDIF
 ! step -4: transfer to local the error
@@ -145,10 +138,6 @@
 ! --- temp
       INTEGER (4) ilv,i,j,id_GS,iter_mgc
 	  INTEGER (4) nnode1,nnode2,nnz,nnzi
-!      real*8,dimension(:),allocatable:: r,rt,e,et
-!	  REAL(8),DIMENSION(:),ALLOCATABLE:: Xintp,Xrest,au
-!	  INTEGER(4),DIMENSION(:),ALLOCATABLE :: ia,ja,ju
-!	  INTEGER(4),DIMENSION(:),ALLOCATABLE :: iai,jai,iar,jar
       
       REAL(8) r(nnodecm),e(nnodecm),rt(nnodecm),et(nnodecm)
       INTEGER (4)ia(nnodecm+1),ja(nnzcm),ju(nnodecm)
@@ -165,10 +154,6 @@
 ! set it is allway to 2 because no communication overhead!
 !/
 	  
-!      allocate(r(nnode1),e(nnode1),rt(nnode1),et(nnode1))
-!	  ALLOCATE(ia(nnode1+1),ja(nnz),ju(nnode1))	
-!      ALLOCATE(iai(nnode1+1),jai(nnzi),iar(nnode1+1),jar(nnzi))	
-!      ALLOCATE(Xrest(nnzi),Xintp(nnzi),au(nnz))	   
 ! ====================================================================!
 ! ---   Starting M-G Iteration method --- 
 ! ====================================================================!    
@@ -192,12 +177,10 @@
       
 
       CALL resi_GC(nnodeG,eG,rG,rGt,auG,jaG,iaG)
-!       rGt = rG-auG*eG
 ! ----restriction 
       ilv = 1
       nnode2 = nnodeGC(ilv)
       call mt_amux2(nnode2,nnodeG,nnziG,rGt,r,XrestG,jarG,iarG)
-! r = X*rGt
       
 ! here: nnode2: fine, nnode1: coarse
 	  DO ilv = 1,nlv_glo-1
@@ -241,7 +224,6 @@
     !$omp END PARALLEL DO		  
 !
       CALL resi_GC(nnode2,e,r,rt,au,ja,ia)
-!       rt = r-au*e	  
 ! restiction
       nnode1 = nnodeGC(ilv+1)
 !
@@ -265,7 +247,6 @@
     !$omp END PARALLEL
 !
       call mt_amux2(nnode1,nnode2,nnzi,rt,r,Xrest,jar,iar)	
-! r= R*rt
 ! for next level: (coarser)
 
       nnode2 = nnode1
@@ -286,7 +267,6 @@
 	  au(1:nnz) = auGC(1:nnz,ilv)
 	 ENDIF
 	 
-!	  e(1:nnode2) = 0.d0
 	  CALL SOLVE_EXACT(i_dir,nnode2,e,r,nnz,ia,ja,ju,au)
 	  
 ! = = = = = = = = = = = = = = = = == = 
@@ -365,17 +345,12 @@
 	  CALL Relax_GS(ITER_MGC,1.d0,nnodeG,nnzG,iaG,jaG,juG,auG,eG,rG)  
      
 ! 
-!      DEALLOCATE( r,rt,e,et)
-!	  DEALLOCATE(Xintp,Xrest,au)
-!	  DEALLOCATE(ia,ja,ju)
-!	  DEALLOCATE( iai,jai,iar,jar)
 ! - - - - - 
 	  
       RETURN
       END
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = 
-! - - - - - - - - -- 
 subroutine resi_GC(n,x,b,r,a,ja,ia)
 
       use omp_lib
@@ -389,7 +364,6 @@ real*8  :: a(*)
 real*8  :: x(*)
 real*8  :: r(*)
 real*8  :: b(*)
-!real*8, dimension(n) :: x,r,b
 real*8 temp
 !  ...
 
@@ -402,7 +376,6 @@ do i= 1,n
     temp = temp -a(j)*x(ja(j))   
    enddo
    
-!   temp = dot_product(a(k1:k2),x(ja(k1:k2)))
    r(i) = temp  !b(i)-temp
 enddo
 
@@ -414,7 +387,6 @@ return
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = 
-! - - - - - - - - -- 
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = !
     SUBROUTINE SOLVE_EXACT(i_dir,nnode,e,r,nnz,ia,ja,ju,au)
@@ -451,10 +423,6 @@ return
         
       !$omp PARALLEL DO private(tmp,j)
      DO i=1,nnode
-!	     tmp = 0.d0
-!		 DO j = 1,nnode
-!		 tmp = tmp + Ainv(i,j)*r(j)
-!		 ENDDO
          e(i) =  DOT_PRODUCT(Ainv(i,1:nnode),r(1:nnode))
      ENDDO
      

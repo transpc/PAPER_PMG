@@ -1,8 +1,6 @@
      SUBROUTINE SOLVE_GMG(icase)
 
 ! this routine solves pressure eq. by PMG
-! icase = 1: for the new matrix (need to comput Galerkin condition RAP)
-! icase = 2: for old matrix (doesnot need to comput RAP)
 !
 
         USE MD_parameter, ONLY: mdf_matrix
@@ -110,13 +108,10 @@
 !
 !-------------------------------------------------------------------------!
 !                                                                         !
-!  r = XR * rt                                                            !
 !  input:                                                                 !
 !     XR(n,nt)                                                            !
-!     rt(nt) = array of length equal to the column dimension of matrix XR !
 !     XR, ja, ia = input matrix in compressed sparse row format.          !
 !  Output:                                                                !
-!     r(n)  = real array of length n, containing the product r=XR*rt      !
 ! IT is noted that r and rt are long vector, each sub. only calculated    !
 ! r [ista,iend]                                                           !
 !                                                                         !
@@ -134,7 +129,6 @@
         REAL(8) tmp
         REAL(8) t0, t1, t2, t3, t4, t5
 !  ...
-!  ...
 
         !$omp PARALLEL DO private(k1,k2,l,k,m,tmp,j0,j1,j2,j3,j4,j5,t0,t1,t2,t3,t4,t5)
 
@@ -142,8 +136,6 @@
            k1 = ia(i)
            k2 = ia(i + 1)!-1
 
-!   r(i) = DOT_PRODUCT( Xr(k1:k2),rt(ja(k1:k2)) )
-!ENDDO
 
            l = k2 - k1 !ia(i+1)-ia(i)
            tmp = 0.d0
@@ -234,7 +226,6 @@
 
         IMPLICIT NONE
 !
-! rt = b-Au*u
 ! ---
         INTEGER(4) nnode, ista, iend
         INTEGER(4) ia(*)
@@ -260,7 +251,6 @@
            END DO
 
 ! ---
-!    temp = DOT_PRODUCT( au(j1:j2),u(ja(j1:j2)) )
            rt(i + nnode) = temp   ! b(i)-temp
         END DO
 
@@ -413,8 +403,6 @@
 ! ====================================================================!
 ! --------
         np = ndom
-!      Iter0 = ITER_MG
-!      iter1=1
         Iter0 = itergs(1)
 
 ! NEW for A - - - - - - -
@@ -425,7 +413,6 @@
         CALL resi_normP(nnode, nintf, u, b, au, ja, ia, res1) ! res1 = (b-a*u)^2
 
 !DEC$IF defined (mpi_flag)
-!      CALL mpi_barrier(mpi_comm_world,ierr)
         res0 = 0.d0
         CALL mpi_allreduce(res1, res0, 1, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
 !DEC$ENDIF
@@ -442,10 +429,6 @@
            RETURN
         END IF
 
-!      rt = 0.d0
-!      rc = 0.d0
-!      r = 0.d0
-!      et = 0.d0
 !
         DO 100 icycle = 1, ncycle
 
@@ -458,7 +441,6 @@
            CALL smoothing_fine(Iter0, ndom, nintf, nnode, nnz, ia, ja, ju, au, &
                                u, b, nnbdA, nbdomA, sptA, rptA, sintfA, rintfA)
 
-!      call send_receive(nnbd,nnode,spt,rpt,sintf,rintf,nbdom,u)
 
 ! ---residual
            CALL resi_P(nnode, nintf, u, b, r, au, ja, ia)   ! r = b-a*u
@@ -487,7 +469,6 @@
            DO ilv = 2, nlevel - 1
 !     restriction: rc = R*rt;
 !     Solve: A*e = rc
-!     rt = rc-A*e
 
               Iter0 = itergs(ilv)
 
@@ -501,11 +482,6 @@
 ! smoothing: A*e=rc
 !
 
-!      IF(ilv.EQ.2) THEN
-!          Iter0 = Iter1
-!      ELSE
-!          Iter0 = ITER_MG
-!      ENDIF
 !
 
               DO i = 1, Iter0
@@ -519,7 +495,6 @@
 !
               END DO
 
-! rt = rc-A*e
               CALL residl(nnode, ista, iend, rt, rc, e, auc, iac, jac)
               ista = ista + nnode
 ! NEW for R
@@ -560,9 +535,6 @@
 
            DO ilv = nlevel - 1, 2, -1
 
-!     et = I*e
-!     e = e + et
-!     rc = A*e
 
               Iter0 = itergs(ilv)
 !
@@ -581,11 +553,6 @@
               !$omp END PARALLEL DO
 
 !
-!      IF(ilv.EQ.2) THEN
-!          Iter0 = Iter1
-!      ELSE
-!          Iter0 = ITER_MG
-!      ENDIF
 !
 ! NEW for A
               id = 1
@@ -632,15 +599,12 @@
            CALL smoothing_fine(Iter0, ndom, nintf, nnode, nnz, ia, ja, ju, au, &
                                u, b, nnbdA, nbdomA, sptA, rptA, sintfA, rintfA)
 
-!      call send_receive(nnbd,nnode,spt,rpt,sintf,rintf,nbdom,u)
 
 ! ---residual-norm
 
            CALL resi_normP(nnode, nintf, u, b, au, ja, ia, res1)
 !
-! --
 !DEC$IF defined (mpi_flag)
-!      CALL mpi_barrier(mpi_comm_world,ierr)
            res = 0.d0
            CALL mpi_allreduce(res1, res, 1, mpi_double_precision, mpi_sum, mpi_comm_world, ierr)
 !DEC$ENDIF
@@ -650,8 +614,6 @@
               res = DSQRT(res1)/(res0)
            END IF
 !
-!      if(myrank==0) then
-!      ENDIF
 
            IF (res .lt. crit) GOTO 200
 
@@ -660,7 +622,6 @@
               RETURN
            END IF
 !
-! ---
 100     END DO   ! end main loop
 
         ierror = 1

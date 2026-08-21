@@ -16,15 +16,12 @@
                end do
             end do
 !==============check---
-!            do i=1,n-1
-!               if(ne(i+1).lt.ne(i)) stop" sort- error "
 !            end do
 ! ---
             return
     end
     
 ! = = = = = = = = = = = = = = 
-!  - - - - - - - - - - - - - - - - - - - - 
       subroutine bubble_sort_real(n,ne,dx)
       implicit none
       integer i,j,n
@@ -42,8 +39,6 @@
                end do
             end do
 !==============check---
- !           do i=1,n-1
- !              if(dx(ne(i+1)).lt.dx(ne(i))) stop" sort- error "
  !           end do
 ! ---
             return
@@ -76,8 +71,6 @@
                end do
             end do
 !==============check---
-!            do i=1,n-1
-!               if(ne(i+1).lt.ne(i)) stop" sort- error "
 !            end do
 ! ---
             return

@@ -16,7 +16,6 @@
       integer(4) jmax,i,j,k,ilv,nnzt,ncolf1,ncolc1,ntmp,nnzr2,nnzt1,ntmpf
       REAL(8) tmp
 	  
-!      jmax = mxnbne
      
  
 	  
@@ -25,10 +24,6 @@
       nnz1 = nnz
       nnode1gl = nnodegl
       nintf1 = nintf
-!      ALLOCATE(ia1(nnode1+1),ja1(nnz1),au1(nnz1))
-!      ia1 = ia
-!      ja1 = ja
-!      au1 = au
       ALLOCATE(ia1(1),ja1(1),au1(1))
       ia1 = 0
       ja1 = 0
@@ -198,11 +193,9 @@
 	
 	  DO i=1, nnz1
       aus(i) = au1(i)
-!      alus(i) = au1(i)
 	  ENDDO
 
     !$omp END PARALLEL DO
-!      CALL pc_ilu1(nnode1,i,ias,jas,jus,alus)
       
       DEALLOCATE(ia1,ja1,au1)
       
@@ -215,10 +208,8 @@
       ENDIF
 ! 
       
-!     IF(myrank.EQ.0) THEN
 
 
-!     ENDIF
     
       return	  
     End
@@ -231,10 +222,8 @@ SUBROUTINE stiff_coarse_P(nnodegl,nnode,nintf,nnode1,nnode1gl,nintf1,nfmax,nnz, 
     
 ! ************************************************************************************!
 ! this subroutine calculates the coarse-stiff matrix by Galerkin formular             !
-!     Ac = R*Af*R(T)                                                                  !
 !   or: Ac(I,J) = R(I,k)*Af(k,l)*R(J,l)                                               !
 !   for each I, J on coarse grid, we only find k,l on fine-grid such that:            !
-!   R(I,k) =/ 0 and R(J,l) =/0                                                        !
 ! inlet: Af, R                                                                        !
 ! outlet: Ac                                                                          !
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
@@ -271,12 +260,6 @@ SUBROUTINE stiff_coarse_P(nnodegl,nnode,nintf,nnode1,nnode1gl,nintf1,nfmax,nnz, 
 ! ----------------------------------------------------------!
       allocate(vi(nnodegl))
       
-!      au1 = 0.d0
-!      ni = 0
-!      vi = 0.d0 
-!      pi = 0.d0
-!      nj = 0
-!      pj = 0.d0
     !$omp PARALLEL
     !$omp DO
       DO i=1,nnz1 	

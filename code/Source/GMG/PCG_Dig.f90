@@ -6,13 +6,9 @@
 !***********************************************************************
       SUBROUTINE amux0_PCG(nintf,n,nnz,x,y,a,ja,ia)
 !-----------------------------------------------------------
-!     Y = A * X
 !     input:
-!       n     = row dimension of A
-!       x     = array of length equal to the column dimension of matrix A
 !       a, ja, ia = input matrix in compressed sparse row format.
 !     output:
-!       y     = real array of length n, containing the product y=Ax
 !-------------------------------------------------------------------
       IMPLICIT NONE
 !      

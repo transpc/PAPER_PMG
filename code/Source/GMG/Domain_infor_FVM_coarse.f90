@@ -132,7 +132,6 @@ enddo
       CALL Neighbor_node_ARP(np,nnode,nnodet,nn,cnode,cext,lcnode3,inbdomA,nnbdomA,riA,siA,rintA,sintA)
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  
-!
 ! add new cext from R(Ij):
    
 do ip=1,np
@@ -350,7 +349,6 @@ do prc=1,np
    enddo
 enddo
 !--------------------------------------------
-! 
 ! cheking: 
   Do ip = 1, np
       i = cinter(ip)+cintf(ip)

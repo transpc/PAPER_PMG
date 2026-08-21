@@ -33,7 +33,6 @@
    DO ie = 1,nintf
 !     
       b(ie) = source(ie)
-!      diagr(ie) = 1.d0/diag(ie)    ! notes for CUPID
       
       diagr(ie) = diag(ie)
 
@@ -44,12 +43,8 @@
    do i = 1, nnz0c
       au(i) = au0c(i)
    end do
-!   do i = 1, nintf
-!      diagt(i) = diag(i)
 !   end do
 
-   ! au(1:nnz0c) = au0c(1:nnz0c)  
-   ! diagt(1:nintf) = diag(1:nintf)
 !  
    ELSE
 

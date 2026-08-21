@@ -179,7 +179,6 @@ DO ie=1,nelem
 ENDDO
 ENDIF
 !
-!----------------------------------------------------------------------
 !%read coordinates
 ALLOCATE(coord(ndim,nnodegl),stat=alstatus)
 IF(alstatus/=0) STOP 'not enough connect memory'
@@ -337,7 +336,6 @@ CLOSE(iu)
 ENDIF
 
 !/ delete the tmp. file
-!call system('del fout')
 !/
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
@@ -404,25 +402,11 @@ READ(iu,*) iintf(ilv),inodegl(ilv),inbdc(ilv),inmax(ilv)    ! reading *
 ENDDO
 ENDIF
 
-!IF(nnbd.EQ.0) THEN
-!  nnsend_m = 0
-!  nnrecv_m = 0
-!ELSE
-!  nnsend_m = spt(nnbd+1)-1                                    ! using data from finest level.
-!  nnrecv_m = rpt(nnbd+1)-1
-!ENDIF
 
 
-!IF((nnode-nintf).NE.nnrecv_m) THEN
-!STOP
-!ENDIF
 
 
-!nnsend_m = 2*nnsend_m                                    ! using data from finest level.
-!nnrecv_m = 2*nnrecv_m
 !
-!nnsend_m = MAX(1,nnsend_m)                                    ! using data from finest level.
-!nnrecv_m = MAX(1,nnrecv_m)
 
 ! from MG_coord
 ALLOCATE(ialv(nlevel+1))
@@ -487,7 +471,6 @@ diagrc = 0.d0
 ALLOCATE(nbdom1(ndom),rpt1(ndom),spt1(ndom))
 i = maxval(inodegl(2:nlevel))
 ALLOCATE(coord1(ndim,i))
-!ALLOCATE(coord1(ndim,nnode))
 ALLOCATE(rintf1(nnrecv_m),sintf1(nnsend_m))
 
 ! iai1/iar1 은 레벨 루프의 재사용 버퍼 — 행 수가 레벨별 nnode1(=ialv 차분)이므로
@@ -498,8 +481,6 @@ IF(i.LT.nnode) i = nnode
 ALLOCATE(iai1(i+1),jai1(nnzi),Xintp1(nnzi))
 ALLOCATE(iar1(i+1),jar1(nnzr),Xrest1(nnzr))
 !/
-!  IF(minval([nnode, nnzc0]) == 0) THEN
-!  ENDIF
 !/
 ALLOCATE(ia1(nnode+1),ja1(nnzc0),ju1(nnode),au1(nnzc0))
 
@@ -513,7 +494,6 @@ isintfc(1:(spt(nnbd+1)-1),1) = sintf(1:(spt(nnbd+1)-1))
 irintfc(1:(nnode-nintf),1) = rintf(1:(nnode-nintf))
 ENDIF
 ! NEW for A, R P ----------------------
-! ALLOCATE : 
 nnsend_mA = nnsend_m
 nnrecv_mA = nnrecv_m
 nnsend_mR = nnsend_m
@@ -543,7 +523,6 @@ isintfcR = 0
 irintfcR = 0
 isintfcP = 0
 irintfcP = 0
-! - - - - - - - - - - - - - - 
 ! - - - - - - - - - - - - - - 
 IF(isetup_comm.EQ.1) THEN
 ! C011-4 통신 모드: rank0 의 prc별 성장형 스트림(stg_mg)을 연접 → 카운트 SCATTER
@@ -958,8 +937,6 @@ DEALLOCATE(iar1,jar1,Xrest1)
   ENDIF
   
 !/
-!  IF(minval([nnodeC, nnodeG, nnzG]) == 0) THEN
-!  ENDIF
 !/
   ALLOCATE(iaG(nnodeG+1),jaG(nnzG),juG(nnodeG),auG(nnzG),auG0(nnzG),stat=alstatus)
      IF (alstatus/=0) THEN

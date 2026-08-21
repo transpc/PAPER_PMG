@@ -16,11 +16,6 @@
          INTEGER(4) ilv, nnzt
          INTEGER(4) jmax, jmax1
 
-!         INTEGER(4), DIMENSION(:), ALLOCATABLE :: nneit
-!         INTEGER(4), DIMENSION(:, :), ALLOCATABLE :: ineit
-!         INTEGER(4), DIMENSION(:), ALLOCATABLE :: iwk, iat, jat
-!         INTEGER(4), DIMENSION(:, :), ALLOCATABLE :: iwork
-!         REAL(8), DIMENSION(:), ALLOCATABLE :: aut
 
 !
          nnode1 = nnodeG
@@ -98,12 +93,8 @@
 
             END DO
 ! 3: Iterpolation procedure
-!            jmax = INT(1.5*nmax1)
-!            IF(ilv.GE.3) jmax = 3*nmax1
-!            IF(ilv.GE.5) jmax = 5*nmax1
 !    3.1: iwk-neighbor nodes of each fine-cell
 
-!            ALLOCATE (iwk(nnode1),iwork(jmax,nnode1))
               
               IF(ip_lev.EQ.1) THEN 
                CALL neighbor_fine_graph_nnz(nnode1,nnode2,nnz_neighc, ia_neighc, ja_neighc,icoarse,nnz_tmp, jmax)
@@ -112,7 +103,6 @@
               ENDIF
 
 !
-! allocate:
             ALLOCATE(ia_tmp(nnode1+1), ja_tmp(nnz_tmp))
 !
               IF(ip_lev.EQ.1) THEN 
@@ -160,7 +150,6 @@
 
 
 ! 3.4: remove small value
-!        IF(MINVAL(Xintp1).LT.alpha) THEN
             
             CALL reduce_CSR_matrix(jmax, nnode1, nnzi1, iai1, jai1, Xintp1, alpha, nnzt)
 !
@@ -176,12 +165,10 @@
             jai1(1:nnzt) = ja_tmp(1:nnzt)
             Xintp1 = aut
             DEALLOCATE ( aut)
-!            DEALLOCATE(ia_tmp, ja_tmp)
 ! 
 100 CONTINUE
 !
             DEALLOCATE(ia_tmp, ja_tmp)
-!        ENDIF
 !
 !  4:  restriction operator: R = (P)T
 
@@ -208,7 +195,6 @@
                                      iai1, jai1, iar1, jar1, nnz2, ia2, ja2, ju2)
 
 ! - - - -storing 
-!ALLOCATE: 
          IF(ilv.EQ.1) THEN
 			
 		  ALLOCATE(iaiG(nnode1+1), jaiG(nnzi1), iarG(nnode2+1), jarG(nnzi1))
@@ -300,12 +286,8 @@
             DEALLOCATE (ia2, ja2, ju2)
 
 ! optimize nlevel:
-!            IF ((ioplv .EQ. 1) .AND. (ilv .GE. 3)) THEN
-!               CALL opt_level(ilv, nlevel, ialv, i)
 
-!               IF (i .EQ. 1) GOTO 20
 !
-!            END IF
             
             IF(nnode2.EQ.1) THEN
                 nlv_glo = ilv

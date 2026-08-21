@@ -10,7 +10,6 @@
       INTEGER(4),DIMENSION (:), ALLOCATABLE :: nnei1
       INTEGER(4),DIMENSION (:,:), ALLOCATABLE :: inei1
       INTEGER(4),DIMENSION (:), ALLOCATABLE :: icoarse,icoarse1
-!      INTEGER(4),DIMENSION (:), ALLOCATABLE :: imapc1,imapc2
 !     
       
       REAL(8),DIMENSION(:,:), ALLOCATABLE :: coord1,coord2

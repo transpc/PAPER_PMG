@@ -34,7 +34,6 @@
    !%MPI send & receive data
    !%send & receive data
    !DEC$IF defined (mpi_flag)
-!   call mpi_barrier(mpi_comm_world,ierr)
    !-------------------------------------------------------------------
    !%copy data to temporary array
    DO i=1,spt(nnbd+1)-1
@@ -78,11 +77,9 @@
       au(j1:j2)=rvar(i1:i2)
    enddo
    
-!   call mpi_barrier(mpi_comm_world,ierr)
    
 !DEC$ENDIF
    !-------------------------------------------------------------------
-!
    DEALLOCATE(svar,rvar)
    return
    
@@ -105,11 +102,8 @@ REAL(8) au(*)
 ! temp:
 INTEGER(4)::nnbd,nnsend,nnrecv
 INTEGER(4),DIMENSION(:),ALLOCATABLE::nbdom,spt,rpt,sintf,rintf,sia,ria
-!INTEGER(4)::nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_m),rintf(nnrecv_m)
-!INTEGER(4)::sia(nnsend_m+1),ria(nnrecv_m+1)
 ALLOCATE(nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_m),rintf(nnrecv_m))
 ALLOCATE(sia(nnsend_m+1),ria(nnrecv_m+1))
-!-------------------------------------------------------------------
 !-------------------------------------------------------------------
    nbdom = 0
    spt = 0
@@ -187,7 +181,6 @@ return
    !-------------------------------------------------------------------
    !%MPI send & receive data
    !DEC$IF defined (mpi_flag)
-!   call mpi_barrier(mpi_comm_world,ierr)
    !-------------------------------------------------------------------
    !%copy data to temporary array
    DO i=1,spt(nnbd+1)-1
@@ -233,10 +226,8 @@ return
       au(j1:j2)=rvar(i1:i2)
    enddo
    
-!   call mpi_barrier(mpi_comm_world,ierr)
 !DEC$ENDIF   
    !-------------------------------------------------------------------
-!
    DEALLOCATE(svar,rvar)
    return
    

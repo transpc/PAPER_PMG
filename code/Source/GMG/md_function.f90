@@ -4,7 +4,6 @@ implicit none
 !
       contains
 !
-!
 ! --- irow 
 ! find the row when a-array poisition are known
       FUNCTION irow(i,init,n,ia)

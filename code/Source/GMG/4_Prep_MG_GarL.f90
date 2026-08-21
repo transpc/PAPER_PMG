@@ -14,15 +14,12 @@
       USE MD_MG_Global_C , ONLY: i_dir,nlv_glo,nnodeG,nnodeGC,Ainv,nnzG,nnzGC,aluG, igather
 
 !
-!-------------------
       IMPLICIT NONE
 	  
       INTEGER(4):: ilv,i,j,nd,nnzss,nnzrr
       INTEGER(4):: nnzt,nnz2,ncolf1,ncolc1,ntmp,nnode2,nintf2,nnode2gl
       INTEGER(4):: nnbd,nnsend,nnrecv,nmaxgl
       INTEGER(4),DIMENSION(:),ALLOCATABLE::nbdom,spt,rpt,sintf,rintf,sia,ria
-!      INTEGER(4)::nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_m),rintf(nnrecv_m)
-!      INTEGER(4)::sia(nnsend_m+1),ria(nnrecv_m+1)
       REAL(8),DIMENSION(:,:),ALLOCATABLE::coord2
       
       ALLOCATE(nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_m),rintf(nnrecv_m))
@@ -36,7 +33,6 @@
       sia = 0
       ria = 0
 ! --- 
-!   
      IF(nlevel.EQ.2) GOTO 300
      
      DO ilv = 2,nlevel-1

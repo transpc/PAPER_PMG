@@ -18,10 +18,7 @@
 !DEC$ENDIF
 ! temp:
    Integer i,isend,nsend,psend,irecv,nrecv,precv
- !  REAL*8,DIMENSION(:),ALLOCATABLE:: svar,rvar
    Real*8 svar(spt(nnbd+1)),rvar(rpt(nnbd+1))
-!   allocate( svar(spt(nnbd+1)-1),rvar(rpt(nnbd+1)-1))
-   !-------------------------------------------------------------------
    !-------------------------------------------------------------------
    !%copy data to temporary array
 
@@ -32,7 +29,6 @@
    svar(spt(nnbd+1)) = 0.d0
 !DEC$IF defined (mpi_flag) 
 !-------------------------------------------------------------------
-!   call mpi_barrier(mpi_comm_world,ierr)
    
          tag=1
       do i=1,nnbd
@@ -49,7 +45,6 @@
         call MPI_WAIT(request(i+nnbd),status,ierr)
       enddo
       
-!   call mpi_barrier(mpi_comm_world,ierr)   
  !DEC$ENDIF  
    do i=1,rpt(nnbd+1)-1
       u(rintf(i))=rvar(i)
@@ -57,7 +52,6 @@
 
 !-------------------------------------------------------------------
 
-  ! DEALLOCATE(svar,rvar)
    return
    
     End subroutine
@@ -89,7 +83,6 @@
    Integer i,isend,nsend,psend,irecv,nrecv,precv,itmp
    Real(8) svar(nnsend+1),rvar(nnrecv+1)
    !-------------------------------------------------------------------
-   !-------------------------------------------------------------------
    !%copy data to temporary array
    itmp = ista - 1
    do i=1,spt(nnbd+1)-1
@@ -100,7 +93,6 @@
    rvar(nnrecv+1) = 0.d0
 !DEC$IF defined (mpi_flag) 
 !-------------------------------------------------------------------
-!   call mpi_barrier(mpi_comm_world,ierr) 
    
          tag=1
       do i=1,nnbd
@@ -117,7 +109,6 @@
         call MPI_WAIT(request(i+nnbd),status,ierr)
       enddo
 
-!   call mpi_barrier(mpi_comm_world,ierr) 
    
  !DEC$ENDIF  
    do i=1,rpt(nnbd+1)-1
@@ -145,16 +136,9 @@ INTEGER(4)::ilv,ista,id
 REAL(8) u(*)
 ! temp:
 INTEGER(4)::nnbd,nnsend,nnrecv
-!INTEGER(4),DIMENSION(:),ALLOCATABLE::nbdom,spt,rpt,sintf,rintf
 INTEGER(4)::nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_mA),rintf(nnrecv_mA)
 
-!ALLOCATE(nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_mA),rintf(nnrecv_mA))
 !-------------------------------------------------------------------
-!nbdom = 0
-!spt = 0
-!rpt = 0
-!sintf = 0
-!rintf = 0
 
 !-------------------------------------------------------------------
    IF(id.EQ.1) THEN
@@ -208,7 +192,6 @@ INTEGER(4)::nbdom(ndom),spt(ndom),rpt(ndom),sintf(nnsend_mA),rintf(nnrecv_mA)
 100 CONTINUE
     
 !-------------------------------------------------------------------
-!DEALLOCATE(nbdom,spt,rpt,sintf,rintf)
 return
    
 End subroutine

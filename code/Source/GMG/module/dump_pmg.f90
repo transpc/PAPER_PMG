@@ -35,7 +35,6 @@
 !
       CONTAINS
 !
-!-----------------------------------------------------------------------
       LOGICAL FUNCTION dump_now(itim)
 !     env 1회 파싱 + 현재 스텝이 덤프 대상인지 판정
       INTEGER, INTENT(IN) :: itim
@@ -69,7 +68,6 @@
       END DO
       END FUNCTION dump_now
 !
-!-----------------------------------------------------------------------
       SUBROUTINE dump_pmg_pre(isite, nnz0c, src, au0c, diag)
 !     SOLVE_GMG 직전 호출 — 솔브 입력 기록 (+최초 1회 셋업 기록)
       USE Zcore,       ONLY: myrank
@@ -100,7 +98,6 @@
       CLOSE (iu)
       END SUBROUTINE dump_pmg_pre
 !
-!-----------------------------------------------------------------------
       SUBROUTINE dump_pmg_post(isite)
 !     SOLVE_GMG 직후 호출 — 수렴해 u* 기록 (기준값)
       USE Zcore,       ONLY: myrank
@@ -123,7 +120,6 @@
       CLOSE (iu)
       END SUBROUTINE dump_pmg_post
 !
-!-----------------------------------------------------------------------
       SUBROUTINE dump_pmg_setup_hook
 !     셋업 입력 기록 — pmg_standalone 이 프로덕션 체인을 재생할 때 필요한 전부.
 !     반드시 subdomain_infor_MG **호출 전**에 불러야 함 — 그 루틴이 종료 시

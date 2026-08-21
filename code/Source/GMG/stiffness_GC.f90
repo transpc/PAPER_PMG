@@ -66,14 +66,12 @@
          ELSE
              
 !DEC$IF defined (mpi_flag)
-!    call mpi_barrier(mpi_comm_world,ierr)
 
 ! step-2: S&R to all processors
 
     IF(igather.EQ.0) THEN
         
        CALL MPI_ALLREDUCE(auG0,auG,nnzG,mpi_double_precision,mpi_sum,mpi_comm_world,ierr)
-!        CALL MPI_REDUCE(auG0,auG,nnzG,mpi_double_precision,mpi_sum,0,mpi_comm_world,ierr)
 
         ELSE
     
@@ -89,17 +87,13 @@
                     
          ENDIF
 
-!    call mpi_barrier(mpi_comm_world,ierr)
 
-!      IF(myrank.EQ.0) THEN
 
-!     ENDIF
     
 !DEC$ENDIF
          ENDIF
         
 ! ALUG
-!    IF(myrank.EQ.0) THEN
         
       IF(nlv_glo.EQ.0) THEN
           CALL STIFF_EXACT(i_dir,nnodeG,nnzG,iaG,jaG,juG,auG)
@@ -107,7 +101,6 @@
           CALL STIFF_COARSE2(i_dir,nnodeG,nnzG,iaG,jaG,juG,auG)
       ENDIF
 !         
-!    ENDIF
 !
       RETURN
       END
@@ -150,7 +143,6 @@
          
        ENDIF
 !         
-!
       RETURN
       END
 	  
@@ -171,10 +163,8 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
     
 ! ************************************************************************************!
 ! this subroutine calculates the coarse-stiff matrix by Galerkin formular             !
-!     Ac = R*Af*R(T)                                                                  !
 !   or: Ac(I,J) = R(I,k)*Af(k,l)*R(J,l)                                               !
 !   for each I, J on coarse grid, we only find k,l on fine-grid such that:            !
-!   R(I,k) =/ 0 and R(J,l) =/0                                                        !
 ! inlet: Af, R                                                                        !
 ! outlet: Ac                                                                          !
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
@@ -205,10 +195,8 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
       real*8 s
       INTEGER(4) ni(nfmax),nj(nfmax)
       REAL(8) pi(nfmax),pj(nfmax)
-!      real*8,dimension(:),allocatable::vi
       
 ! ----------------------------------------------------------!
-!      allocate(vi(nnode))
       
       au1(1:nnz1) = 0.d0
       ni = 0
@@ -263,7 +251,6 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 !
       END DO
 ! -------------------------------------------------------------!
-!      DEALLOCATE(vi)
       
       return
       
@@ -303,10 +290,6 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 ! initial fine level
       nnode1 = nnodeG
       nnz1 = nnzG
-!      ALLOCATE(ia1(nnode1+1),ja1(nnz1),au1(nnz1))
-!      ia1 = iaG
-!      ja1 = jaG
-!      au1 = auG
 ! 
       DO ilv = 1, nlv_glo
           
@@ -315,7 +298,6 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
       nnode2 = nnodeGC(ilv)
       nnz2 = nnzGC(ilv)
       
-!      ALLOCATE(ia2(nnode2+1),ja2(nnz2),au2(nnz2))
       
       ia2(1:nnode2+1)=iaGC(1:nnode2+1, ilv)
       ja2 (1:nnz2) = jaGC(1:nnz2, ilv)
@@ -324,7 +306,6 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 
       IF(ilv.EQ.1) THEN
 	  nnzr2 = nnziG
-!      ALLOCATE(iar2(nnode2+1),jar2(nnzr2),Xrest2(nnzr2))
 	  
       iar2(1:nnode2+1)=iarG (1:nnode2+1)
 
@@ -335,7 +316,6 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
 	  ELSE
       nnzr2 = nnziGC(ilv)
      
-!      ALLOCATE(iar2(nnode2+1),jar2(nnzr2),Xrest2(nnzr2))
 
        iar2(1:nnode2+1)=iarGC(1:nnode2+1, ilv)
 
@@ -358,20 +338,16 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
        ENDIF
            
       
-!      DEALLOCATE(iar2,jar2,Xrest2)
        
 ! adding to array
        auGC(1:nnz2, ilv) = au2 (1:nnz2)
 ! update for fine level
-!       DEALLOCATE(ia1,ja1,au1)
        nnode1 = nnode2
        nnz1 = nnz2
        
-!       ALLOCATE(ia1(nnode1+1),ja1(nnz1),au1(nnz1))
        ia1(1:nnode1+1) = ia2(1:nnode1+1)
        ja1(1:nnz1) = ja2(1:nnz1)
        au1(1:nnz1) = au2(1:nnz1)
- !      DEALLOCATE(ia2,ja2,au2)
        
       ENDDO
     
@@ -381,12 +357,10 @@ SUBROUTINE stiff_coarse_global2(nnode,nnode1,nfmax,nnz,                         
           WRITE(*,*)'PMG error in Stiffness_GC2,',nnode1,nnodeGC(nlv_glo)
       ENDIF
 !
-!	 ALLOCATE(ju1(nnode1))
 	 ju1(1:nnode1) = juGC(1:nnode1,nlv_glo)
 	 
      CALL STIFF_EXACT(i_dir,nnode1,nnz1,ia1,ja1,ju1,au1)
       
-!      DEALLOCATE(ia1,ja1,ju1,au1)   
 ! 
     
       return

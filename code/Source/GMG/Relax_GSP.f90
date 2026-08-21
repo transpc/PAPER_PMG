@@ -3,7 +3,6 @@
       subroutine Relax_GS(maxit,relax,n,nnz,ia,ja,ju,au,u,b)
       
       use omp_lib
-!      USE MD_OpenMP    
 ! ---
       implicit none
 ! ---
@@ -36,11 +35,8 @@
     end
     
 ! 
-! - - - - - - - - - - - - - - - - - - - -- 
-! - - - - - - - - - - - - - - - - - - - -- 
     
 ! 
-! - - - - - - - - - - - - - - - - - - - -- 
     
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
     
@@ -50,7 +46,6 @@
 SUBROUTINE Smooth_GS2(maxit,ista,iend,b,u,au,ia,ja,ju,diagr)
 ! ---
 ! note that it is for GS forward 
-! maxit = 1
 use omp_lib
 ! 
 IMPLICIT NONE
@@ -68,13 +63,10 @@ INTEGER(4) i,j,iter,j1,j2,k
 REAL(8) temp,temp1   
 ! ---
 !---Gauss-Seidel method
-!  DO iter=1,maxit
 !$omp PARALLEL DO private(j1,j2,j,temp,k) 
    DO i=ista,iend
       j1 = ia(i)
 	  j2 = ia(i+1)-1
-!      j = ju(i)
-!      temp1 = au(j)
 !
       temp = b(i)
       do k=j1,j2
@@ -83,17 +75,13 @@ REAL(8) temp,temp1
       enddo
       
 ! ---
-!    temp = DOT_PRODUCT( au(j1:j2),u(ja(j1:j2)) )
     u(i)=temp*diagr(i) + u(i) !(b(i)-temp)/temp1 + u(i)
    ENDDO 
      
 !$omp end PARALLEL DO
-!ENDDO 
   
 RETURN
     END
-! = = = = = = = = = = 
-! = = = = = = = = = = = = = = = = = = = = 
 ! = = = = = = = = = = 
     
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
@@ -127,14 +115,12 @@ RETURN
       END
   
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
 ! = = = = = = = = = = = 
     
 ! = = = = = = = = = = = 
     
 
-! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     
 ! = = = = = = = = = = = 

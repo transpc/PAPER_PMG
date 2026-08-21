@@ -22,8 +22,6 @@
       INTEGER :: i,k,j
       INTEGER :: m, n, l
 !
-! ----
-!      ndim = ndim_cupid
       nv_max = nmax_vertex
       nnode_mg = n_node
       nnode = nelem      ! notes this one
@@ -41,7 +39,6 @@
       ENDDO
  
 !
-!
       RETURN
       END	  
     ! = = = = = = = = = = = = =  = = = = = = = = = = = = = = = = = = = = = !
@@ -56,7 +53,6 @@
       use MD_matrix, ONLY: nnz, ia,ja,ju
       use MD_parameter, only: nf_max
 !
-!-------------------
       implicit none
       INTEGER(4) alstatus,status
       CHARACTER(100) :: command
@@ -69,20 +65,13 @@
       allocate(ia(nelem+1),ja(nnz))
       ia = 0
       ja = 0
-!      ju = 0
 ! notes that there is no JU.
       call csr_FVM(nelem,nf_max,num_neigh_mg,neigh_mg,ia,ja,nnz)
 
-!      DEALLOCATE(ju)
 !
 !/ create folder "MG_tmp" here 
 !/ for WINDOW: 
-!      command = 'if not exist PMG_pre mkdir PMG_pre'
- !     call execute_command_line(command,status)
       call system('mkdir MG_tmp')
-!      IF(status /= 0) THEN
-!          STOP
-!      ENDIF
 !/
       return
     End
@@ -118,7 +107,6 @@
         DO j = 1, nd
             id = ni(j)
             ja(k) = id
-!            IF(id.EQ.ie) ju(ie) = k
             k = k+1
         ENDDO
         

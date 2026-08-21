@@ -2,16 +2,11 @@
 
    subroutine poly_cheb_smooth(np,icheb,rcheb,nintf,n,nnz,ia,ja,au,b,nnbd,si,ri,nbdom,sintf,rintf,x)
    
-! smoothing using fourth-kind of Chebyshev 
-! refs: 
-! Optimal polynomial smoothers for multigrid V-cycles -> method 1: icheb(3) = 1
-! later: modify the beta parameter (in paper). 
-! OPTIMAL POLYNOMIAL SMOOTHERS FOR PARALLEL AMG -> method-2: 
+! 4차 Chebyshev 다항 스무딩 (M^-1 = 대각)
+! ref: OPTIMAL POLYNOMIAL SMOOTHERS FOR PARALLEL AMG
+! 스펙트럼 상계 rcheb(1) 은 eig_value 가 Gershgorin 행합으로 산정 (분할 무관)
+! 반복수는 icheb(1) 만 사용 — icheb 의 나머지 슬롯은 미사용
    
-! notes that this time only using M^-1 by Diagonal 
-! later using ILU for M^-1
-   
-!   use md_MPI, only: myrank
    
    implicit none
    
@@ -26,26 +21,22 @@
 ! out
    real(8) x(n)
 ! temp
-   integer(4) :: i, j, k, max_iter, k_max, imethod
-!   real(8), parameter :: tol = 1.0e-8_dp
+   integer(4) :: i, j, k, max_iter
    real(8),dimension(:),allocatable:: r
    real(8),dimension(:),allocatable:: z,y
-   real(8) :: eig_min, eig_max, theta, sigma, alpha, beta
-   real(8) xtemp,rk,a,ro,ro_new,xtmp,xtmp1
+   real(8) :: eig_max, alpha, beta
+   real(8) a,ro,ro_new,xtmp
 ! 
    Allocate(r(n))
    Allocate(z(n),y(n))
   
   ! Estimate the extremal eigenvalues of A
-!  call estimate_eigenvalues(a, n, eig_min, eig_max)
   
 ! set parameter:
 
   eig_max = rcheb(1)
   
   max_iter = icheb(1)
-  k_max = icheb(2)
-  imethod = icheb(3)  
 !
   
 
@@ -54,9 +45,6 @@
 ! this is for method 2: 
    
    a = 0.3
-!   ro_new = 0.d0
-!   alpha = 0.d0
-!   beta = 0.d0
       
 ! ---
    
@@ -98,7 +86,6 @@
    
 
 ! ---
-! - - - - - 
    deallocate(r)
    
    deallocate(z,y)

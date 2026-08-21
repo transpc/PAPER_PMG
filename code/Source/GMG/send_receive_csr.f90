@@ -35,7 +35,6 @@
    !-------------------------------------------------------------------
    !%MPI send & receive data
    !DEC$IF defined (mpi_flag) 
-!   call mpi_barrier(mpi_comm_world,ierr)
    !-------------------------------------------------------------------
    !%copy data to temporary array
    do i=1,spt(nnbd+1)-1
@@ -55,7 +54,6 @@
 	  
    enddo
 
-!   call mpi_barrier(mpi_comm_world,ierr)
   !         
          tag=1
       do i=1,nnbd
@@ -144,7 +142,6 @@
       ja(j1:j2) = ni(ne(1:nd))
 
    enddo
-!   call mpi_barrier(mpi_comm_world,ierr)
 
 !DEC$ENDIF
    !-------------------------------------------------------------------
@@ -253,7 +250,6 @@
    !-------------------------------------------------------------------
    !%MPI send & receive data
    !DEC$IF defined (mpi_flag) 
-!   call mpi_barrier(mpi_comm_world,ierr)
    !-------------------------------------------------------------------
    !%copy data to temporary array
    do i=1,spt(nnbd+1)-1
@@ -273,7 +269,6 @@
 	  
    enddo
 
-!   call mpi_barrier(mpi_comm_world,ierr)
   !         
          tag=1
       do i=1,nnbd
@@ -367,7 +362,6 @@
       ja(j1:j2) = ni(ne(1:nd))
 
    enddo
-!   call mpi_barrier(mpi_comm_world,ierr)
 
 !DEC$ENDIF
    !-------------------------------------------------------------------

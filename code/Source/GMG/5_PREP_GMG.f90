@@ -20,11 +20,6 @@
          INTEGER(4):: alstatus
          REAL(8) teta1!alpha,
 
-!         INTEGER(4), DIMENSION(:), ALLOCATABLE :: nneit!,imapt
-!         INTEGER(4), DIMENSION(:, :), ALLOCATABLE :: ineit
-!         INTEGER(4), DIMENSION(:), ALLOCATABLE :: iwk      !, iat, jat
-!         INTEGER(4), DIMENSION(:, :), ALLOCATABLE :: iwork
-!         REAL(8), DIMENSION(:), ALLOCATABLE :: aut
 
          CHARACTER(LEN=10) :: filename
 !
@@ -47,7 +42,6 @@
 
          nmax1 = nf_max
 
-!         DEALLOCATE (coord)
 ! initial
          ALLOCATE (iac(1), jac(1))
          ALLOCATE (iai(1), jai(1), Xintp(1))
@@ -94,14 +88,8 @@
 
 ! 1: neighbor nodes of each nodes  - - - - - - - - - - !
 
-!            IF (ilv .GT. 2) THEN
-!               ALLOCATE (nnei(nnode1), inei(nmax1, nnode1))
 !
-!               nnei(1:nnode1) = nneit(1:nnode1)
-!               inei(1:nmax1, 1:nnode1) = ineit(1:nmax1, 1:nnode1)
-!               DEALLOCATE (nneit, ineit)
 
-!            END IF
 
 ! 2: coarsening step
             teta1 = teta
@@ -149,7 +137,6 @@
             
 
 ! 3: Iterpolation procedure
-!            jmax = nmax1
 !    3.1: iwk-neighbor nodes of each fine-cell
 ! finding nnz_neighc            
             IF (ilv .EQ. 2) THEN
@@ -168,9 +155,6 @@
               
             END IF
             
-! allocate:
-!            IF(ALLOCATED(ia_tmp))      DEALLOCATE(ia_tmp)
-!            IF(ALLOCATED(ja_tmp))      DEALLOCATE(ja_tmp)
 
 
             ALLOCATE(ia_tmp(nnode1+1), ja_tmp(nnz_tmp),stat=alstatus)
@@ -265,7 +249,6 @@
       ENDIF
 
 ! 3.4: remove small value
-!      alpha = 0.005
             CALL reduce_CSR_matrix(jmax,nnode1, nnzi1, iai1, jai1, Xintp1, alpha, nnzt)
 !
             IF(nnzi1.EQ.nnzt) GOTO 100
@@ -336,8 +319,6 @@
             iat(ncolc2+2:ntmp+1) = ia2(2:nnode2+1)+nnzt
             jat(1:nnzt) = jac(1:nnzt)
             jat(nnzt+1:nnzt+nnz2) = ja2(1:nnz2)+ncolc2
-!      jut (1:ncolc2) = juc (1:ncolc2)
-!      jut (ncolc2+1:ncolc2+nnode2) = ju2 (1:nnode2) + nnzt
 
             DEALLOCATE (iac, jac)
 
@@ -416,13 +397,6 @@
             DEALLOCATE (imapt, icoarse)
 
 ! the coarest level:
-!      IF(ilv .EQ. nlevel) THEN
-!          ALLOCATE(aus(nnz2),alus(nnz2))
-!          ALLOCATE(ias(nnode2+1),jas(nnz2),jus(nnode2))
-!          ias = ia2
-!          jas = ja2
-!          jus = ju2
-!      ENDIF
 
 ! 7: Updating for next level:
             ncolc1 = ncolc1+nnode1
@@ -509,16 +483,8 @@
 20       CONTINUE
 
 !
-!     nnods = ialv(nlevel+1)-ialv(nlevel)
-!     ncolf = ialv(nlevel+1)-ialv(1)
-!     ncolc = ncolf - nelem
 
-!     ALLOCATE(r(nelem),rt(ncolf),rc(ncolc))
-!     ALLOCATE(rs(nnods),es(nnods),e(ncolc),et(ncolf))
 
-!     nnzt = iac(ncolc+1)-1
-!     ALLOCATE(auc(nnzt))
-!     auc = 0.d0
 
 ! Deallocate
          DEALLOCATE (coord)
@@ -628,13 +594,10 @@
 
          id = 0
 
-!         n0 = ialv(ilv)-ialv(ilv-1)
          n1 = ialv(ilv+1)-ialv(ilv)
 
-!         n2 = INT(n1/ndom)
          ! test
 
-!         IF ((n2 .LE. n2_min) .OR. (n1 .LE. n1_min)) THEN
          IF (n1 .LE. n1_min) THEN
             id = 1
             nlevel_N = ilv

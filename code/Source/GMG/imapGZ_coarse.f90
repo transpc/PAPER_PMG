@@ -107,14 +107,8 @@
       
 ! set imap:
 
-!        ALLOCATE(imap(j))
-!        imap = 0
         
-!        ip = myrank+1
         
-!        DO j = 1,innzsm(ip)        
-!           imap(j) = imapGZ(j)
-!        ENDDO
 !
         
 ! 
@@ -125,7 +119,6 @@
 
 !DEC$IF defined (mpi_flag)
       CALL mpi_barrier(mpi_comm_world,ierr) 
-!        CALL MPI_ALLGATHER(imap,nnzsm,MPI_INTEGER,imapGAT,nnzsm,MPI_INTEGER,mpi_comm_world, ierr)
       CALL MPI_ALLGATHERV(imapGZ,nsengatA,MPI_INTEGER,imapgatA,irevgatA,idispA,MPI_INTEGER,mpi_comm_world, ierr)
         
       CALL MPI_ALLGATHERV(imapG,nsengatR,MPI_INTEGER,imapgatR,irevgatR,idispR,MPI_INTEGER,mpi_comm_world, ierr)
@@ -137,8 +130,6 @@
         ALLOCATE(imark(nnzG))
         imark = 0
 !                
-!        nd = 0
-!        DO i=1,np
           
             DO j = 1,nnzG
         

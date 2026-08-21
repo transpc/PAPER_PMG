@@ -1,5 +1,4 @@
  ! = = = = = = = = = = = = = = = = = = = = = = = = =
-!
       SUBROUTINE P_distance(ndim, jmax, nnodef, nnodec, coordf, coordc, nnz, ia, ja, au)
 !
          IMPLICIT NONE
@@ -35,7 +34,6 @@
 !
             xc(1:ndim) = coordf(1:ndim, ie)
             ni(1:imax) = ja(i1:i2)
-!            dx(1:imax) = 0.d0
 
             DO i = 1, imax
                ne = ni(i)
@@ -43,7 +41,6 @@
                IF (ndim .EQ. 3) THEN
                   dx(i) = dx(i)+(xc(3)-coordc(3, ne))**2.d0
                END IF
-!               dx(i) = (dx(i))
             END DO
 
             dd(1:imax) = 1.d0
@@ -100,7 +97,6 @@
 		  imax = i2-i1+1
           
           ni(1:imax) = ja(i1:i2)
-!		  dx = 0.d0
 !		  
         IF(imax.eq.1) THEN
           au(i1) = 1.d0
@@ -395,7 +391,6 @@
 ! ===========================end sub =========================!
 ! ------------------------------------------------------------!
 ! ------------ area shape function in triangle -------
-!       real*8 function volm(x(1,1),x(2,1),x(3,1),x(1,2),x(2,2),x(3,2),x(1,3),x(2,3),x(3,3),x(1,4),x(2,4),x(3,4))
        real*8 function volm(x11,x21,x31,x12,x22,x32,x13,x23,x33,x14,x24,x34)
        real*8 a(3,3),xj,x11,x21,x31,x12,x22,x32,x13,x23,x33,x14,x24,x34
 ! ---
