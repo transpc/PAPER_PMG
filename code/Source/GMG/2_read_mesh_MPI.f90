@@ -442,6 +442,9 @@ irintfcP = 0
          stg_frbuf(i2+1:i2+stg_frcnt(k)) = stg_mg(k)%rb(1:stg_frcnt(k))
          i1 = i1 + stg_ficnt(k)
          i2 = i2 + stg_frcnt(k)
+!        복사한 스트림은 즉시 해제 — 전 랭크 스트림과 연접 버퍼가 동시에
+!        살아 있으면 MG 페이로드가 순간 2배가 된다 (rank0 피크 지배 항목)
+         DEALLOCATE(stg_mg(k)%ib, stg_mg(k)%rb)
       ENDDO
       DEALLOCATE(stg_mg)
    ELSE
