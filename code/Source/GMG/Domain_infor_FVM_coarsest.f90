@@ -23,9 +23,9 @@ integer i,j,k,idom,nd,ie,ne,nn,proc,prc,cnt,ip,jp,id,jd,neigh,nnd,nk,i1,i2,next_
 integer color,col1,col2,col3,col4,index,sumc
 INTEGER(4)::alstatus
 integer,dimension(:),allocatable::sort
-integer,dimension(:,:),allocatable::index_node,jwk,lcnode3,rnbcnt
+integer,dimension(:),allocatable::index_node,node_intf   ! 소유 랭크 기준 셀별 플래그
+integer,dimension(:,:),allocatable::jwk,lcnode3,rnbcnt
 integer,dimension(:,:,:),allocatable::nbrecv
-integer,dimension(:,:),allocatable::node_intf
 INTEGER(4),DIMENSION(:,:), ALLOCATABLE:: lcelem
 INTEGER(4),DIMENSION(:), ALLOCATABLE:: lnum
 INTEGER(4) imark(np,np)
@@ -36,7 +36,7 @@ nbdom=0
 nnbdom=0 
 !----------------------------------------------------------------------
 !1-%Find local interface node (inside interface)
-allocate(index_node(np,nnode),node_intf(np,nnode),stat=alstatus)
+allocate(index_node(nnode),node_intf(nnode),stat=alstatus)
 ALLOCATE(lnum(np),lcelem(np,nnodet),stat=alstatus)
 
      IF (alstatus/=0) THEN
@@ -60,7 +60,7 @@ DO proc = 1,np
    DO j = 1,nnd
    id = inei(j,i)
    IF(cnode(id).NE.proc) THEN
-   index_node(proc,i) = 1
+   index_node(i) = 1
 
    EXIT
    ENDIF  
@@ -88,7 +88,7 @@ jwk=0
 do ip=1,np
     DO i=1,lnum(ip)
     jd= lcelem(ip,i)
-   IF(index_node(ip,jd).EQ.0) CYCLE
+   IF(index_node(jd).EQ.0) CYCLE
 
    nnd = nnei(jd)
    DO j = 1,nnd
@@ -100,9 +100,9 @@ do ip=1,np
       jwk(ip,id)=1
 ! new
    jp = cnode(id)
-   IF(node_intf(jp,id).EQ.0) THEN
+   IF(node_intf(id).EQ.0) THEN
           cintf(jp)=cintf(jp)+1
-          node_intf(jp,id) = 1
+          node_intf(id) = 1
    ENDIF
    ENDIF
 !   
@@ -152,10 +152,10 @@ do ip=1,np
       
 !!notes
     jp= cnode(id)
-   IF(node_intf(jp,id)==1) CYCLE
+   IF(node_intf(id)==1) CYCLE
       cintf(jp)=cintf(jp)+1
 !   
-      node_intf(jp,id)=1   
+      node_intf(id)=1   
 !     
 
    ENDIF
@@ -173,7 +173,7 @@ do ip=1,np
     DO i=1,lnum(ip)
     jd=lcelem(ip,i)
 !
-    IF(node_intf(ip,jd).EQ.1) CYCLE    ! new
+    IF(node_intf(jd).EQ.1) CYCLE    ! new
         cinter(ip)=cinter(ip)+1
 !       
         jperm(ip,cinter(ip))=jd

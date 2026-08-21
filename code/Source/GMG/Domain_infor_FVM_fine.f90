@@ -22,14 +22,15 @@ integer i,j,k,idom,nd,ie,ne,nn,proc,prc,cnt,ip,jp,id,jd,neigh,nk,n,nvpe,i1,i2,ne
 INTEGER(4)::alstatus
 integer color,col1,col2,col3,col4,index,sumc,col(nf_max)
 integer,dimension(:),allocatable::sort
-integer,dimension(:,:),allocatable::index_elem,lcnode3,rnbcnt
+integer,dimension(:),allocatable::index_cell          ! 셀별 인터페이스 플래그 (소유 랭크 기준)
+integer,dimension(:,:),allocatable::lcnode3,rnbcnt
 integer,dimension(:,:,:),allocatable::nbrecv
 integer(4),dimension(:,:),allocatable::jwk
 INTEGER(4) imark(np,np)
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
 
-allocate(index_elem(np,nnodet),stat=alstatus)
+allocate(index_cell(nnode),stat=alstatus)
 
      IF (alstatus/=0) THEN
          WRITE(*,*)'not enough memory,serial-pre-MPI1-index-element'
@@ -61,9 +62,9 @@ do proc=1,np
       enddo
 
       if(sumc.eq.0)then
-         index_elem(proc,k)=0
+         index_cell(ie)=0
          ELSE
-         index_elem(proc,k)=1 !interface element
+         index_cell(ie)=1 !interface element
       endif
    enddo
 enddo
@@ -86,9 +87,9 @@ jwk=0
 
 do ip=1,np
    do ie=1,lnum(ip)
-      if(index_elem(ip,ie)==1)then
+      ne=lcelem(ip,ie)
+      if(index_cell(ne)==1)then
          cintf(ip)=cintf(ip)+1    
-         ne=lcelem(ip,ie)
          jwk(ip,ne)=1    
          
          nvpe = num_neigh(ne)
@@ -165,8 +166,8 @@ enddo
 jperm=0
 do ip=1,np
    do ie=1,lnum(ip)
-      if(index_elem(ip,ie)==0)then
-         ne=lcelem(ip,ie)
+      ne=lcelem(ip,ie)
+      if(index_cell(ne)==0)then
          IF(jwk(ip,ne).EQ.1) CYCLE     ! notes for R
                cinter(ip)=cinter(ip)+1
 !           
@@ -353,7 +354,7 @@ ENDIF
 	 
 	 DEALLOCATE(cext_tmp)
 ! - - - - - - 
-deallocate(index_elem,sort)
+deallocate(index_cell,sort)
 deallocate(rnbcnt,nbrecv)
 deallocate(lcnode3)
 deallocate(jwk)
