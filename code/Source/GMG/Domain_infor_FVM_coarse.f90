@@ -1,5 +1,5 @@
 SUBROUTINE Domain_infor_FVM_coarse(ilv,np,mxnbne,nnode,nnodet,nnode1,nnzi,iar,jar,icoarse,nnei,inei,cnode,          &
-           nbdom,nnbdom,cext,cinter,cintf,iperm,jperm,ri,si,rint,sint,nnodegl,                 &
+           nbdom,nnbdom,cext,cinter,cintf,jperm,ri,si,rint,sint,nnodegl,                 &
 		   nnode0,cnode0,nnzi0,iai0,jai0)
 		   
 	USE MD_MPI_ARP, ONLY: inbdomA,nnbdomA,riA,siA,rintA,sintA,                                 &
@@ -17,7 +17,7 @@ INTEGER nnode0,nnzi0
 INTEGER cnode0(nnode0),iai0(nnode0+1),jai0(nnzi0)
 ! out
 INTEGER nbdom(np,np),nnbdom(np),cext(np),cinter(np),cintf(np)
-INTEGER iperm(np,nnode),jperm(np,nnodet),ri(np,np),si(np,np),rint(np,nnodet),sint(np,nnodet)
+INTEGER jperm(np,nnodet),ri(np,np),si(np,np),rint(np,nnodet),sint(np,nnodet)
 INTEGER nnodegl(np)
 
 ! temp 
@@ -25,8 +25,8 @@ integer i,j,k,idom,nd,ie,ne,nn,proc,prc,cnt,ip,jp,id,jd,neigh,nnd,nk,i1,i2,next_
 integer color,col1,col2,col3,col4,index,sumc
 INTEGER(4)::alstatus
 integer,dimension(:),allocatable::sort
-integer,dimension(:,:),allocatable::index_node,jwk,lcnode3,rnbcnt,snbcnt
-integer,dimension(:,:,:),allocatable::nbrecv,nbsend
+integer,dimension(:,:),allocatable::index_node,jwk,lcnode3,rnbcnt
+integer,dimension(:,:,:),allocatable::nbrecv
 integer,dimension(:,:),allocatable::node_intf
 INTEGER(4),DIMENSION(:,:), ALLOCATABLE:: lcelem
 INTEGER(4),DIMENSION(:), ALLOCATABLE:: lnum
@@ -197,9 +197,7 @@ do ip=1,np
 enddo  
 
 !-----------------------------------------------
-!%mapping: iperm::global->local
 !%mapping: jperm::local->global
-iperm=0
 jperm=0
 
 do ip=1,np
@@ -210,7 +208,6 @@ do ip=1,np
     IF(node_intf(ip,jd).EQ.1) CYCLE    ! new
         cinter(ip)=cinter(ip)+1
 !       
-        iperm(ip,jd)=cinter(ip)
         jperm(ip,cinter(ip))=jd
 	ENDDO
 ENDDO
@@ -285,28 +282,7 @@ do prc=1,np
    enddo
 enddo
 !----------------------------------------------------------------------
-!%copy recv to send
-allocate(snbcnt(np,np),nbsend(np,np,next_m),stat=alstatus)
-     IF (alstatus/=0) THEN
-         WRITE(*,*)'not enough memory,serial-pre-MPI2-index-nbsend'
-         STOP
-     ENDIF
-     
-do jp=1,np
-   do ip=1,np
-      snbcnt(jp,ip)=rnbcnt(ip,jp)
-   enddo
-enddo
-do jp=1,np
-   do ip=1,np
-      cnt=rnbcnt(ip,jp)
-      if(cnt>0)then
-         do j=1,cnt
-            nbsend(jp,ip,j)=nbrecv(ip,jp,j)
-          enddo
-      endif
-   enddo
-enddo
+! send 목록 = recv 목록의 전치 — 별도 배열 없이 rnbcnt/nbrecv 를 (이웃,자기) 순서로 직접 참조
 !----------------------------------------------
 ! ri and si !
 do prc=1,np
@@ -317,13 +293,12 @@ jwk=0
 
 do prc=1,np
    do jp=1,nnbdom(prc)
-      si(prc,jp+1)=si(prc,jp)+snbcnt(prc,nbdom(prc,jp))
-      do k=1,snbcnt(prc,nbdom(prc,jp))
-         nd=nbsend(prc,nbdom(prc,jp),k)
+      si(prc,jp+1)=si(prc,jp)+rnbcnt(nbdom(prc,jp),prc)
+      do k=1,rnbcnt(nbdom(prc,jp),prc)
+         nd=nbrecv(nbdom(prc,jp),prc,k)
          if(jwk(prc,nd)==0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
-            iperm(prc,nd)=nn
             jperm(prc,nn)=nd
             jwk(prc,nd)=1
          endif
@@ -340,7 +315,6 @@ do prc=1,np
          if(jwk(prc,nd).eq.0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
-            iperm(prc,nd)=nn
             jperm(prc,nn)=nd
             jwk(prc,nd)=1
          endif
@@ -386,7 +360,6 @@ enddo
                 jwk(proc,id)=1
                 sort(proc)=sort(proc)+1
                 nk=sort(proc) !!temporary
-                iperm(proc,id)=nk
                 jperm(proc,nk)=id
             ENDDO
          ENDDO
@@ -429,7 +402,6 @@ ENDIF
 deallocate(index_node,sort,node_intf)
 deallocate(jwk,lcnode3)
 deallocate(rnbcnt,nbrecv)
-deallocate(snbcnt,nbsend)
 DEALLOCATE(lnum,lcelem)
 
 RETURN

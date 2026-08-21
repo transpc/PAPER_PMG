@@ -29,14 +29,15 @@ INTEGER(4):: nintr,nintf,nneib,nelemt
 INTEGER(4):: alstatus
 
 INTEGER(4),DIMENSION(:),ALLOCATABLE::lnum,nnbdom,cinter,cintf,cext,sort,nnodegl_mg
-INTEGER(4),DIMENSION(:,:),ALLOCATABLE::iperm,jperm,nbdom
+INTEGER(4),DIMENSION(:,:),ALLOCATABLE::jperm,nbdom
+INTEGER(4),DIMENSION(:),ALLOCATABLE::iperm_l,iperm1_l   ! prc별 1D 역치환 (jperm 로부터 재구성)
 INTEGER(4),DIMENSION(:,:),ALLOCATABLE::si,ri,sint,rint
 INTEGER(4),DIMENSION(:,:),ALLOCATABLE::lcelem
 ! for PMG
 INTEGER(4):: nnbdom1(ndom),cinter1(ndom),cintf1(ndom),cext1(ndom)
 INTEGER(4):: nbdom1(ndom,ndom)
 INTEGER(4),DIMENSION(:),ALLOCATABLE::celem1,celem0,imap
-INTEGER(4),DIMENSION(:,:),ALLOCATABLE::iperm1,jperm1
+INTEGER(4),DIMENSION(:,:),ALLOCATABLE::jperm1
 INTEGER(4),DIMENSION(:,:),ALLOCATABLE::si1,ri1,sint1,rint1
 REAL(8),DIMENSION(:,:),ALLOCATABLE::coord0,coord1
 ! for write out
@@ -48,6 +49,7 @@ INTEGER(4) ialv_P(nlevel+1,ndom),iintf(nlevel,ndom),               &
            inodegl(nlevel,ndom),inbdc(nlevel,ndom)
 INTEGER(4) nnzc0(ndom),nnzi(ndom),nnzr(ndom),nnodep0(ndom),nnodep1gl(ndom)
 INTEGER(4) nc_min,ilv_test
+INTEGER(4) ngl_c,nglprv(ndom)          ! 직전 레벨 jperm 유효 길이
 INTEGER(4) kci,kcr,icnt_t          ! C011-3: finest 스테이징 pack 커서·카운트
 REAL(8) tmp
 
@@ -81,7 +83,7 @@ CALL Predict_nelemt(np,ilv,nelem,nelemt)
 
 ALLOCATE(lnum(np),nbdom(np,np),nnbdom(np))
 ALLOCATE(cext(np),cinter(np),cintf(np),sort(np),nnodegl_mg(np))
-ALLOCATE(iperm(np,nelem),jperm(np,nelemt),stat=alstatus)
+ALLOCATE(jperm(np,nelemt),stat=alstatus)
 ALLOCATE(ri(np,np),si(np,np),rint(np,nelemt),sint(np,nelemt),stat=alstatus)
 ALLOCATE(lcelem(np,nelemt),stat=alstatus)
 
@@ -117,8 +119,9 @@ ENDIF
       icoarse(1:nelem) = icoarsef(1:nelem)
 
 CALL Domain_infor_FVM_fine(ndom,nf_max,nelem,nelemt,num_neigh_mg,neigh_mg,celem,lnum,lcelem,   &
-         nbdom,nnbdom,cext,cinter,cintf,iperm,jperm,ri,si,rint,sint,nnodegl_mg,        &
+         nbdom,nnbdom,cext,cinter,cintf,jperm,ri,si,rint,sint,nnodegl_mg,              &
          nelem1,nnzr1,iar1,jar1,icoarse) 
+
 
 ! write out data for the finest level
 !%Output local domain
@@ -149,6 +152,8 @@ irecv_m = 1
    kci = 0
    kcr = 0
 !/
+ALLOCATE(iperm_l(nelem))
+   iperm_l = 0
 DO prc=1,np
    nnodep=cinter(prc)+cintf(prc)+cext(prc)   !total number of nodes
    nelemp=lnum(prc)                          !number of elements
@@ -156,6 +161,10 @@ DO prc=1,np
    nintf=cinter(prc)+cintf(prc)              !number of interface nodes
    nneib=nnbdom(prc)                         !number of neighboring domains
    nnd = nnodegl_mg(prc)
+!  전역→지역 역치환을 이 prc 것만 1D 로 복원 (사용 후 원상복구)
+   DO i=1,nnd
+      iperm_l(jperm(prc,i)) = i
+   ENDDO
 
 !  통신 모드 pack — 파일 레코드와 동일 순서·동일 값 (coord 는 rt_ascii 라운딩)
    stg_fibuf(kci+1) = nelemp;  stg_fibuf(kci+2) = nintr
@@ -168,7 +177,7 @@ DO prc=1,np
       j = num_neigh_mg(ie)
       stg_fibuf(kci+1) = j
       DO k=1,j
-         stg_fibuf(kci+1+k) = iperm(prc,neigh_mg(k,ie))
+         stg_fibuf(kci+1+k) = iperm_l(neigh_mg(k,ie))
       ENDDO
       kci = kci + 1 + j
    ENDDO
@@ -193,11 +202,11 @@ DO prc=1,np
    ENDDO
    kci = kci + nnbdom(prc)+1
    DO i=1,ri(prc,nnbdom(prc)+1)-1
-      stg_fibuf(kci+i) = iperm(prc,rint(prc,i))
+      stg_fibuf(kci+i) = iperm_l(rint(prc,i))
    ENDDO
    kci = kci + ri(prc,nnbdom(prc)+1)-1
    DO i=1,si(prc,nnbdom(prc)+1)-1
-      stg_fibuf(kci+i) = iperm(prc,sint(prc,i))
+      stg_fibuf(kci+i) = iperm_l(sint(prc,i))
    ENDDO
    kci = kci + si(prc,nnbdom(prc)+1)-1
 !/
@@ -222,11 +231,11 @@ DO prc=1,np
    ENDDO
    kci = kci + nnbdomA(prc)+1
    DO i=1,riA(prc,nnbdomA(prc)+1)-1
-      stg_fibuf(kci+i) = iperm(prc,rintA(prc,i))
+      stg_fibuf(kci+i) = iperm_l(rintA(prc,i))
    ENDDO
    kci = kci + riA(prc,nnbdomA(prc)+1)-1
    DO i=1,siA(prc,nnbdomA(prc)+1)-1
-      stg_fibuf(kci+i) = iperm(prc,sintA(prc,i))
+      stg_fibuf(kci+i) = iperm_l(sintA(prc,i))
    ENDDO
    kci = kci + siA(prc,nnbdomA(prc)+1)-1
   ENDIF
@@ -246,18 +255,23 @@ DO prc=1,np
    ENDDO
    kci = kci + nnbdomR(prc)+1
    DO i=1,riR(prc,nnbdomR(prc)+1)-1
-      stg_fibuf(kci+i) = iperm(prc,rintR(prc,i))
+      stg_fibuf(kci+i) = iperm_l(rintR(prc,i))
    ENDDO
    kci = kci + riR(prc,nnbdomR(prc)+1)-1
    DO i=1,siR(prc,nnbdomR(prc)+1)-1
-      stg_fibuf(kci+i) = iperm(prc,sintR(prc,i))
+      stg_fibuf(kci+i) = iperm_l(sintR(prc,i))
    ENDDO
    kci = kci + siR(prc,nnbdomR(prc)+1)-1
   ENDIF
 !
 
 
+   DO i=1,nnd
+      iperm_l(jperm(prc,i)) = 0
+   ENDDO
+
 ENDDO
+DEALLOCATE(iperm_l)
 
 ! NEW for ArP - - - - - - - - - - 
     DEALLOCATE(inbdomA,nnbdomA)
@@ -277,6 +291,7 @@ ENDDO
    nnzi = 0
    
    nnodep0(1:np) = lnum(1:np)
+   nglprv(1:np)  = nnodegl_mg(1:np)
 ! 
 DEALLOCATE(lnum,nbdom,nnbdom)
 DEALLOCATE(cext,cinter,cintf,sort,nnodegl_mg)
@@ -388,7 +403,7 @@ DEALLOCATE(imap,coord0)
 
 CALL Predict_nelemt(np,ilv,nelem1,nelemt)
 
-ALLOCATE(iperm1(np,nelem1),jperm1(np,nelemt),stat=alstatus)
+ALLOCATE(jperm1(np,nelemt),stat=alstatus)
 ALLOCATE(ri1(np,np),si1(np,np))
 ALLOCATE(rint1(np,nelemt),sint1(np,nelemt),stat=alstatus)
 
@@ -401,13 +416,14 @@ ALLOCATE(rint1(np,nelemt),sint1(np,nelemt),stat=alstatus)
     
 IF(ilv.NE.nlevel_N) THEN
 CALL Domain_infor_FVM_coarse(ilv,ndom,nmax1,nelem1,nelemt,nelem2,nnzr2,iar2,jar2,icoarse1,nnei1,inei1,celem1,      &
-         nbdom1,nnbdom1,cext1,cinter1,cintf1,iperm1,jperm1,ri1,si1,rint1,sint1,nnodep1gl,            &
+         nbdom1,nnbdom1,cext1,cinter1,cintf1,jperm1,ri1,si1,rint1,sint1,nnodep1gl,                   &
          nelem0,celem0,nnzi1,iai1,jai1)
 ELSE
 CALL Domain_infor_FVM_coarsest(ilv,ndom,nmax1,nelem1,nelemt,nnei1,inei1,celem1,nbdom1,nnbdom1,                        &
-         cext1,cinter1,cintf1,iperm1,jperm1,ri1,si1,rint1,sint1,nnodep1gl,                           &
+         cext1,cinter1,cintf1,jperm1,ri1,si1,rint1,sint1,nnodep1gl,                                  &
          nelem0,celem0,nnzi1,iai1,jai1)
 ENDIF
+
 
 DEALLOCATE(celem0,icoarse1,nnei1,inei1)
   
@@ -432,6 +448,9 @@ DEALLOCATE(celem0,icoarse1,nnei1,inei1)
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - !
 
 ! wrting out file 
+ALLOCATE(iperm_l(nelem0),iperm1_l(nelem1))
+   iperm_l  = 0
+   iperm1_l = 0
 DO prc=1,np
 
    nnodep1=cinter1(prc)+cintf1(prc)+cext1(prc)
@@ -439,6 +458,14 @@ DO prc=1,np
    nintf1=cinter1(prc)+cintf1(prc)
    nneib1=nnbdom1(prc)
    nnd = nnodep1gl(prc)
+   ngl_c = nnd
+!  전역→지역 역치환 복원 (현 레벨 + 직전 레벨), 이 prc 것만
+   DO i=1,ngl_c
+      iperm1_l(jperm1(prc,i)) = i
+   ENDDO
+   DO i=1,nglprv(prc)
+      iperm_l(jperm(prc,i)) = i
+   ENDDO
 !
    iintf(ilv,prc) = nintf1
    inodegl(ilv,prc) = nnd
@@ -477,10 +504,10 @@ IF(nnbdom1(prc).NE.0) THEN
       CALL stg_pushi(prc,si1(prc,i))
    ENDDO
    DO i=1,ri1(prc,nnbdom1(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,rint1(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(rint1(prc,i)))
    ENDDO
    DO i=1,si1(prc,nnbdom1(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,sint1(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(sint1(prc,i)))
    ENDDO
 !/
    isend_m(prc) = max(isend_m(prc),si1(prc,nnbdom1(prc)+1)-1)
@@ -500,10 +527,10 @@ IF(nnbdomA(prc).NE.0) THEN
       CALL stg_pushi(prc,siA(prc,i))
    ENDDO
    DO i=1,riA(prc,nnbdomA(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,rintA(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(rintA(prc,i)))
    ENDDO
    DO i=1,siA(prc,nnbdomA(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,sintA(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(sintA(prc,i)))
    ENDDO
 ENDIF
 	
@@ -520,10 +547,10 @@ IF(nnbdomR(prc).NE.0) THEN
       CALL stg_pushi(prc,siR(prc,i))
    ENDDO
    DO i=1,riR(prc,nnbdomR(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,rintR(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(rintR(prc,i)))
    ENDDO
    DO i=1,siR(prc,nnbdomR(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,sintR(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(sintR(prc,i)))
    ENDDO
 ENDIF
 !
@@ -541,10 +568,10 @@ IF(nnbdomP(prc).NE.0) THEN
       CALL stg_pushi(prc,siP(prc,i))
    ENDDO
    DO i=1,riP(prc,nnbdomP(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,rintP(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(rintP(prc,i)))
    ENDDO
    DO i=1,siP(prc,nnbdomP(prc)+1)-1
-      CALL stg_pushi(prc,iperm1(prc,sintP(prc,i)))
+      CALL stg_pushi(prc,iperm1_l(sintP(prc,i)))
    ENDDO
 ENDIF
 
@@ -557,7 +584,7 @@ ENDIF
        nnd = i2-i1+1
        CALL stg_pushi(prc,nnd)
        DO k=i1,i2
-          CALL stg_pushi(prc,iperm1(prc,jai1(k)))
+          CALL stg_pushi(prc,iperm1_l(jai1(k)))
        ENDDO
        DO k=i1,i2
           CALL stg_pushr(prc,rt_ascii(Xintp1(k)))
@@ -577,7 +604,7 @@ ENDIF
        nnd = i2-i1+1
        CALL stg_pushi(prc,nnd)
        DO k=i1,i2
-          CALL stg_pushi(prc,iperm(prc,jar1(k)))
+          CALL stg_pushi(prc,iperm_l(jar1(k)))
        ENDDO
        DO k=i1,i2
           CALL stg_pushr(prc,rt_ascii(Xrest1(k)))
@@ -595,13 +622,21 @@ ENDIF
        nnd = i2-i1+1
        CALL stg_pushi(prc,nnd)
        DO k=i1,i2
-          CALL stg_pushi(prc,iperm1(prc,ja1(k)))
+          CALL stg_pushi(prc,iperm1_l(ja1(k)))
        ENDDO
 
        mxnbne_mg = max(nnd,mxnbne_mg)
 
        nnzc0(prc) = nnzc0(prc) + nnd
 
+   ENDDO
+
+!  역치환 원상복구 (다음 prc 를 위해)
+   DO i=1,ngl_c
+      iperm1_l(jperm1(prc,i)) = 0
+   ENDDO
+   DO i=1,nglprv(prc)
+      iperm_l(jperm(prc,i)) = 0
    ENDDO
 
 ! !    GLOBAL
@@ -635,6 +670,7 @@ ENDIF
    ENDIF
 
 ENDDO
+DEALLOCATE(iperm_l,iperm1_l)
 
 ! NEW for A, R,P
     DEALLOCATE(inbdomA,nnbdomA)
@@ -662,13 +698,12 @@ IF(ilv_test.EQ.1) GOTO 100
   iar1(1:nelem2+1) = iar2(1:nelem2+1)
   jar1(1:nnzr2) = jar2(1:nnzr2)
   
-  DEALLOCATE(iperm,jperm)
-  ALLOCATE(iperm(np,nelem1),jperm(np,nelemt))
+! 레벨 승계: 재할당+복사 대신 소유권 이전 (복사 시점 중복 점유 제거)
+  IF(ALLOCATED(jperm)) DEALLOCATE(jperm)
+  CALL MOVE_ALLOC(jperm1,jperm)
+  nglprv(1:np) = nnodep1gl(1:np)
   
-  iperm = iperm1
-  jperm = jperm1
-  
-  DEALLOCATE(iperm1,jperm1,Xrest2,iar2,jar2)
+  DEALLOCATE(Xrest2,iar2,jar2)
   
   DEALLOCATE(si1,ri1,sint1,rint1)
   DEALLOCATE(ia1,ja1)
@@ -713,10 +748,10 @@ DEALLOCATE(ia1,ja1)
     IF(ALLOCATED(Xrest2)) DEALLOCATE(Xrest2)
     IF(ALLOCATED(celem1)) DEALLOCATE(celem1)
     IF(ALLOCATED(coord1)) DEALLOCATE(coord1) 
-    IF(ALLOCATED(iperm)) DEALLOCATE(iperm)    
     IF(ALLOCATED(jperm)) DEALLOCATE(jperm)
-    IF(ALLOCATED(iperm1)) DEALLOCATE(iperm1)    
     IF(ALLOCATED(jperm1)) DEALLOCATE(jperm1) 
+    IF(ALLOCATED(iperm_l)) DEALLOCATE(iperm_l)
+    IF(ALLOCATED(iperm1_l)) DEALLOCATE(iperm1_l) 
     IF(ALLOCATED(si1)) DEALLOCATE(si1)  
     IF(ALLOCATED(ri1)) DEALLOCATE(ri1)    
     IF(ALLOCATED(sint1)) DEALLOCATE(sint1) 
@@ -747,7 +782,7 @@ WRITE(999,*)'optimal nlv_gobal, nnz,ext,beta',nnz1, i1, tmp
 IF(tmp.GT.0.3)  WRITE(999,*)'increse "nlv_glo" in mg.in file'
 IF(tmp.LT.0.1)  WRITE(999,*)'reduce "nlv_glo" in mg.in file'
 !/
-DEALLOCATE(imapc,icoarsef,ialv,iperm,jperm,num_neigh_mg,neigh_mg)
+DEALLOCATE(imapc,icoarsef,ialv,jperm,num_neigh_mg,neigh_mg)
 DEALLOCATE(iar1,jar1,Xrest1,iai,jai,iar,jar,iac,jac)
 DEALLOCATE(Xrest,Xintp)
 DEALLOCATE(coord1,inmax)
@@ -798,4 +833,3 @@ IF(nelemt.LE.2000) nelemt = 2000
 ! 
 RETURN
 END
-    
