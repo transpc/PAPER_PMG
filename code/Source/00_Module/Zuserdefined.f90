@@ -41,5 +41,8 @@
       INTEGER user_iary(100)     
 !
       LOGICAL :: MG_solver
+!.....압력 솔버로 hypre(BiCGSTAB+BoomerAMG) 경로를 쓸지. MG_solver=.true. 를
+!     전제로 한다 — CSR·헤일로·분할 재번호가 PMG prep 체인의 산물이다.
+      LOGICAL :: HYPRE_solver
 !
       END MODULE Zuserdefined

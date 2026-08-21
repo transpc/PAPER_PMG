@@ -25,7 +25,7 @@
       USE Zmars         , ONLY: n_marsbc,i3invtbl_tmp,ppcup_tmp
       USE Zpress_coeff  , ONLY: coefp_l,coefp_g,coefp_d,coefm_l,coefm_g
       USE Ztimecon      , ONLY: smac,dp_max
-      USE Zuserdefined  , ONLY: udfl_outlet_press_user,MG_solver
+      USE Zuserdefined  , ONLY: udfl_outlet_press_user,MG_solver,HYPRE_solver
       USE Zbc_index     , ONLY: i_horizontal_outlet
       USE c3com_cupid   , ONLY: i3invtbl
       USE Zpress        , ONLY: p,pp,dpdx,flag
@@ -184,7 +184,11 @@
 
 
             CALL dump_pmg_pre(1, maxmt, src, au, poiss_diag)   ! env CUPID_PMG_DUMP 게이트
-            CALL SOLVE_GMG(1)
+            IF (HYPRE_solver) THEN
+               CALL SOLVE_HYPRE(1)
+            ELSE
+               CALL SOLVE_GMG(1)
+            END IF
             CALL dump_pmg_post(1)
             pp = u
          ELSE
@@ -257,7 +261,11 @@
 !                write(*,*)'MG-2'
                   CALL assemble_FVM(icase_mg,maxmt,src,au,poiss_diag)!,poiss_csr)
                   CALL dump_pmg_pre(2, maxmt, src, au, poiss_diag)   ! env CUPID_PMG_DUMP 게이트
-                  CALL SOLVE_GMG(icase_mg)
+                  IF (HYPRE_solver) THEN
+                     CALL SOLVE_HYPRE(icase_mg)
+                  ELSE
+                     CALL SOLVE_GMG(icase_mg)
+                  END IF
                   CALL dump_pmg_post(2)
                   ppp = u
                ELSE

@@ -11,7 +11,7 @@
       USE Zzone        , ONLY: ncell_cond_all
       USE Zio_unit     , ONLY: unit_log
       USE unitManager  , ONLY: createUnit,printAllUnits
-      USE Zuserdefined, ONLY : MG_solver
+      USE Zuserdefined, ONLY : MG_solver, HYPRE_solver
 !
       IMPLICIT NONE
 !
@@ -33,6 +33,10 @@
       cupid_mars=0
       MG_solver = .true.
       ! MG_solver = .false.
+!.....압력 솔버 경로 선택 (하드와이어 — 추후 파일 입력으로 이관)
+!       .false. = PMG (SOLVE_GMG)          : 기본
+!       .true.  = hypre BiCGSTAB+BoomerAMG : MG_solver=.true. 전제
+      HYPRE_solver = .false.
 !
       time=0.d0
       itim=0
@@ -223,6 +227,9 @@
       ENDIF
 !
       IF(cplmaster.gt.0) CALL save_restart_master(nout)
+!
+!.....hypre 핸들 해제 — MPI_FINALIZE(Closed/main.f90) 보다 먼저여야 한다
+      IF(HYPRE_solver) CALL HYPRE_FINALIZE
 !
       RETURN
       END SUBROUTINE cupid_main
