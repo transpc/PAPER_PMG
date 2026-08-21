@@ -3,6 +3,10 @@
 include ../Source/makefile.in
 
 SRCDIR = ../Source
+
+# LIBDIR 의 HYPRE 상대경로(./HYPRE/...)는 Source/ 에서 링크할 때만 유효 —
+# standalone 은 pmg_standalone/ 에서 링크하므로 SRCDIR 기준으로 치환
+LIBDIR := $(subst -L./HYPRE,-L$(SRCDIR)/HYPRE,$(LIBDIR))
 BUILD  = build
 
 # 1) CUPID 본체 리프 Z-모듈 (전부 USE=0 확인, LOG C006) — Zinterface 는 아래 의존들 뒤
@@ -67,3 +71,29 @@ driver: objs $(BUILD)/driver_pmg.o
 
 $(BUILD)/driver_pmg.o: driver/driver_pmg.f90 | $(BUILD)
 	$(FC) $(FOPTFLAGS) -module $(BUILD) -c $< -o $@
+
+# PMG vs hypre A/B 비교 드라이버 — 선행: ../scripts/build_hypre.sh (v2.33.0 고정)
+# hypre 산출물은 CUPID 본체와 동일 트리를 공유한다 (code/Source/HYPRE) —
+# 두 벌을 두면 버전·플래그가 갈라져 프로덕션 측정치와 같은 표에 못 올린다.
+HYPRE_DIR ?= ../Source/HYPRE/hypre-2.33.0/install
+driver_hypre: objs $(BUILD)/driver_hypre.o
+	$(FC) -o $(BUILD)/driver_hypre $(BUILD)/driver_hypre.o $(OBJS) \
+	      -L$(HYPRE_DIR)/lib -lHYPRE $(LIBDIR)
+
+$(BUILD)/driver_hypre.o: driver/driver_hypre.f90 | $(BUILD)
+	$(FC) $(FOPTFLAGS) -module $(BUILD) -c $< -o $@
+
+# 시간 비교 전용 최적화 빌드 (build_fast/). 기본 FOPTFLAGS 는 -fp-model strict
+# -no-simd -no-vec (bitwise 재현용) 이라 hypre(-O2 자동벡터화) 와 시간을 견주면
+# PMG 가 부당하게 불리하다. 이 타깃은 양쪽 최적화 수준을 맞추기 위한 것 —
+# 골든 bitwise 게이트에는 절대 사용하지 말 것 (산술이 달라짐).
+# -O 레벨은 기본과 동일(-O = -O2)로 두고, 핸디캡 두 가지만 제거한다:
+#   -fp-model strict (FP 재결합 금지) 와 -no-simd -no-vec (벡터화 금지).
+# -O3 도 시도했으나 대형 GMG 파일에서 컴파일이 비현실적으로 느려 채택하지 않음
+# (2026-08-20). 상대 hypre 는 -O3 -xcore-AVX2 라 이 설정은 PMG 에 보수적이다.
+FAST_FLAGS = -O -warn interface -auto -no-ansi-alias -r8 -fpp -Dmpi_flag \
+             -Dmetis_flag -mcmodel=medium -qoverride-limits -DAVX2 \
+             -align array32byte -xcore-AVX2
+driver_hypre_fast:
+	$(MAKE) BUILD=build_fast FOPTFLAGS="$(FAST_FLAGS)" \
+	        HYPRE_DIR=../Source/HYPRE/hypre-2.33.0/install-fast driver_hypre
