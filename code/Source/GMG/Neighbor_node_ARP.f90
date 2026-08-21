@@ -159,7 +159,7 @@ RETURN
 ! = = = = = = = = = = = = = = = = = = = = = 
 
 ! - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - !
-SUBROUTINE Ext_nodes_R(np,nn,nnode,nnode1,nnzr,cnode,icoarse,iar,jar,jwk,cext,lcnode3)
+SUBROUTINE Ext_nodes_R(np,nn,nnode,nnode1,nnzr,cnode,icoarse,iar,jar,cext,lcnode3)
 
 !
 IMPLICIT NONE
@@ -167,13 +167,15 @@ IMPLICIT NONE
 ! input
 INTEGER (4) np,nnode,nnode1,nnzr,nn
 INTEGER (4) cnode(nnode),icoarse(nnode)
-INTEGER (4) iar(nnode1+1),jar(nnzr),jwk(np,nnode)
+INTEGER (4) iar(nnode1+1),jar(nnzr)
 ! output
 INTEGER (4) cext(np),lcnode3(np,nn)
 ! temp
 INTEGER (4) ip,jd,I,J,i1,i2,id
+INTEGER (4),ALLOCATABLE:: jwk(:)      ! 랭크별 고스트 마커 — 1D 로 재사용 (ip 마다 원복)
 
 ! 
+ALLOCATE(jwk(nnode))
 jwk = 0
 !
 do ip=1,np
@@ -187,24 +189,29 @@ do ip=1,np
    DO J = i1,i2
    id = jar(J)
    IF(cnode(id).NE.ip) THEN
-   IF(jwk(ip,id).EQ.0) THEN
+   IF(jwk(id).EQ.0) THEN
       cext(ip)=cext(ip)+1
       lcnode3(ip,cext(ip))=id
-      jwk(ip,id)=1
+      jwk(id)=1
 
    ENDIF
    ENDIF
    ENDDO
 
    Enddo
+!  다음 ip 를 위해 이 ip 가 표시한 것만 원복
+   DO jd=1,cext(ip)
+      jwk(lcnode3(ip,jd))=0
+   ENDDO
 enddo
 ! 
+DEALLOCATE(jwk)
 
 RETURN
 END
 
 ! - - - - - - - - - - - - - -- - - - - - - - - - - - - - - - - - - - !
-SUBROUTINE Ext_nodes_P(np,nn,nnode,nnode0,nnzi0,cnode0,cnode,iai0,jai0,jwk,cext,lcnode3)
+SUBROUTINE Ext_nodes_P(np,nn,nnode,nnode0,nnzi0,cnode0,cnode,iai0,jai0,cext,lcnode3)
 
 !
 IMPLICIT NONE
@@ -212,13 +219,15 @@ IMPLICIT NONE
 ! input
 INTEGER (4) np,nnode,nnode0,nnzi0,nn
 INTEGER (4) cnode0(nnode0),cnode(nnode)
-INTEGER (4) iai0(nnode0+1),jai0(nnzi0),jwk(np,nnode)
+INTEGER (4) iai0(nnode0+1),jai0(nnzi0)
 ! output
 INTEGER (4) cext(np),lcnode3(np,nn)
 ! temp
 INTEGER (4) ip,jd,I,J,i1,i2,id
+INTEGER (4),ALLOCATABLE:: jwk(:)      ! 랭크별 고스트 마커 — 1D 로 재사용 (ip 마다 원복)
 
 ! 
+ALLOCATE(jwk(nnode))
 jwk = 0
 !
 do ip=1,np
@@ -232,18 +241,23 @@ do ip=1,np
    DO J = i1,i2
    id = jai0(J)
    IF(cnode(id).NE.ip) THEN
-   IF(jwk(ip,id).EQ.0) THEN
+   IF(jwk(id).EQ.0) THEN
       cext(ip)=cext(ip)+1
       lcnode3(ip,cext(ip))=id
-      jwk(ip,id)=1
+      jwk(id)=1
 
    ENDIF
    ENDIF
    ENDDO
 
    Enddo
+!  다음 ip 를 위해 이 ip 가 표시한 것만 원복
+   DO jd=1,cext(ip)
+      jwk(lcnode3(ip,jd))=0
+   ENDDO
 enddo
 ! 
+DEALLOCATE(jwk)
 
 RETURN
 END

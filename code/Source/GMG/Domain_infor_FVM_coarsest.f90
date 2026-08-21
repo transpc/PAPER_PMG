@@ -24,7 +24,8 @@ integer color,col1,col2,col3,col4,index,sumc
 INTEGER(4)::alstatus
 integer,dimension(:),allocatable::sort
 integer,dimension(:),allocatable::index_node,node_intf   ! 소유 랭크 기준 셀별 플래그
-integer,dimension(:,:),allocatable::jwk,lcnode3,rnbcnt
+integer,dimension(:),allocatable::jwk        ! 랭크별 고스트 마커 — 1D 로 재사용 (구간마다 복원/원복)
+integer,dimension(:,:),allocatable::lcnode3,rnbcnt
 integer,dimension(:,:,:),allocatable::nbrecv
 INTEGER(4),DIMENSION(:,:), ALLOCATABLE:: lcelem
 INTEGER(4),DIMENSION(:), ALLOCATABLE:: lnum
@@ -71,7 +72,7 @@ DO proc = 1,np
 ENDDO
 
 !----------------------------------------------------------------------
-Allocate(jwk(np,nnode),lcnode3(np,nnodet),stat=alstatus)
+Allocate(jwk(nnode),lcnode3(np,nnodet),stat=alstatus)
 
      IF (alstatus/=0) THEN
          WRITE(*,*)'not enough memory,serial-pre-MG-MPI-jwk'
@@ -94,10 +95,10 @@ do ip=1,np
    DO j = 1,nnd
    id = inei(j,jd)
    IF(cnode(id).NE.ip) THEN
-   IF(jwk(ip,id).EQ.0) THEN
+   IF(jwk(id).EQ.0) THEN
       cext(ip)=cext(ip)+1
       lcnode3(ip,cext(ip))=id
-      jwk(ip,id)=1
+      jwk(id)=1
 ! new
    jp = cnode(id)
    IF(node_intf(id).EQ.0) THEN
@@ -110,6 +111,10 @@ do ip=1,np
    
    ENDDO
    
+   ENDDO
+!  이 ip 가 표시한 고스트 마커만 원복 (다음 ip 재사용)
+   DO idom=1,cext(ip)
+      jwk(lcnode3(ip,idom))=0
    ENDDO
 enddo	  
 
@@ -135,6 +140,10 @@ enddo
 ! add new cext from P(iJ):
    
 do ip=1,np
+!  직전 단계에서 이 ip 가 만든 고스트 마커 복원
+   DO idom=1,cext(ip)
+      jwk(lcnode3(ip,idom))=1
+   ENDDO
    do jd=1,nnode0
    IF(cnode0(jd).NE.ip) CYCLE
 
@@ -145,10 +154,10 @@ do ip=1,np
    DO J = i1,i2
    id = jai0(J)
    IF(cnode(id).NE.ip) THEN
-   IF(jwk(ip,id).EQ.0) THEN
+   IF(jwk(id).EQ.0) THEN
       cext(ip)=cext(ip)+1
       lcnode3(ip,cext(ip))=id
-      jwk(ip,id)=1
+      jwk(id)=1
       
 !!notes
     jp= cnode(id)
@@ -162,6 +171,10 @@ do ip=1,np
    ENDIF
    ENDDO
 !
+   ENDDO
+!  이 ip 가 표시한 고스트 마커만 원복 (다음 ip 재사용)
+   DO idom=1,cext(ip)
+      jwk(lcnode3(ip,idom))=0
    ENDDO
 enddo
 
@@ -258,37 +271,39 @@ do prc=1,np
    ri(prc,1)=1
    si(prc,1)=1
 enddo
-jwk=0
-
+! send/recv 두 패스를 prc 단위로 합침 — prc 별 jperm 추가 순서(送 후 受) 불변
 do prc=1,np
+   nk = sort(prc)                      ! 이 prc 표시 시작 위치 (원복 기준)
    do jp=1,nnbdom(prc)
       si(prc,jp+1)=si(prc,jp)+rnbcnt(nbdom(prc,jp),prc)
       do k=1,rnbcnt(nbdom(prc,jp),prc)
          nd=nbrecv(nbdom(prc,jp),prc,k)
-         if(jwk(prc,nd)==0) then
+         if(jwk(nd)==0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
             jperm(prc,nn)=nd
-            jwk(prc,nd)=1
+            jwk(nd)=1
          endif
          sint(prc,si(prc,jp)-1+k)=nd
       enddo
    enddo
-enddo
 !---------------------------------------------------------
-do prc=1,np
    do jp=1,nnbdom(prc)
       ri(prc,jp+1)=ri(prc,jp)+rnbcnt(prc,nbdom(prc,jp))
       do k=1,rnbcnt(prc,nbdom(prc,jp))
          nd=nbrecv(prc,nbdom(prc,jp),k)
-         if(jwk(prc,nd).eq.0) then
+         if(jwk(nd).eq.0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
             jperm(prc,nn)=nd
-            jwk(prc,nd)=1
+            jwk(nd)=1
          endif
          rint(prc,ri(prc,jp)-1+k)=nd
       enddo
+   enddo
+!  원복
+   do k=nk+1,sort(prc)
+      jwk(jperm(prc,k))=0
    enddo
 enddo
 !--------------------------------------------
@@ -309,20 +324,15 @@ ENDIF
 ! NEW: added more nodes for Garlekin F
 !------------
 !1-index nodes:
-      jwk = 0
-      
+! 표시 패스와 확장 패스를 proc 단위로 합침 (proc 간 의존 없음)
       DO proc=1,np
           
           DO i=1,sort(proc)
               id = jperm(proc,i)
-              jwk(proc,id)=1
+              jwk(id)=1
           ENDDO
           
-      ENDDO
-      
 ! 3-add: 
-      DO proc=1,np
-          
          nn=cext(proc)
          DO j=1,nn
             jd =lcnode3(proc,j)
@@ -331,12 +341,16 @@ ENDIF
             DO i = 1,nnd
             id = inei(i,jd)
             
-                IF(jwk(proc,id).EQ.1) CYCLE
-                jwk(proc,id)=1
+                IF(jwk(id).EQ.1) CYCLE
+                jwk(id)=1
                 sort(proc)=sort(proc)+1
                 nk=sort(proc) !!temporary
                 jperm(proc,nk)=id
             ENDDO
+         ENDDO
+!  원복
+         DO i=1,sort(proc)
+             jwk(jperm(proc,i))=0
          ENDDO
          
       ENDDO
@@ -355,7 +369,7 @@ ENDIF
 	 lcnode3 = 0
 	 cext_tmp = 0
 !
-     CALL Ext_nodes_P(np,next_m,nnode,nnode0,nnzi0,cnode0,cnode,iai0,jai0,jwk,cext_tmp,lcnode3)
+     CALL Ext_nodes_P(np,next_m,nnode,nnode0,nnzi0,cnode0,cnode,iai0,jai0,cext_tmp,lcnode3)
      
 	 ALLOCATE(inbdomP(np,np),nnbdomP(np),riP(np,np),siP(np,np),rintP(np,next_m),sintP(np,next_m))
      CALL Neighbor_node_ARP(np,nnode,next_m,next_m,cnode,cext_tmp,lcnode3,inbdomP,nnbdomP,riP,siP,rintP,sintP)	

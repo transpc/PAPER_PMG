@@ -25,7 +25,7 @@ integer,dimension(:),allocatable::sort
 integer,dimension(:),allocatable::index_cell          ! 셀별 인터페이스 플래그 (소유 랭크 기준)
 integer,dimension(:,:),allocatable::lcnode3,rnbcnt
 integer,dimension(:,:,:),allocatable::nbrecv
-integer(4),dimension(:,:),allocatable::jwk
+integer(4),dimension(:),allocatable::jwk,mark_own   ! jwk: 랭크별 고스트 마커(1D 재사용), mark_own: 소유자 인터페이스 표시
 INTEGER(4) imark(np,np)
 
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - !
@@ -70,7 +70,7 @@ do proc=1,np
 enddo
 !----------------------------------------------------------------------
 Allocate(lcnode3(np,nnodet),stat=alstatus)
-Allocate(jwk(np,nnode),stat=alstatus)
+Allocate(jwk(nnode),mark_own(nnode),stat=alstatus)
 
      IF (alstatus/=0) THEN
          WRITE(*,*)'not enough memory,serial-pre-MPI1-index-jwk'
@@ -84,27 +84,32 @@ cext=0
 !
 lcnode3=0
 jwk=0
+mark_own=0
 
 do ip=1,np
    do ie=1,lnum(ip)
       ne=lcelem(ip,ie)
       if(index_cell(ne)==1)then
          cintf(ip)=cintf(ip)+1    
-         jwk(ip,ne)=1    
+         mark_own(ne)=1    
          
          nvpe = num_neigh(ne)
          do id=1,nvpe
             jd=e_neigh(id,ne)
             
-            if(jwk(ip,jd)==0)then 
-               if(celem(jd).NE.ip)then
+            if(celem(jd).NE.ip)then
+               if(jwk(jd)==0)then 
                   cext(ip)=cext(ip)+1
                   lcnode3(ip,cext(ip))=jd
-                  jwk(ip,jd)=1
+                  jwk(jd)=1
                endif
             endif ! assign old node
          enddo
       endif ! end of interface element
+   enddo
+!  이 ip 가 표시한 고스트 마커만 원복 (다음 ip 재사용)
+   do ie=1,cext(ip)
+      jwk(lcnode3(ip,ie))=0
    enddo
 enddo
 ! - - - - - - - - - - - -----
@@ -128,6 +133,10 @@ enddo
 ! add new cext from R(Ij):for all nodes
 
 do ip=1,np
+!  A 단계에서 이 ip 가 만든 고스트 마커 복원
+   do ie=1,cext(ip)
+      jwk(lcnode3(ip,ie))=1
+   enddo
    do ie=1,lnum(ip)
        jd = lcelem(ip,ie)
 
@@ -138,20 +147,17 @@ do ip=1,np
    DO J = i1,i2
    id = jar(J)
    IF(celem(id).NE.ip) THEN
-   IF(jwk(ip,id).EQ.0) THEN
+   IF(jwk(id).EQ.0) THEN
       cext(ip)=cext(ip)+1
       lcnode3(ip,cext(ip))=id
-      jwk(ip,id)=1
-
-
-
+      jwk(id)=1
 
 !notes-> update for intf
     jp= celem(id)
-   IF(jwk(jp,id)==1) CYCLE
+   IF(mark_own(id)==1) CYCLE
       cintf(jp)=cintf(jp)+1
 !   
-      jwk(jp,id)=1      
+      mark_own(id)=1      
 !     
 
    ENDIF
@@ -159,6 +165,10 @@ do ip=1,np
    ENDDO
 
    Enddo
+!  원복
+   do ie=1,cext(ip)
+      jwk(lcnode3(ip,ie))=0
+   enddo
 enddo
 
 !-----------------------------------------------
@@ -168,7 +178,7 @@ do ip=1,np
    do ie=1,lnum(ip)
       ne=lcelem(ip,ie)
       if(index_cell(ne)==0)then
-         IF(jwk(ip,ne).EQ.1) CYCLE     ! notes for R
+         IF(mark_own(ne).EQ.1) CYCLE     ! notes for R
                cinter(ip)=cinter(ip)+1
 !           
                jperm(ip,cinter(ip))=ne
@@ -255,37 +265,39 @@ do prc=1,np
    si(prc,1)=1
 enddo
 
-jwk=0
-
+! send/recv 두 패스를 prc 단위로 합침 — prc 별 jperm 추가 순서(送 후 受) 불변
 do prc=1,np
+   nk = sort(prc)                      ! 이 prc 표시 시작 위치 (원복 기준)
    do jp=1,nnbdom(prc)
       si(prc,jp+1)=si(prc,jp)+rnbcnt(nbdom(prc,jp),prc)
       do k=1,rnbcnt(nbdom(prc,jp),prc)
          nd=nbrecv(nbdom(prc,jp),prc,k)
-         if(jwk(prc,nd)==0) then
+         if(jwk(nd)==0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
             jperm(prc,nn)=nd
-            jwk(prc,nd)=1
+            jwk(nd)=1
          endif
          sint(prc,si(prc,jp)-1+k)=nd
       enddo
    enddo
-enddo
 !---------------------------------------------------------
-do prc=1,np
    do jp=1,nnbdom(prc)
       ri(prc,jp+1)=ri(prc,jp)+rnbcnt(prc,nbdom(prc,jp))
       do k=1,rnbcnt(prc,nbdom(prc,jp))
          nd=nbrecv(prc,nbdom(prc,jp),k)
-         if(jwk(prc,nd).eq.0) then
+         if(jwk(nd).eq.0) then
             sort(prc)=sort(prc)+1
             nn=sort(prc) !!temporary
             jperm(prc,nn)=nd
-            jwk(prc,nd)=1
+            jwk(nd)=1
          endif
          rint(prc,ri(prc,jp)-1+k)=nd
       enddo
+   enddo
+!  원복
+   do k=nk+1,sort(prc)
+      jwk(jperm(prc,k))=0
    enddo
 enddo
 write(999,*)'neq=',sort(1)
@@ -295,19 +307,15 @@ write(999,*)'neq=',sort(1)
 !1-neiboring Element of each node:     
 !------------
 !2-index element:
-      jwk = 0
-      
+! 표시 패스와 확장 패스를 proc 단위로 합침 (proc 간 의존 없음)
       DO proc=1,np
           
           DO i=1,sort(proc)
               id = jperm(proc,i)
-              jwk(proc,id)=1
+              jwk(id)=1
           ENDDO
           
-      ENDDO
-      
 ! 3-
-      DO proc=1,np
          nn=cext(proc)
          ip=lnum(proc) 
          DO j=1,nn
@@ -319,8 +327,8 @@ write(999,*)'neq=',sort(1)
                 nvpe = num_neigh(ie)
                 DO i=1,nvpe
                     id=e_neigh(i,ie)
-                    IF(jwk(proc,id).EQ.1) CYCLE
-                      jwk(proc,id)=1
+                    IF(jwk(id).EQ.1) CYCLE
+                      jwk(id)=1
                       sort(proc)=sort(proc)+1
                       nk=sort(proc) !!temporary
                       jperm(proc,nk)=id
@@ -328,6 +336,10 @@ write(999,*)'neq=',sort(1)
 !           
          ENDDO
          lnum(proc) = ip
+!  원복
+         DO i=1,sort(proc)
+             jwk(jperm(proc,i))=0
+         ENDDO
          
       ENDDO
       
@@ -347,7 +359,7 @@ ENDIF
 	 lcnode3 = 0
 	 cext_tmp = 0
 !
-     CALL Ext_nodes_R(np,next_m,nnode,nnode1,nnzi,celem,icoarse,iar,jar,jwk,cext_tmp,lcnode3)
+     CALL Ext_nodes_R(np,next_m,nnode,nnode1,nnzi,celem,icoarse,iar,jar,cext_tmp,lcnode3)
      
 	 ALLOCATE(inbdomR(np,np),nnbdomR(np),riR(np,np),siR(np,np),rintR(np,next_m),sintR(np,next_m))
      CALL Neighbor_node_ARP(np,nnode,next_m,next_m,celem,cext_tmp,lcnode3,inbdomR,nnbdomR,riR,siR,rintR,sintR)	 
@@ -357,7 +369,7 @@ ENDIF
 deallocate(index_cell,sort)
 deallocate(rnbcnt,nbrecv)
 deallocate(lcnode3)
-deallocate(jwk)
+deallocate(jwk,mark_own)
 
      RETURN
 
