@@ -274,7 +274,7 @@ AR_hi/iallocate_c/icase_MG/isol_start/iGS/nGS/ipar/icommu/igather/ihybrid 등
 | P4 완전 데드 서브루틴·AR_hi | ✅ | (P4 커밋) | -824줄 |
 | D5 MKL 링크 제거 (LAPACK 보조 4종 로컬) | ✅ | 334a339 | 의존성 제거 |
 | P5 입력 계층 재설계 (namelist 2그룹, mg.in 16줄) | ✅ | 7829816 | 고아 13종 |
-| **D6 isetup_comm 통신모드 단일화 + MG_tmp 소거** | ⏳ 다음 | — | 분기 56곳 (2_read_mesh 34 + writer 22) |
+| D6 isetup_comm 통신모드 단일화 + MG_tmp 소거 | ✅ | (D6 커밋) | 분기 54곳 소거, 파일 I/O 전폐 (-358줄) |
 
 GMG 총량: 19,064 → **13,766줄 (-28%)**. 전 단계 게이트 12/12 bitwise 동일 + CUPID 링크 green + P5 후 프로덕션 스팟(np=4) its 일치 확인.
 
