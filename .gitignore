@@ -79,3 +79,14 @@ __pycache__/
 
 # pmg_standalone 검증 빌드 산출물
 code/pmg_standalone/build_chk/
+
+# 외부 라이브러리 (hypre 등 — scripts/build_hypre.sh 가 재생성)
+code/external/
+
+# hypre 비교 하네스 산출물 (2026-08-20)
+code/pmg_standalone/build_fast/
+code/pmg_standalone/tests/*.tsv
+code/pmg_standalone/tests/.fair_raw
+
+# hypre 소스 전개 트리 (tarball 만 커밋 — Source/HYPRE/makefile 이 자동 전개)
+code/Source/HYPRE/hypre-2.33.0/

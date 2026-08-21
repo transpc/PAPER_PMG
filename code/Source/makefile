@@ -17,6 +17,9 @@ LFLAGS =
 #	-L$(D0_6) -l$(D0_6) \
 #	-L$(D0_7) -l$(D0_7)
 FFLAGS = $(FOPTFLAGS)
+# hypre 정적 라이브러리는 실제 링크가 일어나는 최상위에서만 붙인다 — LIBDIR 에
+# 두면 makefile.in 을 include 하는 모든 서브 makefile 에 죽은 -L 이 섞인다.
+HYPRE_LDFLAGS = -L$(D0_H)/hypre-2.33.0/install/lib -lHYPRE
 # CFLAGS = $(COPTFLAGS) -I/$(INCDIR)
 OFLAGS = $(OOPTFLAGS) 
 
@@ -58,6 +61,7 @@ mk_exe:
 	wait;
 	cd $(D0_4); make -j $(p)
 	cd $(D0_G); make -j $(p)
+	cd $(D0_H); make -j $(p)
 	cd $(D0_5); make -j $(p)
 	cd $(D0_51); make -j $(p) & \
 	cd ../../$(D0_52); make -j $(p) & \
@@ -102,7 +106,7 @@ mk_exe:
 	wait;
 	cd $(D0_13); make -j $(p)
 	cd $(D0_14); make -j $(p)
-	$(LD) -o $(EXCNAME) $(OFLAGS) $(OBJS) $(LIBDIR)
+	$(LD) -o $(EXCNAME) $(OFLAGS) $(OBJS) $(LIBDIR) $(HYPRE_LDFLAGS)
 clean:
 	(cd $(D0_0); make $@)
 	(cd $(D0_a); make $@)
