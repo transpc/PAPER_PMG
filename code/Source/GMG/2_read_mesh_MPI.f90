@@ -15,7 +15,7 @@ USE MD_MG_matrix, ONLY: nnzi1,iai1,jai1,iar1,jar1,Xintp1,Xrest1,               &
                         auc,aus,Xrest,Xintp,iac,jac,juc,ias,jas,jus,           &
                         iai,jai,iar,jar,nnzc0,nnzi,nnzr,nnzs
 USE MD_MG_index, ONLY: mxnbne,nlevel,n_GC,nlevel_N,mxnbne_mg,isend_m,irecv_m,   &
-                       isetup_comm,stg_iintf,stg_inodegl,stg_inbdc,             &
+                       stg_iintf,stg_inodegl,stg_inbdc,             &
                        stg_ialvP,stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr,         &
                        stg_fibuf,stg_frbuf,stg_ficnt,stg_frcnt,stg_mg
 USE MD_MG_Global_C, ONLY: nlv_glo  ,nnodeG,nnzG,nnodeC,imapG,imapGZ,           &
@@ -36,7 +36,6 @@ IMPLICIT NONE
       INCLUDE 'mpif.h'
 !DEC$ENDIF
 
-character(len=64)::fout
 integer:: ie,ip,i,j,k,nnd,iu
 integer::alstatus,i1,i2,i3,i4,ierr
 real*8 tmp(10*mxnbne)
@@ -47,10 +46,6 @@ INTEGER(4)::kci,kcr,icnt_my,rcnt_my
 INTEGER(4), DIMENSION(:), ALLOCATABLE::fibuf_my,idis_t,rdis_t
 REAL(8), DIMENSION(:), ALLOCATABLE::frbuf_my
 
-!%read grid data
-! I0.3: 3자리 zero-padding, np>999 이면 자릿수 자동 확장 — 쓰기측
-! 6_subdomain_infor_mg.f90 의 파일명 생성과 반드시 동일 포맷 유지
-WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', myrank+1, '.out'
 
 ! update optimized nlevel_N
 
@@ -86,7 +81,6 @@ WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part', myrank+1, '.out'
 !/
 ! 1: for the finest level: - - - - - - - - - - - - - - - 
 
-IF(isetup_comm.EQ.1) THEN
 ! C011-3 통신 모드: 카운트 SCATTER → 페이로드 SCATTERV → 파일 READ 순서 그대로
 ! 커서 unpack (part###.out 미생성). REAL(8) 은 pack 시점에 rt_ascii 라운딩 완료
    IF(myrank.NE.0) THEN
@@ -140,17 +134,6 @@ IF(isetup_comm.EQ.1) THEN
    nnbdR   = fibuf_my(8)
    kci = 8
    kcr = 0
-ELSE
-! NEWUNIT: 런타임이 미사용 unit 을 배정 — 고정 unit(999 등)과의 충돌 원천 차단
-open(newunit=iu,file=fout,status='old',action='read',iostat=alstatus)
-IF(alstatus/=0) THEN
-WRITE(*,*)'read_mesh_MPI: cannot open ',TRIM(fout),' rank',myrank
-STOP
-ENDIF
-read(iu,*)nelem,nintr,nintf,nnode,nnbd,nnodegl
-! NEW
-read(iu,*)nnbdA,nnbdR
-ENDIF
 !----------------------------------------------------
 IF(nelem.NE.nnode) THEN
     WRITE(*,*)'PMG error: nelem=/nnode'
@@ -163,7 +146,6 @@ nelemgl = nnodegl
 
 ALLOCATE(num_neigh(nelem),e_neigh(nf_max,nelem),stat=alstatus)
 IF (alstatus/=0) STOP 'not enough inod memory'
-IF(isetup_comm.EQ.1) THEN
 DO ie=1,nelem
    j = fibuf_my(kci+1)
    DO k=1,j
@@ -172,26 +154,14 @@ DO ie=1,nelem
    kci = kci + 1 + j
    num_neigh(ie) = j
 ENDDO
-ELSE
-DO ie=1,nelem
-   READ(iu,*) j,e_neigh(1:j,ie)
-   num_neigh(ie) = j
-ENDDO
-ENDIF
 !
 !%read coordinates
 ALLOCATE(coord(ndim,nnodegl),stat=alstatus)
 IF(alstatus/=0) STOP 'not enough connect memory'
-IF(isetup_comm.EQ.1) THEN
 DO ip=1,nnodegl
    coord(1:ndim,ip) = frbuf_my(kcr+1:kcr+ndim)
    kcr = kcr + ndim
 ENDDO
-ELSE
-DO ip=1,nnodegl
-   READ(iu,*) coord(1:ndim,ip)
-ENDDO
-ENDIF
 !--------------------------------------------
 !%read neighboring data
 i = MAX(nnbd,1)
@@ -202,18 +172,12 @@ rpt = 0
 spt = 0
 
 IF(nnbd.NE.0) THEN
-IF(isetup_comm.EQ.1) THEN
 nbdom(1:nnbd)  = fibuf_my(kci+1:kci+nnbd)
 kci = kci + nnbd
 rpt(1:nnbd+1)  = fibuf_my(kci+1:kci+nnbd+1)
 kci = kci + nnbd+1
 spt(1:nnbd+1)  = fibuf_my(kci+1:kci+nnbd+1)
 kci = kci + nnbd+1
-ELSE
-READ(iu,*) nbdom(1:nnbd)
-READ(iu,*) rpt(1:nnbd+1)
-READ(iu,*) spt(1:nnbd+1)
-ENDIF
 ENDIF
 !
 i = MAX(1,nnode-nintf)
@@ -226,16 +190,11 @@ rintf = 0
 sintf = 0
 !
 IF(nnbd.NE.0) THEN
-IF(isetup_comm.EQ.1) THEN
 ! 파일 모드와 동일 계약: rint 개수 = rpt(nnbd+1)-1 = nnode-nintf (writer 측 ri 와 일치)
 rintf(1:(nnode-nintf))   = fibuf_my(kci+1:kci+(nnode-nintf))
 kci = kci + (nnode-nintf)
 sintf(1:(spt(nnbd+1)-1)) = fibuf_my(kci+1:kci+(spt(nnbd+1)-1))
 kci = kci + (spt(nnbd+1)-1)
-ELSE
-READ(iu,*) rintf(1:(nnode-nintf))
-READ(iu,*) sintf(1:(spt(nnbd+1)-1))
-ENDIF
 ENDIF
 ! - - - - - - - - - NEW for A  - - - - - - - - - 
 i = MAX(nnbdA,1)
@@ -246,18 +205,12 @@ nbdomA = 0
 rptA = 0
 sptA = 0
 IF(nnbdA.NE.0) THEN
-IF(isetup_comm.EQ.1) THEN
 nbdomA(1:nnbdA)  = fibuf_my(kci+1:kci+nnbdA)
 kci = kci + nnbdA
 rptA(1:nnbdA+1)  = fibuf_my(kci+1:kci+nnbdA+1)
 kci = kci + nnbdA+1
 sptA(1:nnbdA+1)  = fibuf_my(kci+1:kci+nnbdA+1)
 kci = kci + nnbdA+1
-ELSE
-READ(iu,*) nbdomA(1:nnbdA)
-READ(iu,*) rptA(1:nnbdA+1)
-READ(iu,*) sptA(1:nnbdA+1)
-ENDIF
 ENDIF
 !
 i = MAX(1,rptA(nnbdA+1)-1)
@@ -270,15 +223,10 @@ rintfA = 0
 sintfA = 0
 !
 IF(nnbdA.NE.0) THEN
-IF(isetup_comm.EQ.1) THEN
 rintfA(1:(rptA(nnbdA+1)-1)) = fibuf_my(kci+1:kci+(rptA(nnbdA+1)-1))
 kci = kci + (rptA(nnbdA+1)-1)
 sintfA(1:(sptA(nnbdA+1)-1)) = fibuf_my(kci+1:kci+(sptA(nnbdA+1)-1))
 kci = kci + (sptA(nnbdA+1)-1)
-ELSE
-READ(iu,*) rintfA(1:(rptA(nnbdA+1)-1))
-READ(iu,*) sintfA(1:(sptA(nnbdA+1)-1))
-ENDIF
 ENDIF
 ! - - - - - - - - - NEW for R  - - - - - - - - - 
 i = MAX(nnbdR,1)
@@ -289,18 +237,12 @@ nbdomR = 0
 rptR = 0
 sptR = 0
 IF(nnbdR.NE.0) THEN
-IF(isetup_comm.EQ.1) THEN
 nbdomR(1:nnbdR)  = fibuf_my(kci+1:kci+nnbdR)
 kci = kci + nnbdR
 rptR(1:nnbdR+1)  = fibuf_my(kci+1:kci+nnbdR+1)
 kci = kci + nnbdR+1
 sptR(1:nnbdR+1)  = fibuf_my(kci+1:kci+nnbdR+1)
 kci = kci + nnbdR+1
-ELSE
-READ(iu,*) nbdomR(1:nnbdR)
-READ(iu,*) rptR(1:nnbdR+1)
-READ(iu,*) sptR(1:nnbdR+1)
-ENDIF
 ENDIF
 !
 i = MAX(1,rptR(nnbdR+1)-1)
@@ -313,34 +255,24 @@ rintfR = 0
 sintfR = 0
 !
 IF(nnbdR.NE.0) THEN
-IF(isetup_comm.EQ.1) THEN
 rintfR(1:(rptR(nnbdR+1)-1)) = fibuf_my(kci+1:kci+(rptR(nnbdR+1)-1))
 kci = kci + (rptR(nnbdR+1)-1)
 sintfR(1:(sptR(nnbdR+1)-1)) = fibuf_my(kci+1:kci+(sptR(nnbdR+1)-1))
 kci = kci + (sptR(nnbdR+1)-1)
-ELSE
-READ(iu,*) rintfR(1:(rptR(nnbdR+1)-1))
-READ(iu,*) sintfR(1:(sptR(nnbdR+1)-1))
-ENDIF
 ENDIF
 !
-IF(isetup_comm.EQ.1) THEN
 ! unpack 정합 검사: 커서가 정확히 수신 길이에서 끝나야 함 (프로토콜 자기 검증)
 IF(kci.NE.icnt_my .OR. kcr.NE.rcnt_my) THEN
 WRITE(*,*)'read_mesh_MPI: finest unpack mismatch rank',myrank,kci,icnt_my,kcr,rcnt_my
 STOP
 ENDIF
 DEALLOCATE(fibuf_my,frbuf_my)
-ELSE
-CLOSE(iu)
-ENDIF
 
 !/ delete the tmp. file
 !/
 
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 ! 2: for the coarse levels: - - - - - - - - - - - - - - - 
-IF(isetup_comm.EQ.1) THEN
 ! 통신 모드 (LOOP C011-2): rank0 스테이징(= PMG_infor 파일 내용과 1:1, 전부 정수라
 ! 라운딩 무관)을 전 rank 로 BCAST 하고 아래에서 자기 열(myrank+1)을 추출.
 ! 파일 모드의 O(np) 더미 스킵과 공유 파일 동시 OPEN 이 소거된다.
@@ -364,20 +296,6 @@ IF(isetup_comm.EQ.1) THEN
    CALL MPI_BCAST(stg_nnzr,   ndom,           mpi_INTEGER,0,mpi_comm_world,ierr)
    ENDIF
 !DEC$ENDIF
-ELSE
-OPEN(newunit=iu,file='MG_tmp/PMG_infor',status='old',action='read',iostat=alstatus)
-IF(alstatus/=0) THEN
-WRITE(*,*)'read_mesh_MPI: cannot open MG_tmp/PMG_infor rank',myrank
-STOP
-ENDIF
-
-ntmp = nlevel*2+2
-ntmp = ntmp*myrank
-
-DO i = 1,ntmp
-READ(iu,*) j
-ENDDO
-ENDIF
 
 ! from MPI-MG
 ALLOCATE(iintf(nlevel),inodegl(nlevel),inbdc(nlevel))
@@ -389,18 +307,12 @@ isptc = 0
 irptc = 0
 inmax = 0
 !
-IF(isetup_comm.EQ.1) THEN
 DO ilv=1,nlevel
 iintf(ilv)   = stg_iintf(ilv,myrank+1)
 inodegl(ilv) = stg_inodegl(ilv,myrank+1)
 inbdc(ilv)   = stg_inbdc(ilv,myrank+1)
 inmax(ilv)   = stg_inmax(ilv)
 ENDDO
-ELSE
-DO ilv=1,nlevel
-READ(iu,*) iintf(ilv),inodegl(ilv),inbdc(ilv),inmax(ilv)    ! reading *
-ENDDO
-ENDIF
 
 
 
@@ -411,13 +323,7 @@ ENDIF
 ! from MG_coord
 ALLOCATE(ialv(nlevel+1))
 
-IF(isetup_comm.EQ.1) THEN
 ialv(1:nlevel+1) = stg_ialvP(1:nlevel+1,myrank+1)
-ELSE
-DO ilv = 1,nlevel+1
-    READ(iu,*) ialv(ilv)                               ! reading *
-ENDDO
-ENDIF
 
 ncolf = ialv(nlevel+1)-1
 ncolc = ncolf -nnode
@@ -425,18 +331,12 @@ ntmp = SUM(inodegl(2:nlevel))
 ALLOCATE(coordc(ndim,ntmp))
 
 ! From MG_matrix
-IF(isetup_comm.EQ.1) THEN
 nnzc0 = stg_nnzc0(myrank+1)
 nnzi  = stg_nnzi(myrank+1)
 nnzr  = stg_nnzr(myrank+1)
 ! 스테이징 사용 완료 — 전 rank 해제 (재진입 대비 가드는 할당측에 있음)
 DEALLOCATE(stg_iintf,stg_inodegl,stg_inbdc,stg_ialvP,stg_inmax,             &
            stg_nnzc0,stg_nnzi,stg_nnzr)
-ELSE
-READ(iu,*) nnzc0,nnzi,nnzr                          ! reading *
-
-CLOSE(iu)
-ENDIF
 
 DO ilv=2,nlevel
     j = ialv(ilv+1)-ialv(ilv)-iintf(ilv)
@@ -524,7 +424,6 @@ irintfcR = 0
 isintfcP = 0
 irintfcP = 0
 ! - - - - - - - - - - - - - - 
-IF(isetup_comm.EQ.1) THEN
 ! C011-4 통신 모드: rank0 의 prc별 성장형 스트림(stg_mg)을 연접 → 카운트 SCATTER
 ! → 페이로드 SCATTERV → 파일 READ 순서 그대로 커서 unpack (part_MG 미생성)
    IF(myrank.EQ.0) THEN
@@ -588,18 +487,9 @@ IF(isetup_comm.EQ.1) THEN
    DEALLOCATE(stg_fibuf,stg_frbuf,stg_ficnt,stg_frcnt)
    kci = 0
    kcr = 0
-ELSE
-WRITE(fout,'(A,I0.3,A)') 'MG_tmp/part_MG', myrank+1, '.out'
-OPEN(newunit=iu,file=fout,status='old',action='read',iostat=alstatus)
-IF(alstatus/=0) THEN
-WRITE(*,*)'read_mesh_MPI: cannot open ',TRIM(fout),' rank',myrank
-STOP
-ENDIF
-ENDIF
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
 DO ilv = 2,nlevel
 
-IF(isetup_comm.EQ.0) READ(iu,*)                       ! reading ('coarse' 마커)
 nintf1 = iintf(ilv)
 nnode1 = ialv(ilv+1)-ialv(ilv)
 nnbd1 = inbdc(ilv)
@@ -609,21 +499,16 @@ nnode0 = ialv(ilv)-ialv(ilv-1)
 
 ! 1:reading local
 
-IF(isetup_comm.EQ.1) THEN
 i1 = fibuf_my(kci+1)
 i2 = fibuf_my(kci+2)
 i3 = fibuf_my(kci+3)
 i4 = fibuf_my(kci+4)
 kci = kci + 4
-ELSE
-READ(iu,*) i1,i2,i3,i4
-ENDIF
 IF((i1.NE.nintf1).OR.(i2.NE.nnode1).OR.(i3.NE.nnbd1).OR.(i4.NE.nnode1gl)) THEN
 WRITE(*,*)'error nintf1'
 STOP
 ENDIF
 ! NEW for A and R, P - - - - - -
-IF(isetup_comm.EQ.1) THEN
 IF(ilv.NE.nlevel) THEN
 inbdcA(ilv) = fibuf_my(kci+1)
 inbdcR(ilv) = fibuf_my(kci+2)
@@ -634,27 +519,13 @@ inbdcA(ilv) = fibuf_my(kci+1)
 inbdcP(ilv) = fibuf_my(kci+2)
 kci = kci + 2
 ENDIF
-ELSE
-IF(ilv.NE.nlevel) THEN
-READ(iu,*) inbdcA(ilv),inbdcR(ilv),inbdcP(ilv)
-ELSE
-READ(iu,*) inbdcA(ilv),inbdcP(ilv)
-ENDIF
-ENDIF
 ! - - - - - - - - - - - - - - -
-IF(isetup_comm.EQ.1) THEN
 DO i=1,nnode1gl
    coord1(1:ndim,i) = frbuf_my(kcr+1:kcr+ndim)
    kcr = kcr + ndim
 ENDDO
-ELSE
-DO i=1,nnode1gl
-   READ(iu,*) coord1(1:ndim,i)                        ! reading
-ENDDO
-ENDIF
 
 IF(nnbd1.NE.0) THEN
-IF(isetup_comm.EQ.1) THEN
 nbdom1(1:nnbd1) = fibuf_my(kci+1:kci+nnbd1)
 kci = kci + nnbd1
 rpt1(1:nnbd1+1) = fibuf_my(kci+1:kci+nnbd1+1)
@@ -665,14 +536,6 @@ rintf1(1:(nnode1-nintf1))   = fibuf_my(kci+1:kci+(nnode1-nintf1))
 kci = kci + (nnode1-nintf1)
 sintf1(1:(spt1(nnbd1+1)-1)) = fibuf_my(kci+1:kci+(spt1(nnbd1+1)-1))
 kci = kci + (spt1(nnbd1+1)-1)
-ELSE
-READ(iu,*) nbdom1(1:nnbd1)                            ! reading
-READ(iu,*) rpt1(1:nnbd1+1)
-READ(iu,*) spt1(1:nnbd1+1)
-
-READ(iu,*) rintf1(1:(nnode1-nintf1))                  ! reading
-READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
-ENDIF
 
 IF((nnode1-nintf1).NE.(rpt1(nnbd1+1)-1)) THEN
 WRITE(*,*)'error/nnode1-nintf1.NE.rpt1(nnbd1+1)-1'
@@ -700,7 +563,6 @@ ENDIF
  nnbd1 =  inbdcA(ilv)
 IF(nnbd1.NE.0) THEN
 
-IF(isetup_comm.EQ.1) THEN
 nbdom1(1:nnbd1) = fibuf_my(kci+1:kci+nnbd1)
 kci = kci + nnbd1
 rpt1(1:nnbd1+1) = fibuf_my(kci+1:kci+nnbd1+1)
@@ -711,14 +573,6 @@ rintf1(1:(rpt1(nnbd1+1)-1)) = fibuf_my(kci+1:kci+(rpt1(nnbd1+1)-1))
 kci = kci + (rpt1(nnbd1+1)-1)
 sintf1(1:(spt1(nnbd1+1)-1)) = fibuf_my(kci+1:kci+(spt1(nnbd1+1)-1))
 kci = kci + (spt1(nnbd1+1)-1)
-ELSE
-READ(iu,*) nbdom1(1:nnbd1)                            ! reading
-READ(iu,*) rpt1(1:nnbd1+1)
-READ(iu,*) spt1(1:nnbd1+1)
-
-READ(iu,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
-READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
-ENDIF
 
 ENDIF
 
@@ -738,7 +592,6 @@ IF(ilv.NE.nlevel) THEN
  nnbd1 =  inbdcR(ilv)
 IF(nnbd1.NE.0) THEN
 
-IF(isetup_comm.EQ.1) THEN
 nbdom1(1:nnbd1) = fibuf_my(kci+1:kci+nnbd1)
 kci = kci + nnbd1
 rpt1(1:nnbd1+1) = fibuf_my(kci+1:kci+nnbd1+1)
@@ -749,14 +602,6 @@ rintf1(1:(rpt1(nnbd1+1)-1)) = fibuf_my(kci+1:kci+(rpt1(nnbd1+1)-1))
 kci = kci + (rpt1(nnbd1+1)-1)
 sintf1(1:(spt1(nnbd1+1)-1)) = fibuf_my(kci+1:kci+(spt1(nnbd1+1)-1))
 kci = kci + (spt1(nnbd1+1)-1)
-ELSE
-READ(iu,*) nbdom1(1:nnbd1)                            ! reading
-READ(iu,*) rpt1(1:nnbd1+1)
-READ(iu,*) spt1(1:nnbd1+1)
-
-READ(iu,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
-READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
-ENDIF
 
 ENDIF
 
@@ -777,7 +622,6 @@ ENDIF
  nnbd1 =  inbdcP(ilv)
 IF(nnbd1.NE.0) THEN
 
-IF(isetup_comm.EQ.1) THEN
 nbdom1(1:nnbd1) = fibuf_my(kci+1:kci+nnbd1)
 kci = kci + nnbd1
 rpt1(1:nnbd1+1) = fibuf_my(kci+1:kci+nnbd1+1)
@@ -788,14 +632,6 @@ rintf1(1:(rpt1(nnbd1+1)-1)) = fibuf_my(kci+1:kci+(rpt1(nnbd1+1)-1))
 kci = kci + (rpt1(nnbd1+1)-1)
 sintf1(1:(spt1(nnbd1+1)-1)) = fibuf_my(kci+1:kci+(spt1(nnbd1+1)-1))
 kci = kci + (spt1(nnbd1+1)-1)
-ELSE
-READ(iu,*) nbdom1(1:nnbd1)                            ! reading
-READ(iu,*) rpt1(1:nnbd1+1)
-READ(iu,*) spt1(1:nnbd1+1)
-
-READ(iu,*) rintf1(1:(rpt1(nnbd1+1)-1))                  ! reading
-READ(iu,*) sintf1(1:(spt1(nnbd1+1)-1))
-ENDIF
 
 ENDIF
 
@@ -813,20 +649,14 @@ ENDIF
 ! FOR P,R & AC
 ! - - - -
 ! 1: reading local:
-IF(isetup_comm.EQ.0) read(iu,*)                   ! reading ('P-1' 마커)
 
 iai1(1) = 1
 Do i=1,nnode0
-IF(isetup_comm.EQ.1) THEN
 nnd = fibuf_my(kci+1)
 id(1:nnd) = fibuf_my(kci+2:kci+1+nnd)
 kci = kci + 1 + nnd
 tmp(1:nnd) = frbuf_my(kcr+1:kcr+nnd)
 kcr = kcr + nnd
-ELSE
-read(iu,*) nnd,id(1:nnd)
-read(iu,*) tmp(1:nnd)
-ENDIF
  k=iai1(i)
  do j=1,nnd
  jai1(k)=id(j)
@@ -837,19 +667,13 @@ ENDIF
 enddo
 
 ! R
-IF(isetup_comm.EQ.0) READ(iu,*)                   ! reading ('R-1' 마커)
 iar1(1) = 1
 DO i=1,nnode1
-IF(isetup_comm.EQ.1) THEN
 nnd = fibuf_my(kci+1)
 id(1:nnd) = fibuf_my(kci+2:kci+1+nnd)
 kci = kci + 1 + nnd
 tmp(1:nnd) = frbuf_my(kcr+1:kcr+nnd)
 kcr = kcr + nnd
-ELSE
-READ(iu,*) nnd,id(1:nnd)
-READ(iu,*) tmp(1:nnd)
-ENDIF
  k=iar1(i)
  DO j=1,nnd
  jar1(k)=id(j)
@@ -860,16 +684,11 @@ ENDIF
 ENDDO
 
 ! AC
-IF(isetup_comm.EQ.0) READ(iu,*)                  ! reading ('Ac-1' 마커)
 ia1(1) = 1
 DO i=1,nnode1
-IF(isetup_comm.EQ.1) THEN
 nnd = fibuf_my(kci+1)
 id(1:nnd) = fibuf_my(kci+2:kci+1+nnd)
 kci = kci + 1 + nnd
-ELSE
-READ(iu,*) nnd,id(1:nnd)
-ENDIF
 k=ia1(i)
  DO j=1,nnd
  ja1(k)=id(j)
@@ -926,15 +745,10 @@ DEALLOCATE(iar1,jar1,Xrest1)
 ! 3:coarsest-global = = = = = = = = = = = = = = = = = = = = = = = 
 
   IF(n_GC.EQ.1) THEN
-  IF(isetup_comm.EQ.1) THEN
   nnodeC = fibuf_my(kci+1)
   nnodeG = fibuf_my(kci+2)
   nnzG   = fibuf_my(kci+3)
   kci = kci + 3
-  ELSE
-  READ(iu,*)                                         ! reading ('A_GC' 마커)
-  READ(iu,*) nnodeC,nnodeG,nnzG
-  ENDIF
   
 !/
 !/
@@ -957,14 +771,8 @@ DEALLOCATE(iar1,jar1,Xrest1)
 !/  
 !imapG
   IF(nnodeC .GT. 0) THEN
-  IF(isetup_comm.EQ.1) THEN
   imapG(1:nnodeC) = fibuf_my(kci+1:kci+nnodeC)
   kci = kci + nnodeC
-  ELSE
-  DO i=1,nnodeC
-   READ(iu,*) imapG(i)
-  ENDDO
-  ENDIF
   ENDIF
 
 
@@ -972,15 +780,11 @@ DEALLOCATE(iar1,jar1,Xrest1)
 
  iaG(1) = 1
  DO i=1,nnodeG
-  IF(isetup_comm.EQ.1) THEN
    nnd = fibuf_my(kci+1)
    id(1:nnd) = fibuf_my(kci+2:kci+1+nnd)
    kci = kci + 1 + nnd
    coordG(1:ndim,i) = frbuf_my(kcr+1:kcr+ndim)
    kcr = kcr + ndim
-  ELSE
-   READ(iu,*) nnd,id(1:nnd),coordG(1:ndim,i)
-  ENDIF
    k=iaG(i)
    DO j=1,nnd
     jaG(k)=id(j)
@@ -998,16 +802,12 @@ DEALLOCATE(iar1,jar1,Xrest1)
 
   ENDIF
 
-IF(isetup_comm.EQ.1) THEN
 ! unpack 정합 검사 (coarse 스트림 — 프로토콜 자기 검증)
 IF(kci.NE.icnt_my .OR. kcr.NE.rcnt_my) THEN
 WRITE(*,*)'read_mesh_MPI: coarse unpack mismatch rank',myrank,kci,icnt_my,kcr,rcnt_my
 STOP
 ENDIF
 DEALLOCATE(fibuf_my,frbuf_my)
-ELSE
-CLOSE(iu)
-ENDIF
 !/
      nnods = ialv(nlevel+1)-ialv(nlevel)
      ncolf = ialv(nlevel+1)-ialv(1)

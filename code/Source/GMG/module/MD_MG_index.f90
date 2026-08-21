@@ -18,10 +18,8 @@
 !   랭크 밖(고스트 열) 연결 |a_ij| 합을 더해 파티션 무관 수렴 보장.
 !   0 = 기존(순수 대각), 1 = l1 보정. np=1 에서는 고스트가 없어 두 모드 동일.
       INTEGER(4) :: il1_gs
-! G2 셋업 분배 이중 모드 (LOOP C011): 0=파일(MG_tmp), 1=MPI 통신
-!   stg_*: rank0 이 writer(subdomain_infor_mg)에서 채우고 reader(read_mesh_MPI)가
-!          BCAST 로 분배하는 스테이징 메타 (PMG_infor 파일 내용과 1:1)
-      INTEGER(4) :: isetup_comm
+! 셋업 분배 스테이징 (G2/D6): rank0 이 writer(subdomain_infor_mg)에서 채우고
+!   reader(read_mesh_MPI)가 BCAST/SCATTERV 로 분배 — 파일 경유 없음
       INTEGER(4),DIMENSION(:,:),ALLOCATABLE :: stg_iintf,stg_inodegl,stg_inbdc,stg_ialvP
       INTEGER(4),DIMENSION(:),ALLOCATABLE :: stg_inmax,stg_nnzc0,stg_nnzi,stg_nnzr
 !   finest fan-out (part###.out) 스테이징 (C011-3): prc 순 연접 정수/실수 스트림 + prc별 길이

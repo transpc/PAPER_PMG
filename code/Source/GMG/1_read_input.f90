@@ -9,7 +9,7 @@
 !
 !  mg.in (선택 — 없으면 전부 기본값):
 !    &MG_tuning  teta, teta_p, alpha, itergs, icheb, ip_nmax, ip_inter, ip_lev
-!    &MG_options il1_gs, isetup_comm, nthre
+!    &MG_options il1_gs, nthre
 ! = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = !
          USE MD_parameter, ONLY: ndim, maxit, mdf_matrix, ip_inter, ndom, &
                                  crit, teta, teta_p, alpha
@@ -17,7 +17,7 @@
                                 iter_mg, n_GC, crit_1, &
                                 iter_max, nlevel_N, n1_min, n2_min, ioplv, ip_lev, &
                                 itergs, icheb, icase_MG, &
-                                crit_bcg_mg, il1_gs, isetup_comm
+                                crit_bcg_mg, il1_gs
          USE MD_MPI, ONLY: myrank, myrankt
          USE MD_OpenMP, ONLY: nthre
          USE MD_MG_Global_C, ONLY: i_dir, nlv_glo, nlv_glomax, igather
@@ -32,7 +32,7 @@
 !
          NAMELIST /MG_tuning/ teta, teta_p, alpha, itergs, icheb, &
                               ip_nmax, ip_inter, ip_lev
-         NAMELIST /MG_options/ il1_gs, isetup_comm, nthre
+         NAMELIST /MG_options/ il1_gs, nthre
 !
          myrank = myrank_mg
          myrankt = myrank_mg
@@ -72,7 +72,6 @@
          ip_lev = 1
 ! ---- 옵션 기본값 ----
          il1_gs = 0                 ! (1) l1-보정 코어스 GS (Baker et al. 2011)
-         isetup_comm = 0            ! (1) 셋업 분배 MPI 통신 모드
          nthre = 1                  ! OpenMP 스레드 수
 !
 ! ---- mg.in (선택) : 그룹 순서 무관, 부재 허용 ----

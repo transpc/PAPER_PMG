@@ -69,10 +69,6 @@
       call csr_FVM(nelem,nf_max,num_neigh_mg,neigh_mg,ia,ja,nnz)
 
 !
-!/ create folder "MG_tmp" here 
-!/ for WINDOW: 
-      call system('mkdir MG_tmp')
-!/
       return
     End
     
